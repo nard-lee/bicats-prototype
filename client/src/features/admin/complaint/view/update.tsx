@@ -5,7 +5,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Separator } from "@/components/ui/separator";
 import { api } from "@/lib/api";
 import { useT, type Key } from "@/lib/I18n";
 import type { ComplaintStatus } from "./loader";
@@ -36,18 +35,13 @@ export default function StatusUpdateModal({ complaintId, currentStatus, onSucces
   const [internalNote, setInternalNote] = useState("");
   const [hearingAt, setHearingAt] = useState<string>("");
   
-  // Reopen State
-  const [reopenReason, setReopenReason] = useState("");
-  
   // Loading States
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isReopening, setIsReopening] = useState(false);
 
   // Logic Flags
   const allowedNextStatuses = ALLOWED_TRANSITIONS[currentStatus] || [];
   const canChangeStatus = allowedNextStatuses.length > 0;
   const canScheduleHearing = !["settled", "certified", "dismissed"].includes(currentStatus);
-  const isClosed = ["settled", "certified", "dismissed"].includes(currentStatus);
 
   // Check if any field in the main form has been modified
   const hasChanges = 
@@ -63,7 +57,6 @@ export default function StatusUpdateModal({ complaintId, currentStatus, onSucces
       setPublicNote("");
       setInternalNote("");
       setHearingAt("");
-      setReopenReason("");
     }
   }, [open, currentStatus]);
 
@@ -91,27 +84,6 @@ export default function StatusUpdateModal({ complaintId, currentStatus, onSucces
       toast.error("Failed to update status.");
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const handleReopen = async () => {
-    if (!reopenReason.trim()) {
-      toast.error("Please provide a reason for reopening.");
-      return;
-    }
-    setIsReopening(true);
-    try {
-      await api.post(`/complaints/${complaintId}/reopen`, {
-        json: { reason: reopenReason },
-      });
-      setOpen(false);
-      toast.success("Case reopened.");
-      onSuccess();
-    } catch (error) {
-      console.error("Failed to reopen case", error);
-      toast.error("Failed to reopen case.");
-    } finally {
-      setIsReopening(false);
     }
   };
 
@@ -222,34 +194,6 @@ export default function StatusUpdateModal({ complaintId, currentStatus, onSucces
             </Button>
           </DialogFooter>
         </form>
-
-        {/* REOPEN SECTION */}
-        {isClosed && (
-          <div className="mt-2">
-            <Separator className="my-4" />
-            <div className="space-y-3">
-              <h4 className="text-sm font-medium text-destructive">Reopen Case</h4>
-              <p className="text-xs text-muted-foreground">
-                Use this if the respondent failed to comply with the settlement or if new evidence has emerged.
-              </p>
-              <Textarea
-                placeholder="Reason for reopening (e.g., Non-compliance with Amicable Settlement)"
-                value={reopenReason}
-                onChange={(e) => setReopenReason(e.target.value)}
-                className="border-destructive/20 focus-visible:ring-destructive/20"
-              />
-              <Button 
-                variant="destructive" 
-                size="sm" 
-                onClick={handleReopen} 
-                disabled={isReopening || !reopenReason.trim()}
-                className="w-full sm:w-auto"
-              >
-                {isReopening ? "Reopening..." : "Reopen Case"}
-              </Button>
-            </div>
-          </div>
-        )}
       </DialogContent>
     </Dialog>
   );

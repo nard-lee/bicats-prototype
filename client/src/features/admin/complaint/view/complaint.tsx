@@ -26,6 +26,7 @@ import {
 import { useT, type Key } from "@/lib/I18n";
 import type { ComplaintDetail } from "./loader";
 import StatusUpdateModal from "./update";
+import ReopenCaseModal from "./reopen";
 import { DOCUMENT_TYPES } from "../documents/loader";
 
 function Info({ label, value }: { label: string; value: ReactNode }) {
@@ -72,10 +73,12 @@ export default function ComplaintView() {
     }
   };
 
+  const isClosed = ["settled", "certified", "dismissed"].includes(complaint.status);
+
   const isOverdue =
     !!complaint.dueAt &&
     new Date(complaint.dueAt).getTime() < Date.now() &&
-    !["settled", "certified", "dismissed"].includes(complaint.status);
+    !isClosed;
 
   return (
     <div className="space-y-6">
@@ -120,11 +123,19 @@ export default function ComplaintView() {
           )}
         </div>
 
-        <StatusUpdateModal
-          complaintId={complaint.id}
-          currentStatus={complaint.status}
-          onSuccess={() => revalidator.revalidate()}
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          <StatusUpdateModal
+            complaintId={complaint.id}
+            currentStatus={complaint.status}
+            onSuccess={() => revalidator.revalidate()}
+          />
+          {isClosed && (
+            <ReopenCaseModal
+              complaintId={complaint.id}
+              onSuccess={() => revalidator.revalidate()}
+            />
+          )}
+        </div>
       </div>
 
       {/* Documents */}

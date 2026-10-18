@@ -169,21 +169,21 @@ export default function AdminLayout() {
 
       <SidebarInset className="h-screen flex flex-col">
         <header className="sticky top-0 z-10 flex h-12 items-center justify-between border-b bg-background px-4">
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
             <SidebarTrigger />
             
             {/* Breadcrumbs */}
-            <nav aria-label="Breadcrumb" className="hidden md:flex items-center gap-1 text-sm text-muted-foreground">
-              <Link to="/admin" className="flex items-center gap-1 hover:text-foreground transition-colors">
+            <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1 overflow-hidden text-sm text-muted-foreground">
+              <Link to="/admin" className="flex shrink-0 items-center gap-1 hover:text-foreground transition-colors">
                 <Home className="h-4 w-4" />
               </Link>
               {breadcrumbs.map((crumb, index) => (
-                <div key={crumb.path} className="flex items-center gap-1">
-                  <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
+                <div key={crumb.path} className="flex min-w-0 items-center gap-1">
+                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/50" />
                   {index === breadcrumbs.length - 1 ? (
-                    <span className="font-medium text-foreground">{crumb.label}</span>
+                    <span className="truncate font-medium text-foreground">{crumb.label}</span>
                   ) : (
-                    <Link to={crumb.path} className="hover:text-foreground transition-colors">
+                    <Link to={crumb.path} className="truncate hover:text-foreground transition-colors">
                       {crumb.label}
                     </Link>
                   )}
@@ -192,7 +192,7 @@ export default function AdminLayout() {
             </nav>
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex shrink-0 items-center gap-1">
             <NotificationsBell />
           </div>
         </header>

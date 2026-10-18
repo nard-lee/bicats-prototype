@@ -27,7 +27,7 @@ export function ComplaintSearch({ defaultValue = "" }: { defaultValue?: string }
       try {
         const data = await api
           .post("/complaints/list", {
-            searchParams: { q: term, pageSize: 6 },
+            searchParams: { q: term, pageSize: 8 },
             signal: controller.signal,
           })
           .json<Paginated<ComplaintListItem>>();
@@ -98,7 +98,7 @@ export function ComplaintSearch({ defaultValue = "" }: { defaultValue?: string }
   }
 
   return (
-    <div ref={boxRef} className="relative w-full sm:w-80">
+    <div ref={boxRef} className="relative w-full sm:w-[26rem]">
       <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
       <Input
         value={query}
@@ -126,7 +126,7 @@ export function ComplaintSearch({ defaultValue = "" }: { defaultValue?: string }
               {loading ? "Searching..." : "No matches found."}
             </p>
           ) : (
-            <ul className="max-h-72 overflow-auto py-1">
+            <ul className="max-h-96 overflow-auto py-1">
               {results.map((item, index) => (
                 <li key={item.id}>
                   <button
