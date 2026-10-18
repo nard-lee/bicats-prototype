@@ -13,12 +13,14 @@ import {
   FileText,
   Users,
   CheckCircle2,
-  ArrowRightFromLine,
-  XCircle,
-  Calendar,
   ArrowLeft,
   Download,
   Notebook,
+  Send,
+  FileCheck2,
+  XCircle,
+  Calendar,
+  AlertTriangle,
 } from "lucide-react";
 import { useT, type Key } from "@/lib/I18n";
 import type { ComplaintDetail } from "./loader";
@@ -52,13 +54,20 @@ export default function ComplaintView() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "received": return <FileText className="h-8 w-8 " />;
-      case "under_mediation": return <Users className="h-8 w-8 " />;
+      case "summoned": return <Send className="h-8 w-8 " />;
+      case "mediation": return <Users className="h-8 w-8 " />;
+      case "conciliation": return <Users className="h-4 w-4 " />;
       case "settled": return <CheckCircle2 className="h-8 w-8 " />;
-      case "endorsed": return <ArrowRightFromLine className="h-4 w-4 " />;
+      case "certified": return <FileCheck2 className="h-8 w-8 " />;
       case "dismissed": return <XCircle className="h-8 w-8 " />;
       default: return <FileText className="h-8 w-8 " />;
     }
   };
+
+  const isOverdue =
+    !!complaint.dueAt &&
+    new Date(complaint.dueAt).getTime() < Date.now() &&
+    !["settled", "certified", "dismissed"].includes(complaint.status);
 
   return (
     <div className="space-y-6">
@@ -86,6 +95,21 @@ export default function ComplaintView() {
             {complaint.reference} · {t(complaint.complaintType as Key)} ·{" "}
             {formatDateTime(complaint.createdAt)}
           </p>
+
+          {complaint.dueAt ? (
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-muted-foreground">{t("dueDate")}:</span>
+              <span className="font-medium">{formatDateTime(complaint.dueAt)}</span>
+              {isOverdue && (
+                <Badge variant="destructive" className="gap-1">
+                  <AlertTriangle className="h-3 w-3" />
+                  {t("overdue")}
+                </Badge>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">{t("noDeadline")}</p>
+          )}
         </div>
 
         <StatusUpdateModal

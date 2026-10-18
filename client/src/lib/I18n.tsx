@@ -42,7 +42,7 @@ const en = {
     "The 10 puroks with the most complaints. A taller bar means more cases from that area.",
   anStatusTitle: "Case Status Breakdown",
   anStatusDesc:
-    "Where cases stand today. Received and Under mediation are still open; the others are closed.",
+    "Where cases stand today. Received, Summoned, Mediation and Conciliation are still open; the rest are closed.",
   adminCreate: "Create Account",
   adminSection: "Administration",
   viewSite: "View public site",
@@ -221,10 +221,31 @@ const en = {
   history: "History",
   hearing: "Hearing",
   st_received: "Received",
-  st_under_mediation: "Under mediation",
+  st_summoned: "Respondent summoned",
+  st_mediation: "Under mediation",
+  st_conciliation: "Under conciliation (Lupon)",
   st_settled: "Settled",
-  st_endorsed: "Endorsed to the proper agency",
+  st_certified: "Certified to file action",
   st_dismissed: "Dismissed",
+  dueDate: "Next deadline",
+  overdue: "Overdue",
+  overdueOnly: "Overdue only",
+  anyDue: "Any due date",
+  noDeadline: "No pending deadline",
+  trackPhase: "Where your case is now",
+  ph_received:
+    "Your complaint is on record in the barangay blotter. The Punong Barangay will summon the respondent within 3 days.",
+  ph_summoned:
+    "The respondent has been summoned. A mediation session will be called within 7–15 days of filing.",
+  ph_mediation:
+    "Mediation is ongoing before the Punong Barangay. If both parties agree, the case is closed with an amicable settlement.",
+  ph_conciliation:
+    "The case was endorsed to the Lupong Tagapamayapa. The Pangkat has 15 days to help the parties reach a settlement.",
+  ph_settled:
+    "The case was settled. Both parties reached an amicable settlement.",
+  ph_certified:
+    "No settlement was reached, so a Certificate to File Action was issued. The complainant may now bring the case to court.",
+  ph_dismissed: "The case was dismissed by the barangay.",
 
   // complaint view/detail page
   complaintDetails: "Complaint Details",
@@ -279,7 +300,7 @@ const tl: Record<Key, string> = {
     "Ang 10 purok na may pinakamaraming reklamo. Mas mataas na bar, mas maraming kaso mula sa lugar na iyon.",
   anStatusTitle: "Kalagayan ng mga Kaso",
   anStatusDesc:
-    "Kung saan na ang mga kaso ngayon. Natanggap at Nasa mediation ay bukas pa; sarado na ang iba.",
+    "Kung saan na ang mga kaso ngayon. Natanggap, Pinatawag, Mediation at Conciliation ay bukas pa; sarado na ang iba.",
   adminCreate: "Gumawa ng Account",
   adminSection: "Pangangasiwa",
   viewSite: "Tingnan ang public site",
@@ -452,10 +473,31 @@ const tl: Record<Key, string> = {
   history: "Kasaysayan",
   hearing: "Pagdinig",
   st_received: "Natanggap",
-  st_under_mediation: "Nasa mediation",
+  st_summoned: "Pinatawag ang inirereklamo",
+  st_mediation: "Nasa mediation",
+  st_conciliation: "Nasa conciliation (Lupon)",
   st_settled: "Naayos",
-  st_endorsed: "Ipinasa sa tamang ahensya",
+  st_certified: "Binigyan ng sertipiko para magsampa ng kaso",
   st_dismissed: "Ibinasura",
+  dueDate: "Susunod na takda",
+  overdue: "Lampas na sa takda",
+  overdueOnly: "Lampas na takda lang",
+  anyDue: "Kahit anong takda",
+  noDeadline: "Walang nakabinbing takda",
+  trackPhase: "Kung nasaan na ang kaso mo",
+  ph_received:
+    "Nakatala na ang reklamo mo sa blotter ng barangay. Ipatawag ng Punong Barangay ang inirereklamo sa loob ng 3 araw.",
+  ph_summoned:
+    "Napatawag na ang inirereklamo. Magsasagawa ng mediation sa loob ng 7–15 araw mula nang paghain.",
+  ph_mediation:
+    "Nagpapatuloy ang mediation sa harap ng Punong Barangay. Kung magkakasundo, isasara ang kaso sa isang amicable settlement.",
+  ph_conciliation:
+    "Ipinasa ang kaso sa Lupong Tagapamayapa. May 15 araw ang Pangkat para tulungan ang mga panig na magkasundo.",
+  ph_settled:
+    "Naayos na ang kaso. Nakarating sa amicable settlement ang magkabilang panig.",
+  ph_certified:
+    "Walang naging kasunduan, kaya binigyan ng Certificate to File Action. Maaari nang dalhin ng nagreklamo ang kaso sa korte.",
+  ph_dismissed: "Ibinasura ng barangay ang kaso.",
 
   nfTitle: "Hindi mahanap ang pahina",
   nfText: "Ang pahinang hinahanap ninyo ay wala o nailipat na.",

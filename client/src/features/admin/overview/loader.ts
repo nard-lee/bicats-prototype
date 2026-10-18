@@ -26,6 +26,7 @@ export type Overview = {
     complaints: number;
     open: number;
     settled: number;
+    overdue: number;
     notices: number;
     publishedNotices: number;
   };

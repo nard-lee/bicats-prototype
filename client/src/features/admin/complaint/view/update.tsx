@@ -17,10 +17,12 @@ interface StatusUpdateModalProps {
 }
 
 const ALLOWED_TRANSITIONS: Record<ComplaintStatus, ComplaintStatus[]> = {
-  received: ["under_mediation", "dismissed"],
-  under_mediation: ["settled", "endorsed", "dismissed"],
+  received: ["summoned", "dismissed"],
+  summoned: ["mediation", "dismissed"],
+  mediation: ["settled", "conciliation", "dismissed"],
+  conciliation: ["settled", "certified", "dismissed"],
   settled: [],
-  endorsed: [],
+  certified: [],
   dismissed: [],
 };
 
@@ -44,8 +46,8 @@ export default function StatusUpdateModal({ complaintId, currentStatus, onSucces
   // Logic Flags
   const allowedNextStatuses = ALLOWED_TRANSITIONS[currentStatus] || [];
   const canChangeStatus = allowedNextStatuses.length > 0;
-  const canScheduleHearing = !["settled", "dismissed", "endorsed"].includes(currentStatus);
-  const isClosed = ["settled", "dismissed", "endorsed"].includes(currentStatus);
+  const canScheduleHearing = !["settled", "certified", "dismissed"].includes(currentStatus);
+  const isClosed = ["settled", "certified", "dismissed"].includes(currentStatus);
 
   // Check if any field in the main form has been modified
   const hasChanges = 
@@ -115,9 +117,11 @@ export default function StatusUpdateModal({ complaintId, currentStatus, onSucces
 
   const allStatuses: ComplaintStatus[] = [
     "received",
-    "under_mediation",
+    "summoned",
+    "mediation",
+    "conciliation",
     "settled",
-    "endorsed",
+    "certified",
     "dismissed",
   ];
 
@@ -204,7 +208,7 @@ export default function StatusUpdateModal({ complaintId, currentStatus, onSucces
             />
             {!canScheduleHearing && (
               <p className="text-xs text-muted-foreground">
-                Hearings cannot be scheduled for closed or endorsed cases.
+                Hearings cannot be scheduled for closed cases.
               </p>
             )}
           </div>

@@ -2,11 +2,16 @@ import { prisma } from "../../db.js";
 
 const COMPLAINT_STATUSES = [
   "received",
-  "under_mediation",
+  "summoned",
+  "mediation",
+  "conciliation",
   "settled",
-  "endorsed",
+  "certified",
   "dismissed",
 ] as const;
+
+const OPEN_STATUSES = ["received", "summoned", "mediation", "conciliation"];
+const TERMINAL_STATUSES = ["settled", "certified", "dismissed"];
 
 export const analyticsService = {
   async getComplaintTypes() {
@@ -57,6 +62,7 @@ export const analyticsService = {
       upcomingHearings,
       notices,
       publishedNotices,
+      overdueComplaints,
     ] = await Promise.all([
       prisma.complaint.count(),
       prisma.complaint.groupBy({ by: ["status"], _count: { status: true } }),
@@ -88,17 +94,30 @@ export const analyticsService = {
       }),
       prisma.notice.count(),
       prisma.notice.count({ where: { isPublished: true } }),
+      prisma.complaint.count({
+        where: {
+          dueAt: { lt: now },
+          status: { notIn: TERMINAL_STATUSES },
+        },
+      }),
     ]);
 
     const statusCounts: Record<string, number> = {};
     for (const status of COMPLAINT_STATUSES) statusCounts[status] = 0;
     for (const group of statusGroups) statusCounts[group.status] = group._count.status;
 
+    const open = OPEN_STATUSES.reduce(
+      (sum, status) => sum + (statusCounts[status] ?? 0),
+      0,
+    );
+    const settled = (statusCounts.settled ?? 0) + (statusCounts.certified ?? 0);
+
     return {
       totals: {
         complaints: totalComplaints,
-        open: (statusCounts.received ?? 0) + (statusCounts.under_mediation ?? 0),
-        settled: statusCounts.settled ?? 0,
+        open,
+        settled,
+        overdue: overdueComplaints,
         notices,
         publishedNotices,
       },

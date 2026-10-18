@@ -64,8 +64,10 @@ model Complaint {
   incidentPlace String
   narrative     String
 
-  // received | under_mediation | settled | endorsed | dismissed
+  // received | summoned | mediation | conciliation | settled | certified | dismissed
   status    String    @default("received")
+  // Deadline for the next Katarungang Pambarangay step (null for terminal cases)
+  dueAt     DateTime?
   consentAt DateTime
   viewedAt  DateTime? // first time staff opened the case; null = unopened
   createdAt DateTime  @default(now())
@@ -78,6 +80,8 @@ model Complaint {
   @@index([contactNormalized])
   // Staff complaint lists, newest first within each status
   @@index([status, createdAt])
+  // Overdue open cases
+  @@index([status, dueAt])
   // Unopened-first staff lists
   @@index([viewedAt, updatedAt])
   // Date-based reports and chronological filtering

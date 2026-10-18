@@ -8,7 +8,28 @@ const COMPLAINT_TYPES = [
 ];
 
 
-const STATUSES = ["received", "under_mediation", "settled", "dismissed", "endorsed"];
+const OPEN_STATUSES: Record<string, number> = {
+  received: 3,
+  summoned: 15,
+  mediation: 0,
+  conciliation: 15,
+};
+
+const STATUSES = [
+  "received",
+  "summoned",
+  "mediation",
+  "conciliation",
+  "settled",
+  "certified",
+  "dismissed",
+];
+
+function computeDueAt(status: string, from: Date): Date | null {
+  const days = OPEN_STATUSES[status];
+  if (!days) return null;
+  return new Date(from.getTime() + days * 24 * 60 * 60 * 1000);
+}
 
 async function main() {
   console.log("🌱 Starting seed with Faker...");
@@ -19,9 +40,9 @@ async function main() {
 
   const complaints = [];
 
-  // Generate 50 random complaints
+  // Generate 25 random complaints
   for (let i = 0; i < 25; i++) {
-    const status = "received"; // default
+    const status = faker.helpers.arrayElement(STATUSES);
     const incidentAt = faker.date.past({ years: 1 });
     const createdAt = faker.date.between({ from: incidentAt, to: new Date() });
     const contact = faker.phone.number({ style: 'international' });
@@ -49,6 +70,7 @@ async function main() {
       narrative: faker.lorem.paragraphs(2), // Assuming narrative is a required field
       
       status,
+      dueAt: computeDueAt(status, createdAt),
       createdAt,
       consentAt: faker.date.between({ from: createdAt, to: new Date() }), // Random consent date after filing
     });

@@ -3,8 +3,10 @@ import {
   Link,
   useLoaderData,
   useNavigate,
+  useRevalidator,
   useSearchParams,
 } from "react-router";
+import { RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import DataPagination from "@/components/data-pagination";
@@ -29,27 +31,43 @@ import type { ComplaintListItem, ComplaintStatus, Paginated } from "./loader";
 
 const STATUSES: ComplaintStatus[] = [
   "received",
-  "under_mediation",
+  "summoned",
+  "mediation",
+  "conciliation",
   "settled",
-  "endorsed",
+  "certified",
   "dismissed",
+];
+
+const OPEN_STATUSES: ComplaintStatus[] = [
+  "received",
+  "summoned",
+  "mediation",
+  "conciliation",
 ];
 
 export default function ComplaintsList() {
   const { t, lang } = useT();
   const { items, total, page, pageSize, totalPages } = useLoaderData() as Paginated<ComplaintListItem>;
   const navigate = useNavigate();
+  const revalidator = useRevalidator();
   const [params] = useSearchParams();
 
   const q = params.get("q") ?? "";
   const status = params.get("status") ?? "all";
   const type = params.get("type") ?? "all";
-  const hasFilters = q !== "" || status !== "all" || type !== "all";
+  const overdue = params.get("overdue") === "true";
+  const hasFilters = q !== "" || status !== "all" || type !== "all" || overdue;
 
   const date = (iso: string) =>
     new Date(iso).toLocaleDateString(lang === "tl" ? "fil-PH" : "en-PH", {
       dateStyle: "medium",
     });
+
+  const isOverdue = (c: ComplaintListItem) =>
+    !!c.dueAt &&
+    new Date(c.dueAt).getTime() < Date.now() &&
+    OPEN_STATUSES.includes(c.status);
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-6">
@@ -68,6 +86,19 @@ export default function ComplaintsList() {
         className="flex shrink-0 flex-wrap items-center gap-2"
       >
         <input type="hidden" name="q" value={q} />
+
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          onClick={() => revalidator.revalidate()}
+          disabled={revalidator.state === "loading"}
+          title="Reload"
+        >
+          <RefreshCw
+            className={revalidator.state === "loading" ? "animate-spin" : ""}
+          />
+        </Button>
 
         <Select name="status" defaultValue={status}>
           <SelectTrigger className="w-[170px]">
@@ -94,6 +125,16 @@ export default function ComplaintsList() {
                 {t(k)}
               </SelectItem>
             ))}
+          </SelectContent>
+        </Select>
+
+        <Select name="overdue" defaultValue={overdue ? "true" : "all"}>
+          <SelectTrigger className="w-[150px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t("anyDue")}</SelectItem>
+            <SelectItem value="true">{t("overdueOnly")}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -124,13 +165,14 @@ export default function ComplaintsList() {
               <TableHead>Respondent</TableHead>
               <TableHead>{t("complaintType")}</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>{t("dueDate")}</TableHead>
               <TableHead>Filed</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {items.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
                   {hasFilters
                     ? "No complaints match your filters."
                     : "No complaints yet."}
@@ -158,6 +200,22 @@ export default function ComplaintsList() {
                 <TableCell>{t(c.complaintType as Key)}</TableCell>
                 <TableCell>
                   <Badge variant="secondary">{t(`st_${c.status}` as Key)}</Badge>
+                </TableCell>
+                <TableCell className="whitespace-nowrap">
+                  {c.dueAt ? (
+                    <span className="inline-flex items-center gap-2">
+                      <span className="text-muted-foreground">
+                        {date(c.dueAt)}
+                      </span>
+                      {isOverdue(c) && (
+                        <Badge variant="destructive" className="h-5 px-1.5 text-[10px] uppercase tracking-wide">
+                          {t("overdue")}
+                        </Badge>
+                      )}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
                 </TableCell>
                 <TableCell>{date(c.createdAt)}</TableCell>
               </TableRow>

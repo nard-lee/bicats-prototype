@@ -3,9 +3,11 @@ import type { LoaderFunctionArgs } from "react-router";
 
 export type ComplaintStatus =
   | "received"
-  | "under_mediation"
+  | "summoned"
+  | "mediation"
+  | "conciliation"
   | "settled"
-  | "endorsed"
+  | "certified"
   | "dismissed";
 
 export type ComplaintDetail = {
@@ -16,6 +18,7 @@ export type ComplaintDetail = {
   complaintType: string;
   status: ComplaintStatus;
   createdAt: string;
+  dueAt: string | null;
   description: string;
   evidence: Array<{
     originalName: string;

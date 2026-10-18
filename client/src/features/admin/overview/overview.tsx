@@ -1,5 +1,6 @@
 import { Link, useLoaderData } from "react-router";
 import {
+  AlertTriangle,
   Bell,
   Calendar,
   CheckCircle2,
@@ -14,9 +15,11 @@ import type { Overview } from "./loader";
 
 const STATUS_ORDER = [
   "received",
-  "under_mediation",
+  "summoned",
+  "mediation",
+  "conciliation",
   "settled",
-  "endorsed",
+  "certified",
   "dismissed",
 ] as const;
 
@@ -42,6 +45,11 @@ export default function AdminOverview() {
       icon: ClipboardList,
     },
     { label: "Open Cases", value: data.totals.open, icon: FolderOpen },
+    {
+      label: "Overdue Cases",
+      value: data.totals.overdue,
+      icon: AlertTriangle,
+    },
     { label: "Settled", value: data.totals.settled, icon: CheckCircle2 },
     {
       label: "Published Notices",
@@ -60,7 +68,7 @@ export default function AdminOverview() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {stats.map(({ label, value, icon: Icon }) => (
           <Card key={label}>
             <CardContent className="flex items-center justify-between">

@@ -78,22 +78,51 @@ export type ComplaintListRow = {
   status: string;
   createdAt: Date;
   viewedAt: Date | null;
+  dueAt: Date | null;
 };
 
 export const COMPLAINT_STATUSES = [
   "received",
-  "under_mediation",
+  "summoned",
+  "mediation",
+  "conciliation",
   "settled",
-  "endorsed",
+  "certified",
   "dismissed",
 ] as const;
 
 export type ComplaintStatus = (typeof COMPLAINT_STATUSES)[number];
 
+// Cases that no longer have a pending step (no deadline).
+export const TERMINAL_STATUSES: readonly ComplaintStatus[] = [
+  "settled",
+  "certified",
+  "dismissed",
+];
+
+// Katarungang Pambarangay flow: for each status, how many days the barangay
+// has to take the next step (see the KP rules cited in the barangay handbook).
+export const KP_DEADLINE_DAYS: Partial<Record<ComplaintStatus, number>> = {
+  received: 3, // summon the respondent
+  summoned: 15, // hold mediation
+  conciliation: 15, // conclude the Pangkat conciliation
+};
+
+// Deadline for the step required by the given status, measured from `from`.
+export function computeNextDueAt(
+  status: string,
+  from: Date = new Date(),
+): Date | null {
+  const days = KP_DEADLINE_DAYS[status as ComplaintStatus];
+  if (days === undefined) return null;
+  return new Date(from.getTime() + days * 24 * 60 * 60 * 1000);
+}
+
 export type ComplaintListFilters = {
   q?: string | undefined;
   status?: string | undefined;
   type?: string | undefined;
+  overdue?: boolean | undefined;
 };
 
 export type ComplaintDetail = {
@@ -104,6 +133,7 @@ export type ComplaintDetail = {
   complaintType: string;
   status: string;
   createdAt: string;
+  dueAt: string | null;
   description: string;
   evidence: Array<{
     originalName: string;

@@ -3,12 +3,11 @@ import { randomInt } from "node:crypto";
 import { prisma } from "../../db.js";
 import { Prisma } from "../../generated/prisma/client.js";
 
-import { COMPLAINT_STATUSES } from "./complaint.schema.js";
+import { COMPLAINT_STATUSES, computeNextDueAt } from "./complaint.schema.js";
 import type {
     ComplaintDetail,
     ComplaintListFilters,
     ComplaintListRow,
-    ComplaintStatus,
     ComplaintTrackResult,
     CreateComplaintInput,
     Paginated,
@@ -67,6 +66,8 @@ const complaintService = {
                 incidentPlace: input.incidentPlace,
                 narrative: input.narrative,
 
+                // KP clock starts at filing: summon the respondent within 3 days.
+                dueAt: computeNextDueAt("received"),
                 consentAt: new Date(),
 
                 evidence: {
@@ -95,17 +96,10 @@ const complaintService = {
         pageSize: number,
         filters: ComplaintListFilters = {},
     ): Promise<Paginated<ComplaintListRow>> {
-        const where: Prisma.ComplaintWhereInput = {};
         const conditions: Prisma.Sql[] = [];
 
         const q = filters.q?.trim();
         if (q) {
-            where.OR = [
-                { reference: { contains: q, mode: "insensitive" } },
-                { complainantName: { contains: q, mode: "insensitive" } },
-                { respondentName: { contains: q, mode: "insensitive" } },
-            ];
-
             const like = `%${q}%`;
             conditions.push(
                 Prisma.sql`("reference" ILIKE ${like} OR "complainantName" ILIKE ${like} OR "respondentName" ILIKE ${like})`,
@@ -116,13 +110,17 @@ const complaintService = {
             filters.status &&
             (COMPLAINT_STATUSES as readonly string[]).includes(filters.status)
         ) {
-            where.status = filters.status as ComplaintStatus;
             conditions.push(Prisma.sql`"status" = ${filters.status}`);
         }
 
         if (filters.type) {
-            where.complaintType = filters.type;
             conditions.push(Prisma.sql`"complaintType" = ${filters.type}`);
+        }
+
+        if (filters.overdue) {
+            conditions.push(
+                Prisma.sql`("dueAt" IS NOT NULL AND "dueAt" < NOW() AND "status" NOT IN ('settled', 'certified', 'dismissed'))`,
+            );
         }
 
         const whereSql = conditions.length
@@ -131,18 +129,22 @@ const complaintService = {
 
         const offset = (page - 1) * pageSize;
 
-        const [items, total] = await Promise.all([
+        const [items, countRows] = await Promise.all([
             // New (unopened) cases float to the top, then most recently updated.
             prisma.$queryRaw<ComplaintListRow[]>`
                 SELECT id, reference, "complainantName", "respondentName",
-                       "complaintType", status, "createdAt", "viewedAt"
+                       "complaintType", status, "createdAt", "viewedAt", "dueAt"
                 FROM "Complaint"
                 ${whereSql}
                 ORDER BY ("viewedAt" IS NULL) DESC, "updatedAt" DESC, id DESC
                 LIMIT ${pageSize} OFFSET ${offset}
             `,
-            prisma.complaint.count({ where }),
+            prisma.$queryRaw<{ count: number }[]>`
+                SELECT COUNT(*)::int AS count FROM "Complaint" ${whereSql}
+            `,
         ]);
+
+        const total = countRows[0]?.count ?? 0;
 
         return {
             items,
@@ -198,6 +200,7 @@ const complaintService = {
             complaintType: complaint.complaintType,
             status: currentStatus,
             createdAt: complaint.createdAt.toISOString(),
+            dueAt: complaint.dueAt ? complaint.dueAt.toISOString() : null,
             description: complaint.narrative,
 
             evidence: complaint.evidence.map((evidence) => ({
@@ -273,10 +276,13 @@ const complaintService = {
     },
 
     async updateStatus(id: number, status: string, publicNote?: string, internalNote?: string, hearingAt?: Date, userId?: number) {
+        // Advance the KP clock whenever a case moves to a new step.
+        const dueAt = computeNextDueAt(status);
+
         return prisma.$transaction(async (tx) => {
             await tx.complaint.update({
                 where: { id },
-                data: { status },
+                data: { status, dueAt },
             });
 
             return tx.statusUpdate.create({
@@ -296,7 +302,7 @@ const complaintService = {
         return prisma.$transaction(async (tx) => {
             await tx.complaint.update({
                 where: { id },
-                data: { status: "received" },
+                data: { status: "received", dueAt: computeNextDueAt("received") },
             });
 
             const historyData: any = {

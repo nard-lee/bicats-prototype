@@ -9,7 +9,6 @@ const complaintController = {
 
     async create(req: Request, res: Response): Promise<void> {
         const files = (req.files as Express.Multer.File[] | undefined) ?? [];
-        console.log(req.body)
         try {
             const request = validateRequest(createComplaintSchema, req.body);
             const { reference } = await complaintService.create(request, files);
@@ -51,8 +50,9 @@ const complaintController = {
         const q = typeof req.query.q === "string" ? req.query.q : undefined;
         const status = typeof req.query.status === "string" ? req.query.status : undefined;
         const type = typeof req.query.type === "string" ? req.query.type : undefined;
+        const overdue = req.query.overdue === "true" || req.query.overdue === "1";
 
-        res.json(await complaintService.list(page, pageSize, { q, status, type }));
+        res.json(await complaintService.list(page, pageSize, { q, status, type, overdue }));
     },
 
     async markViewed(req: Request, res: Response): Promise<void> {

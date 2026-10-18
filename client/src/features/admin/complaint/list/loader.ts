@@ -3,9 +3,11 @@ import type { LoaderFunctionArgs } from "react-router";
 
 export type ComplaintStatus =
   | "received"
-  | "under_mediation"
+  | "summoned"
+  | "mediation"
+  | "conciliation"
   | "settled"
-  | "endorsed"
+  | "certified"
   | "dismissed";
 
 export type ComplaintListItem = {
@@ -17,6 +19,7 @@ export type ComplaintListItem = {
   status: ComplaintStatus;
   createdAt: string; 
   viewedAt: string | null;
+  dueAt: string | null;
 };
 
 export type Paginated<T> = {
@@ -33,6 +36,7 @@ export async function ComplaintsLoader({ request }: LoaderFunctionArgs) {
   const q = params.get("q")?.trim() ?? "";
   const status = params.get("status") ?? "";
   const type = params.get("type") ?? "";
+  const overdue = params.get("overdue") === "true";
 
   return api
     .post("/complaints/list", {
@@ -42,6 +46,7 @@ export async function ComplaintsLoader({ request }: LoaderFunctionArgs) {
         ...(q ? { q } : {}),
         ...(status && status !== "all" ? { status } : {}),
         ...(type && type !== "all" ? { type } : {}),
+        ...(overdue ? { overdue: "true" } : {}),
       },
     })
     .json<Paginated<ComplaintListItem>>();

@@ -7,11 +7,12 @@ import {
 } from "react-router";
 import { HTTPError } from "ky";
 import {
-  ArrowRightFromLine,
   Calendar,
   CheckCircle2,
+  FileCheck2,
   FileText,
   Notebook,
+  Send,
   Users,
   XCircle,
 } from "lucide-react";
@@ -80,12 +81,16 @@ export default function Track() {
     switch (status) {
       case "received":
         return <FileText className="h-8 w-8" />;
-      case "under_mediation":
+      case "summoned":
+        return <Send className="h-8 w-8" />;
+      case "mediation":
         return <Users className="h-8 w-8" />;
+      case "conciliation":
+        return <Users className="h-4 w-4" />;
       case "settled":
         return <CheckCircle2 className="h-8 w-8" />;
-      case "endorsed":
-        return <ArrowRightFromLine className="h-4 w-4" />;
+      case "certified":
+        return <FileCheck2 className="h-8 w-8" />;
       case "dismissed":
         return <XCircle className="h-8 w-8" />;
       default:
@@ -157,6 +162,18 @@ export default function Track() {
                   {statusLabel(result.status)}
                 </Badge>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Plain-language phase explanation */}
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("trackPhase")}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm leading-relaxed text-foreground/90">
+                {t(`ph_${result.status}` as Key)}
+              </p>
             </CardContent>
           </Card>
 
