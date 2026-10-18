@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useT, type Key, type Lang } from "@/lib/I18n";
 import TopLoader from "@/components/top-loader";
+import NotificationsBell from "@/features/admin/notifications/bell";
 import { LogoutButton } from "./logout";
 import type { AppRouteHandle } from "@/types/react-router";
 import type { CurrentUser } from "@/hooks/use-auth";
@@ -189,6 +190,10 @@ export default function AdminLayout() {
                 </div>
               ))}
             </nav>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <NotificationsBell />
           </div>
         </header>
         

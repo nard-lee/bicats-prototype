@@ -7,6 +7,7 @@ import {
   ChevronRight,
   ClipboardList,
   FolderOpen,
+  Timer,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -50,6 +51,11 @@ export default function AdminOverview() {
       value: data.totals.overdue,
       icon: AlertTriangle,
     },
+    {
+      label: "Due Soon",
+      value: data.totals.atRisk,
+      icon: Timer,
+    },
     { label: "Settled", value: data.totals.settled, icon: CheckCircle2 },
     {
       label: "Published Notices",
@@ -68,7 +74,7 @@ export default function AdminOverview() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
         {stats.map(({ label, value, icon: Icon }) => (
           <Card key={label}>
             <CardContent className="flex items-center justify-between">
@@ -134,6 +140,57 @@ export default function AdminOverview() {
         </Card>
 
         <div className="space-y-6">
+          {/* Needs attention */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-muted-foreground" />
+                {t("needsAttention")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {data.attention.length === 0 ? (
+                <p className="py-6 text-center text-sm text-muted-foreground">
+                  {t("allClear")}
+                </p>
+              ) : (
+                <div className="divide-y">
+                  {data.attention.map((item) => (
+                    <Link
+                      key={item.id}
+                      to={`/admin/complaints/${item.id}`}
+                      className="-mx-2 flex items-center justify-between gap-3 rounded-md px-2 py-3 transition-colors hover:bg-muted/50"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold">{item.reference}</p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {item.complainantName} vs {item.respondentName}
+                        </p>
+                        {item.dueAt && (
+                          <p className="text-xs text-muted-foreground">
+                            {t("dueDate")}: {formatDate(item.dueAt)}
+                          </p>
+                        )}
+                      </div>
+                      <Badge
+                        variant={
+                          item.risk === "overdue" ? "destructive" : "secondary"
+                        }
+                        className={
+                          item.risk === "due_soon"
+                            ? "border-transparent bg-amber-500 text-white"
+                            : ""
+                        }
+                      >
+                        {item.risk === "overdue" ? t("overdue") : t("dueSoon")}
+                      </Badge>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Upcoming hearings */}
           <Card>
             <CardHeader>

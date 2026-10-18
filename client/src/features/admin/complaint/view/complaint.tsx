@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -25,6 +26,7 @@ import {
 import { useT, type Key } from "@/lib/I18n";
 import type { ComplaintDetail } from "./loader";
 import StatusUpdateModal from "./update";
+import { DOCUMENT_TYPES } from "../documents/loader";
 
 function Info({ label, value }: { label: string; value: ReactNode }) {
   return (
@@ -50,6 +52,12 @@ export default function ComplaintView() {
 
   const evidence = complaint.evidence || [];
   const history = complaint.history || [];
+
+  const availableDocs = DOCUMENT_TYPES.filter((doc) => {
+    if (doc === "settlement") return complaint.status === "settled";
+    if (doc === "cfa") return complaint.status === "certified";
+    return true;
+  });
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -118,6 +126,26 @@ export default function ComplaintView() {
           onSuccess={() => revalidator.revalidate()}
         />
       </div>
+
+      {/* Documents */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("documents")}</CardTitle>
+          <CardDescription>{t("documentsDesc")}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            {availableDocs.map((doc) => (
+              <Button key={doc} asChild variant="outline">
+                <Link to={`/admin/complaints/${complaint.id}/documents/${doc}`}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  {t(`doc_${doc}` as Key)}
+                </Link>
+              </Button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* People */}
       <div className="grid gap-6 md:grid-cols-2">

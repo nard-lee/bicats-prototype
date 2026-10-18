@@ -230,8 +230,15 @@ const en = {
   dueDate: "Next deadline",
   overdue: "Overdue",
   overdueOnly: "Overdue only",
+  dueSoon: "Due soon",
+  dueSoonOnly: "Due soon only",
   anyDue: "Any due date",
   noDeadline: "No pending deadline",
+  needsAttention: "Needs Attention",
+  allClear: "All caught up. No cases need attention right now.",
+  notifications: "Notifications",
+  noNotifications: "You're all caught up.",
+  markAllRead: "Mark all read",
   trackPhase: "Where your case is now",
   ph_received:
     "Your complaint is on record in the barangay blotter. The Punong Barangay will summon the respondent within 3 days.",
@@ -259,6 +266,22 @@ const en = {
   description: "Description",
   statusHistory: "Status History",
   notes: "Notes",
+
+  // documents
+  documents: "Case Documents",
+  documentsDesc:
+    "Generate the official Katarungang Pambarangay paperwork for this case.",
+  printDoc: "Print / Save as PDF",
+  backToCase: "Back to case",
+  doc_summons: "Summons",
+  doc_notice: "Notice of Hearing",
+  doc_settlement: "Amicable Settlement",
+  doc_cfa: "Certificate to File Action",
+  lblPunongBarangay: "Punong Barangay",
+  lblLuponChairman: "Lupon Chairman",
+  lblComplainant: "Complainant",
+  lblRespondent: "Respondent",
+  lblAttestedBy: "Attested by",
 
   // 404
   nfTitle: "Page not found",
@@ -482,8 +505,15 @@ const tl: Record<Key, string> = {
   dueDate: "Susunod na takda",
   overdue: "Lampas na sa takda",
   overdueOnly: "Lampas na takda lang",
+  dueSoon: "Malapit nang mag-takda",
+  dueSoonOnly: "Malapit nang mag-takda lang",
   anyDue: "Kahit anong takda",
   noDeadline: "Walang nakabinbing takda",
+  needsAttention: "Kailangan ng Pansin",
+  allClear: "Wala nang kasong kailangan ng pansin sa ngayon.",
+  notifications: "Mga Abiso",
+  noNotifications: "Wala kang bagong abiso.",
+  markAllRead: "Markahan lahat na nabasa",
   trackPhase: "Kung nasaan na ang kaso mo",
   ph_received:
     "Nakatala na ang reklamo mo sa blotter ng barangay. Ipatawag ng Punong Barangay ang inirereklamo sa loob ng 3 araw.",
@@ -515,6 +545,22 @@ const tl: Record<Key, string> = {
   description: "Paglalarawan",
   statusHistory: "Kasaysayan ng Status",
   notes: "Mga Tala",
+
+  // documents
+  documents: "Mga Dokumento ng Kaso",
+  documentsDesc:
+    "Gumawa ng opisyal na papeles ng Katarungang Pambarangay para sa kasong ito.",
+  printDoc: "I-print / I-save bilang PDF",
+  backToCase: "Bumalik sa kaso",
+  doc_summons: "Patawag (Summons)",
+  doc_notice: "Abiso ng Pagdinig",
+  doc_settlement: "Kasunduang Pag-aayos",
+  doc_cfa: "Sertipiko para Magsampa ng Kaso",
+  lblPunongBarangay: "Punong Barangay",
+  lblLuponChairman: "Tagapangulo ng Lupon",
+  lblComplainant: "Nagrereklamo",
+  lblRespondent: "Inirereklamo",
+  lblAttestedBy: "Pinatunayan ni",
 };
 
 const dict = { en, tl };

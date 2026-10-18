@@ -56,18 +56,26 @@ export default function ComplaintsList() {
   const q = params.get("q") ?? "";
   const status = params.get("status") ?? "all";
   const type = params.get("type") ?? "all";
-  const overdue = params.get("overdue") === "true";
-  const hasFilters = q !== "" || status !== "all" || type !== "all" || overdue;
+  const risk = params.get("risk") ?? "all";
+  const hasFilters = q !== "" || status !== "all" || type !== "all" || risk !== "all";
 
   const date = (iso: string) =>
     new Date(iso).toLocaleDateString(lang === "tl" ? "fil-PH" : "en-PH", {
       dateStyle: "medium",
     });
 
+  const DUE_SOON_MS = 3 * 24 * 60 * 60 * 1000;
+
   const isOverdue = (c: ComplaintListItem) =>
     !!c.dueAt &&
     new Date(c.dueAt).getTime() < Date.now() &&
     OPEN_STATUSES.includes(c.status);
+
+  const isDueSoon = (c: ComplaintListItem) => {
+    if (!c.dueAt || !OPEN_STATUSES.includes(c.status)) return false;
+    const time = new Date(c.dueAt).getTime();
+    return time >= Date.now() && time <= Date.now() + DUE_SOON_MS;
+  };
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-6">
@@ -128,13 +136,14 @@ export default function ComplaintsList() {
           </SelectContent>
         </Select>
 
-        <Select name="overdue" defaultValue={overdue ? "true" : "all"}>
-          <SelectTrigger className="w-[150px]">
+        <Select name="risk" defaultValue={risk}>
+          <SelectTrigger className="w-[160px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t("anyDue")}</SelectItem>
-            <SelectItem value="true">{t("overdueOnly")}</SelectItem>
+            <SelectItem value="overdue">{t("overdueOnly")}</SelectItem>
+            <SelectItem value="dueSoon">{t("dueSoonOnly")}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -210,6 +219,11 @@ export default function ComplaintsList() {
                       {isOverdue(c) && (
                         <Badge variant="destructive" className="h-5 px-1.5 text-[10px] uppercase tracking-wide">
                           {t("overdue")}
+                        </Badge>
+                      )}
+                      {isDueSoon(c) && (
+                        <Badge className="h-5 border-transparent bg-amber-500 px-1.5 text-[10px] tracking-wide text-white uppercase hover:bg-amber-500">
+                          {t("dueSoon")}
                         </Badge>
                       )}
                     </span>

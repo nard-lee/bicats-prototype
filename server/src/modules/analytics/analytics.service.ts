@@ -1,4 +1,7 @@
 import { prisma } from "../../db.js";
+import { complaintRisk } from "../complaint/complaint.schema.js";
+
+const DAY = 24 * 60 * 60 * 1000;
 
 const COMPLAINT_STATUSES = [
   "received",
@@ -54,6 +57,7 @@ export const analyticsService = {
 
   async getOverview() {
     const now = new Date();
+    const soon = new Date(now.getTime() + 3 * DAY);
 
     const [
       totalComplaints,
@@ -63,6 +67,8 @@ export const analyticsService = {
       notices,
       publishedNotices,
       overdueComplaints,
+      atRiskComplaints,
+      attentionRaw,
     ] = await Promise.all([
       prisma.complaint.count(),
       prisma.complaint.groupBy({ by: ["status"], _count: { status: true } }),
@@ -100,6 +106,30 @@ export const analyticsService = {
           status: { notIn: TERMINAL_STATUSES },
         },
       }),
+      // Due soon but not yet overdue
+      prisma.complaint.count({
+        where: {
+          dueAt: { gte: now, lte: soon },
+          status: { notIn: TERMINAL_STATUSES },
+        },
+      }),
+      // Overdue + due soon, soonest first
+      prisma.complaint.findMany({
+        where: {
+          dueAt: { not: null, lte: soon },
+          status: { notIn: TERMINAL_STATUSES },
+        },
+        orderBy: { dueAt: "asc" },
+        take: 6,
+        select: {
+          id: true,
+          reference: true,
+          complainantName: true,
+          respondentName: true,
+          status: true,
+          dueAt: true,
+        },
+      }),
     ]);
 
     const statusCounts: Record<string, number> = {};
@@ -112,18 +142,30 @@ export const analyticsService = {
     );
     const settled = (statusCounts.settled ?? 0) + (statusCounts.certified ?? 0);
 
+    const attention = attentionRaw.map((c) => ({
+      id: c.id,
+      reference: c.reference,
+      complainantName: c.complainantName,
+      respondentName: c.respondentName,
+      status: c.status,
+      dueAt: c.dueAt ? c.dueAt.toISOString() : null,
+      risk: complaintRisk(c.dueAt, c.status),
+    }));
+
     return {
       totals: {
         complaints: totalComplaints,
         open,
         settled,
         overdue: overdueComplaints,
+        atRisk: atRiskComplaints,
         notices,
         publishedNotices,
       },
       statusCounts,
       recentComplaints,
       upcomingHearings,
+      attention,
     };
   },
 };

@@ -2,6 +2,8 @@ import ComplaintsList from "@/features/admin/complaint/list/table";
 import { ComplaintsLoader } from "@/features/admin/complaint/list/loader";
 import ComplaintView from "@/features/admin/complaint/view/complaint";
 import { ComplaintDetailLoader } from "@/features/admin/complaint/view/loader";
+import ComplaintDocument from "@/features/admin/complaint/documents/document";
+import { ComplaintDocumentLoader } from "@/features/admin/complaint/documents/loader";
 import CreateUser from "@/features/admin/user/create";
 import { createUserAction } from "@/features/admin/user/create-action";
 import StaffAccounts from "@/features/admin/user/list/table";
@@ -111,6 +113,13 @@ const router = createBrowserRouter([
       },
       { path: '*', element: <NotFound /> },
     ]
+  },
+  // printable KP documents render on their own (no app chrome)
+  {
+    path: '/admin/complaints/:id/documents/:doc',
+    element: <ComplaintDocument />,
+    loader: ComplaintDocumentLoader,
+    errorElement: <AdminError />,
   },
 ]);
 

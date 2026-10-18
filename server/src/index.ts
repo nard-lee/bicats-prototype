@@ -18,6 +18,8 @@ import userRouter from "@/modules/user/user.routes.js";
 import complaintRouter from "@/modules/complaint/complaint.routes.js"
 import noticeRouter from "@/modules/notice/notice.routes.js"
 import analyticsRouter from "@/modules/analytics/analytics.routes.js"
+import notificationRouter from "@/modules/notification/notification.routes.js"
+import { startReminderJob } from "@/jobs/reminder.job.js"
 
 
 import { config } from "@/utils/env.config.js";
@@ -71,6 +73,7 @@ app.use('/api/users', userRouter);
 app.use('/api/complaints', complaintRouter);
 app.use('/api/notices', noticeRouter);
 app.use('/api/analytics', analyticsRouter);
+app.use('/api/notifications', notificationRouter);
 
 // ---- Unknown API route ----
 app.use("/api", (_req, res) => {
@@ -114,6 +117,8 @@ async function start() {
   const server = app.listen(config.port, () => {
     console.log(`==> server: http://localhost:${config.port}`);
   });
+
+  startReminderJob();
 
   server.keepAliveTimeout = 65_000;
   server.headersTimeout = 66_000;

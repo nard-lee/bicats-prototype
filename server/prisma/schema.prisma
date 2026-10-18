@@ -24,6 +24,7 @@ model User {
   refreshTokens RefreshToken[]
   statusUpdates StatusUpdate[]
   notices       Notice[]
+  notifications Notification[]
 
   // Staff management filters
   @@index([role, isActive])
@@ -75,6 +76,7 @@ model Complaint {
 
   evidence Evidence[]
   updates  StatusUpdate[]
+  notifications Notification[]
 
   // Public tracking by normalized contact
   @@index([contactNormalized])
@@ -142,3 +144,26 @@ model Notice {
   // Filter notices created by a particular staff member
   @@index([createdById])
 }
+
+// ---- In-app notifications (deadline reminders, alerts) ----
+model Notification {
+  id          Int        @id @default(autoincrement())
+  userId      Int
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        String     @default("info") // reminder | overdue | info
+  title       String
+  body        String
+  complaintId Int?
+  complaint   Complaint? @relation(fields: [complaintId], references: [id], onDelete: SetNull)
+  reference   String?
+  // Prevents duplicate reminders for the same case/day/user
+  dedupeKey   String?    @unique
+  readAt      DateTime?
+  createdAt   DateTime   @default(now())
+
+  // Unread-first inbox per user
+  @@index([userId, readAt, createdAt])
+  // Retention / cleanup scans
+  @@index([createdAt])
+}
+

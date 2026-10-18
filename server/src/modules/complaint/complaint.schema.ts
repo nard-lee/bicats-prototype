@@ -118,11 +118,33 @@ export function computeNextDueAt(
   return new Date(from.getTime() + days * 24 * 60 * 60 * 1000);
 }
 
+// A case is "due soon" when its deadline falls within this window.
+export const RISK_WINDOW_DAYS = 3;
+
+export type ComplaintRisk = "overdue" | "due_soon" | "on_track" | "none";
+
+// Simple decision-support signal used by reminders and dashboards.
+export function complaintRisk(
+  dueAt: Date | null,
+  status: string,
+): ComplaintRisk {
+  if (!dueAt) return "none";
+  if (TERMINAL_STATUSES.includes(status as ComplaintStatus)) return "none";
+
+  const now = Date.now();
+  if (dueAt.getTime() < now) return "overdue";
+  if (dueAt.getTime() <= now + RISK_WINDOW_DAYS * 24 * 60 * 60 * 1000) {
+    return "due_soon";
+  }
+  return "on_track";
+}
+
 export type ComplaintListFilters = {
   q?: string | undefined;
   status?: string | undefined;
   type?: string | undefined;
   overdue?: boolean | undefined;
+  dueSoon?: boolean | undefined;
 };
 
 export type ComplaintDetail = {

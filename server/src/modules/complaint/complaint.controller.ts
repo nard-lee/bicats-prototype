@@ -51,8 +51,9 @@ const complaintController = {
         const status = typeof req.query.status === "string" ? req.query.status : undefined;
         const type = typeof req.query.type === "string" ? req.query.type : undefined;
         const overdue = req.query.overdue === "true" || req.query.overdue === "1";
+        const dueSoon = req.query.dueSoon === "true" || req.query.dueSoon === "1";
 
-        res.json(await complaintService.list(page, pageSize, { q, status, type, overdue }));
+        res.json(await complaintService.list(page, pageSize, { q, status, type, overdue, dueSoon }));
     },
 
     async markViewed(req: Request, res: Response): Promise<void> {

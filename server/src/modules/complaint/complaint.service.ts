@@ -123,6 +123,12 @@ const complaintService = {
             );
         }
 
+        if (filters.dueSoon) {
+            conditions.push(
+                Prisma.sql`("dueAt" IS NOT NULL AND "dueAt" >= NOW() AND "dueAt" <= NOW() + interval '3 days' AND "status" NOT IN ('settled', 'certified', 'dismissed'))`,
+            );
+        }
+
         const whereSql = conditions.length
             ? Prisma.sql`WHERE ${Prisma.join(conditions, " AND ")}`
             : Prisma.empty;

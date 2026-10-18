@@ -36,7 +36,9 @@ export async function ComplaintsLoader({ request }: LoaderFunctionArgs) {
   const q = params.get("q")?.trim() ?? "";
   const status = params.get("status") ?? "";
   const type = params.get("type") ?? "";
-  const overdue = params.get("overdue") === "true";
+  const risk = params.get("risk") ?? "all";
+  const overdue = risk === "overdue";
+  const dueSoon = risk === "dueSoon";
 
   return api
     .post("/complaints/list", {
@@ -47,6 +49,7 @@ export async function ComplaintsLoader({ request }: LoaderFunctionArgs) {
         ...(status && status !== "all" ? { status } : {}),
         ...(type && type !== "all" ? { type } : {}),
         ...(overdue ? { overdue: "true" } : {}),
+        ...(dueSoon ? { dueSoon: "true" } : {}),
       },
     })
     .json<Paginated<ComplaintListItem>>();
