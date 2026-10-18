@@ -1,0 +1,140 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---- Staff accounts (created by an admin, no public registration) ----
+model User {
+  id           Int      @id @default(autoincrement())
+  fullName     String
+  position     String
+  email        String   @unique
+  phone        String   @unique
+  username     String   @unique
+  passwordHash String
+  role         String   @default("staff") // "admin" | "staff"
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  refreshTokens RefreshToken[]
+  statusUpdates StatusUpdate[]
+  notices       Notice[]
+
+  // Staff management filters
+  @@index([role, isActive])
+  @@index([createdAt])
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String    @unique
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
+}
+
+// ---- Complaints ----
+model Complaint {
+  id        Int    @id @default(autoincrement())
+  reference String @unique // e.g. SI-2026-K7M4Q9
+
+  // Complainant
+  complainantName    String
+  complainantAge     Int
+  complainantPurok   String
+  complainantContact String
+  contactNormalized  String
+  complainantAddress String
+
+  // Respondent
+  respondentName    String
+  respondentAddress String?
+  relationship      String?
+
+  // Incident
+  complaintType String
+  incidentAt    DateTime
+  incidentPlace String
+  narrative     String
+
+  // received | under_mediation | settled | endorsed | dismissed
+  status    String    @default("received")
+  consentAt DateTime
+  viewedAt  DateTime? // first time staff opened the case; null = unopened
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  evidence Evidence[]
+  updates  StatusUpdate[]
+
+  // Public tracking by normalized contact
+  @@index([contactNormalized])
+  // Staff complaint lists, newest first within each status
+  @@index([status, createdAt])
+  // Unopened-first staff lists
+  @@index([viewedAt, updatedAt])
+  // Date-based reports and chronological filtering
+  @@index([createdAt])
+  @@index([incidentAt])
+  // Reports filtered by complaint type and date
+  @@index([complaintType, createdAt])
+}
+
+// ---- Uploaded files (metadata only) ----
+model Evidence {
+  id           Int       @id @default(autoincrement())
+  complaintId  Int
+  complaint    Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  originalName String
+  storedName   String    @unique
+  mimeType     String
+  size         Int
+  createdAt    DateTime  @default(now())
+
+  // Evidence belonging to a complaint, newest first
+  @@index([complaintId, createdAt])
+}
+
+// ---- Timeline: every status change ----
+model StatusUpdate {
+  id           Int       @id @default(autoincrement())
+  complaintId  Int
+  complaint    Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  status       String
+  publicNote   String?
+  internalNote String?
+  hearingAt    DateTime?
+  createdById  Int?
+  createdBy    User?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt    DateTime  @default(now())
+
+  // Complaint timeline, oldest or newest first
+  @@index([complaintId, createdAt])
+  // Filter history by staff member
+  @@index([createdById])
+  // Find upcoming mediation sessions and hearings
+  @@index([hearingAt])
+}
+
+// ---- Notice board on the Home page ----
+model Notice {
+  id          Int      @id @default(autoincrement())
+  title       String
+  body        String
+  isPublished Boolean  @default(true)
+  createdById Int?
+  createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+
+  // Published notices ordered by creation date
+  @@index([isPublished, createdAt])
+  // Filter notices created by a particular staff member
+  @@index([createdById])
+}
