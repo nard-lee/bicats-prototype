@@ -6,6 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   BarChart,
   Bar,
@@ -23,16 +24,44 @@ import {
 import { AlertTriangle, CalendarClock, ClipboardList, MapPin } from "lucide-react";
 import { useT, type Key } from "@/lib/I18n";
 
-const COLORS = [
-  "#0088FE",
-  "#00C49F",
-  "#FFBB28",
-  "#FF8042",
-  "#8884d8",
-  "#d88484",
-  "#84c2d8",
-  "#a8d884",
+// Warm on-brand palette derived from the theme tokens so the charts match the
+// rest of the app instead of the old hardcoded colours.
+const CHART_COLORS = [
+  "var(--primary)",
+  "color-mix(in oklab, var(--primary) 78%, var(--card))",
+  "color-mix(in oklab, var(--primary) 58%, var(--card))",
+  "color-mix(in oklab, var(--primary) 40%, var(--card))",
+  "color-mix(in oklab, var(--primary) 25%, var(--card))",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
 ];
+
+const STATUS_ORDER = [
+  "received",
+  "summoned",
+  "mediation",
+  "conciliation",
+  "settled",
+  "certified",
+  "dismissed",
+];
+
+const statusColor = (status: string) => {
+  const index = STATUS_ORDER.indexOf(status);
+  return CHART_COLORS[Math.max(0, index) % CHART_COLORS.length];
+};
+
+const TOOLTIP_STYLE = {
+  background: "var(--popover)",
+  border: "1px solid var(--border)",
+  borderRadius: "var(--radius)",
+  color: "var(--popover-foreground)",
+  fontSize: 12,
+  boxShadow: "0 4px 12px oklch(0 0 0 / 0.08)",
+} as const;
+
+const AXIS_TICK = { fill: "var(--muted-foreground)", fontSize: 12 };
 
 const NOW = new Date();
 
@@ -65,10 +94,16 @@ export default function AdminReport() {
     cases: item.count,
   }));
 
-  const statusData = data.statusDist.map((item) => ({
-    name: t(`st_${item.status}` as Key) || item.status,
-    value: item._count.status,
-  }));
+  const statusData = data.statusDist
+    .map((item) => ({
+      status: item.status,
+      name: t(`st_${item.status}` as Key) || item.status,
+      value: item._count.status,
+    }))
+    .sort(
+      (a, b) =>
+        STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status),
+    );
   const statusTotal = statusData.reduce((sum, item) => sum + item.value, 0) || 1;
 
   const totalComplaints = typeData.reduce((sum, item) => sum + item.value, 0);
@@ -150,6 +185,8 @@ export default function AdminReport() {
                     innerRadius={55}
                     outerRadius={100}
                     dataKey="value"
+                    stroke="var(--card)"
+                    strokeWidth={2}
                     label={({ percent }: { percent?: number }) =>
                       `${((percent ?? 0) * 100).toFixed(0)}%`
                     }
@@ -157,11 +194,11 @@ export default function AdminReport() {
                     {typeData.map((_entry, index) => (
                       <Cell
                         key={`cell-${index}`}
-                        fill={COLORS[index % COLORS.length]}
+                        fill={CHART_COLORS[index % CHART_COLORS.length]}
                       />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip contentStyle={TOOLTIP_STYLE} />
                   <Legend
                     layout="vertical"
                     align="right"
@@ -180,25 +217,34 @@ export default function AdminReport() {
             <CardTitle>{t("anStatusTitle")}</CardTitle>
             <CardDescription>{t("anStatusDesc")}</CardDescription>
           </CardHeader>
-          <CardContent className="justify-center gap-4">
+          <CardContent className="gap-4">
             {statusData.length === 0 ? (
               <EmptyChart message={t("anNoData")} />
             ) : (
-              statusData.map(({ name, value }) => {
+              statusData.map(({ status, name, value }) => {
                 const pct = Math.round((value / statusTotal) * 100);
                 return (
-                  <div key={name} className="space-y-1.5">
+                  <div key={status} className="space-y-1.5">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">{name}</span>
-                      <span className="font-medium">
+                      <span className="flex items-center gap-2 text-muted-foreground">
+                        <span
+                          className="size-2.5 rounded-full"
+                          style={{ background: statusColor(status) }}
+                        />
+                        {name}
+                      </span>
+                      <Badge variant="secondary">
                         {value}{" "}
                         <span className="text-muted-foreground">({pct}%)</span>
-                      </span>
+                      </Badge>
                     </div>
                     <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
                       <div
-                        className="h-full rounded-full bg-primary"
-                        style={{ width: `${pct}%` }}
+                        className="h-full rounded-full"
+                        style={{
+                          width: `${pct}%`,
+                          background: statusColor(status),
+                        }}
                       />
                     </div>
                   </div>
@@ -222,15 +268,29 @@ export default function AdminReport() {
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={trendData} margin={{ top: 8, right: 8 }}>
-                  <XAxis dataKey="name" />
-                  <YAxis allowDecimals={false} />
-                  <Tooltip />
+                  <XAxis
+                    dataKey="name"
+                    tick={AXIS_TICK}
+                    axisLine={{ stroke: "var(--border)" }}
+                    tickLine={{ stroke: "var(--border)" }}
+                  />
+                  <YAxis
+                    allowDecimals={false}
+                    tick={AXIS_TICK}
+                    axisLine={{ stroke: "var(--border)" }}
+                    tickLine={{ stroke: "var(--border)" }}
+                  />
+                  <Tooltip
+                    contentStyle={TOOLTIP_STYLE}
+                    cursor={{ stroke: "var(--border)" }}
+                  />
                   <Line
                     type="monotone"
                     dataKey="cases"
-                    stroke="#8884d8"
+                    stroke="var(--primary)"
                     strokeWidth={2}
-                    dot={{ r: 3 }}
+                    dot={{ r: 3, fill: "var(--primary)", strokeWidth: 0 }}
+                    activeDot={{ r: 5 }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -255,10 +315,25 @@ export default function AdminReport() {
                     angle={-30}
                     textAnchor="end"
                     height={60}
+                    tick={AXIS_TICK}
+                    axisLine={{ stroke: "var(--border)" }}
+                    tickLine={{ stroke: "var(--border)" }}
                   />
-                  <YAxis allowDecimals={false} />
-                  <Tooltip cursor={{ fill: "transparent" }} />
-                  <Bar dataKey="cases" fill="#82ca9d" radius={[4, 4, 0, 0]} />
+                  <YAxis
+                    allowDecimals={false}
+                    tick={AXIS_TICK}
+                    axisLine={{ stroke: "var(--border)" }}
+                    tickLine={{ stroke: "var(--border)" }}
+                  />
+                  <Tooltip
+                    contentStyle={TOOLTIP_STYLE}
+                    cursor={{ fill: "var(--muted)", opacity: 0.5 }}
+                  />
+                  <Bar
+                    dataKey="cases"
+                    fill="var(--primary)"
+                    radius={[4, 4, 0, 0]}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             )}
