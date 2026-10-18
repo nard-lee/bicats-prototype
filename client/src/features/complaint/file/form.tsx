@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import {
   Form,
   Link,
@@ -30,6 +30,17 @@ const puroks = [
   "General Luna Road",
   "Fr. Carlu Street"
 ];
+
+const MAX_FILES = 5;
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "application/pdf", "video/mp4"]);
+const ALLOWED_LABEL = "JPG, PNG, PDF, MP4";
+
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
@@ -84,7 +95,49 @@ function Field({
 export default function FileComplaint() {
   const { t } = useT();
   const navigate = useNavigate();
-  const [files, setFiles] = useState<string[]>([]);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [files, setFiles] = useState<File[]>([]);
+  const [fileError, setFileError] = useState<string | null>(null);
+
+  function resetInput() {
+    if (inputRef.current) inputRef.current.value = "";
+  }
+
+  function handleFiles(e: React.ChangeEvent<HTMLInputElement>) {
+    const selected = Array.from(e.target.files ?? []);
+
+    const fail = (message: string) => {
+      setFileError(message);
+      setFiles([]);
+      resetInput();
+    };
+
+    if (selected.length > MAX_FILES) {
+      fail(`You can attach at most ${MAX_FILES} files.`);
+      return;
+    }
+
+    const badType = selected.find((f) => !ALLOWED_TYPES.has(f.type));
+    if (badType) {
+      fail(`Unsupported file type: ${badType.name}. Allowed: ${ALLOWED_LABEL}.`);
+      return;
+    }
+
+    const tooBig = selected.find((f) => f.size > MAX_FILE_SIZE);
+    if (tooBig) {
+      fail(`"${tooBig.name}" is larger than 10 MB.`);
+      return;
+    }
+
+    setFileError(null);
+    setFiles(selected);
+  }
+
+  function clearFiles() {
+    setFiles([]);
+    setFileError(null);
+    resetInput();
+  }
 
   const actionData = useActionData() as ActionResult | undefined;
   const submitting = useNavigation().state === "submitting";
@@ -130,7 +183,7 @@ export default function FileComplaint() {
               variant="outline"
               size="lg"
               onClick={() => {
-                setFiles([]);
+                clearFiles();
                 navigate("/file-complaint", { replace: true });
               }}
             >
@@ -283,25 +336,38 @@ export default function FileComplaint() {
               <Upload className="size-6 text-muted-foreground" />
               <span>{t("dropFiles")}</span>
               <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Paperclip className="size-3" /> JPG, PNG, PDF, MP4
+                <Paperclip className="size-3" /> {ALLOWED_LABEL}
               </span>
               <input
+                ref={inputRef}
                 type="file"
                 name="evidence"
                 multiple
                 accept=".jpg,.jpeg,.png,.pdf,.mp4"
                 className="absolute inset-0 cursor-pointer opacity-0"
-                onChange={(e) =>
-                  setFiles(Array.from(e.target.files ?? []).map((f) => f.name))
-                }
+                onChange={handleFiles}
               />
             </label>
+            {fileError && (
+              <p className="text-sm font-medium text-destructive">{fileError}</p>
+            )}
             {files.length > 0 && (
-              <ul className="text-xs text-muted-foreground">
-                {files.map((f) => (
-                  <li key={f}>{f}</li>
-                ))}
-              </ul>
+              <div className="space-y-2">
+                <ul className="space-y-1 text-xs text-muted-foreground">
+                  {files.map((f) => (
+                    <li
+                      key={`${f.name}-${f.size}`}
+                      className="flex items-center justify-between gap-2"
+                    >
+                      <span className="truncate">{f.name}</span>
+                      <span className="shrink-0">{formatSize(f.size)}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Button type="button" variant="ghost" size="sm" onClick={clearFiles}>
+                  {t("clearFiles")}
+                </Button>
+              </div>
             )}
           </Field>
         </Section>

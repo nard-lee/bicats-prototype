@@ -4,6 +4,7 @@ import { validateRequest } from "../../utils/custom.validator.js";
 import complaintService from "./complaint.service.js";
 import { CustomError } from "../../utils/custom.exception.js";
 import { createComplaintSchema, trackComplaintSchema } from "./complaint.schema.js";
+import { removeUploadedFiles } from "../../utils/upload.js";
 
 const complaintController = {
 
@@ -14,8 +15,9 @@ const complaintController = {
             const { reference } = await complaintService.create(request, files);
             res.status(200).json({ reference, success: true });
         } catch (err: unknown) {
-            if (err instanceof CustomError) {
+            await removeUploadedFiles(files);
 
+            if (err instanceof CustomError) {
                 res.status(400).json({ error: err.message, fields: err.fields });
                 return;
             }

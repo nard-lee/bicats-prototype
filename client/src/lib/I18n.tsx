@@ -142,8 +142,9 @@ const en = {
     "Describe what happened in your own words. Include any witnesses.",
   phNarr: "On the night of...",
   evidence: "Evidence",
-  evHint: "Photos, videos, receipts, or documents. Max 10MB per file.",
+  evHint: "Photos, videos, receipts, or documents. Up to 5 files, 10 MB each.",
   dropFiles: "Drag files here or browse",
+  clearFiles: "Clear files",
   consentA: "I understand that this complaint must first go through ",
   consentC:
     " (mediation and conciliation) before it can be brought to court, and that everything I have stated is true to the best of my knowledge.",
@@ -419,8 +420,9 @@ const tl: Record<Key, string> = {
     "Isalaysay ang nangyari sa sarili ninyong pananalita. Isama ang mga saksi kung mayroon.",
   phNarr: "Noong gabi ng...",
   evidence: "Ebidensya",
-  evHint: "Mga larawan, video, resibo, o dokumento. Max 10MB bawat file.",
+  evHint: "Mga larawan, video, resibo, o dokumento. Hanggang 5 files, 10 MB bawat isa.",
   dropFiles: "I-drag ang files dito o mag-browse",
+  clearFiles: "Alisin ang mga file",
   consentA: "Nauunawaan ko na ang reklamong ito ay dadaan muna sa ",
   consentC:
     " (mediation at conciliation) bago maaaring iakyat sa korte, at ang lahat ng aking isinaad ay totoo sa abot ng aking kaalaman.",

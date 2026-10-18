@@ -1,11 +1,18 @@
 import fs from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
+import type { NextFunction, Request, Response } from "express";
 import multer from "multer";
+
+import { ApiError } from "@/utils/api.error.js";
 
 // Private folder, nothing serves it. Add "uploads" to .gitignore.
 const UPLOAD_DIR = path.resolve("uploads");
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+
+export const MAX_FILES = 5;
+export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+export const MAX_FILE_SIZE_MB = MAX_FILE_SIZE / (1024 * 1024);
 
 // The extension comes from the file type, never from the user's filename
 const EXTENSIONS: Record<string, string> = {
@@ -15,11 +22,58 @@ const EXTENSIONS: Record<string, string> = {
   "video/mp4": ".mp4",
 };
 
-export const upload = multer({
+const ALLOWED_TYPES = new Set(Object.keys(EXTENSIONS));
+export const ALLOWED_LABEL = "JPG, PNG, PDF, MP4";
+
+const upload = multer({
   storage: multer.diskStorage({
     destination: UPLOAD_DIR,
     filename: (_req, file, cb) => cb(null, randomUUID() + EXTENSIONS[file.mimetype]),
   }),
-  limits: { fileSize: 10 * 1024 * 1024, files: 5 }, // 10 MB each, 5 files
-  fileFilter: (_req, file, cb) => cb(null, Boolean(EXTENSIONS[file.mimetype])),
+  limits: { fileSize: MAX_FILE_SIZE, files: MAX_FILES },
+  fileFilter: (_req, file, cb) => {
+    if (ALLOWED_TYPES.has(file.mimetype)) {
+      cb(null, true);
+      return;
+    }
+    cb(new ApiError(400, `Unsupported file type. Allowed: ${ALLOWED_LABEL}.`));
+  },
 });
+
+// Turn multer's internal errors into friendly, client-safe messages.
+function mapUploadError(err: unknown): ApiError {
+  if (err instanceof ApiError) return err;
+
+  if (err instanceof multer.MulterError) {
+    switch (err.code) {
+      case "LIMIT_FILE_SIZE":
+        return new ApiError(400, `Each file must be ${MAX_FILE_SIZE_MB} MB or smaller.`);
+      case "LIMIT_FILE_COUNT":
+        return new ApiError(400, `You can attach at most ${MAX_FILES} files.`);
+      case "LIMIT_UNEXPECTED_FILE":
+        return new ApiError(400, "Unexpected file field.");
+    }
+  }
+
+  return new ApiError(400, "Upload failed. Please check your files and try again.");
+}
+
+// Remove files already written to disk when a request ultimately fails.
+export async function removeUploadedFiles(files?: Express.Multer.File[]): Promise<void> {
+  if (!files?.length) return;
+  await Promise.all(
+    files.map((file) => fs.promises.unlink(file.path).catch(() => undefined)),
+  );
+}
+
+// Parses the "evidence" field, rejecting bad types/sizes/counts with a 400.
+export function uploadEvidence(req: Request, res: Response, next: NextFunction): void {
+  upload.array("evidence", MAX_FILES)(req, res, (err: unknown) => {
+    if (err) {
+      void removeUploadedFiles(req.files as Express.Multer.File[] | undefined);
+      next(mapUploadError(err));
+      return;
+    }
+    next();
+  });
+}
