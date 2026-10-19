@@ -3,6 +3,7 @@ import type { Request, Response } from "express";
 import { validateRequest } from "../../utils/custom.validator.js";
 import { CustomError } from "../../utils/custom.exception.js";
 import { auditFromRequest } from "../audit/audit.service.js";
+import complainantNotifier from "../notify/complainant.notifier.js";
 import hearingService from "./hearing.service.js";
 import {
   createHearingSchema,
@@ -55,6 +56,13 @@ const hearingController = {
         summary: `Scheduled a ${KIND_LABEL[input.kind] ?? "mediation"} session for case #${input.complaintId}`,
         meta: { complaintId: input.complaintId, kind: input.kind, scheduledAt: input.scheduledAt.toISOString() },
       });
+
+      // Text/email the complainant that their session is booked.
+      void complainantNotifier.mediationScheduled(input.complaintId, {
+        kind: input.kind,
+        scheduledAt: input.scheduledAt,
+        location: input.location ?? null,
+      });
     } catch (err) {
       handleError(res, err, "Failed to schedule mediation");
     }
@@ -70,7 +78,7 @@ const hearingController = {
 
     try {
       const input = validateRequest(updateHearingSchema, req.body);
-      await hearingService.update(id, input);
+      const updated = await hearingService.update(id, input);
       res.json({ success: true });
 
       await auditFromRequest(req, {
@@ -80,6 +88,16 @@ const hearingController = {
         summary: `Updated mediation session #${id}`,
         ...(input.status ? { meta: { status: input.status } } : {}),
       });
+
+      // Text/email the complainant when the session is moved to a new slot.
+      if (input.scheduledAt && input.status !== "cancelled") {
+        void complainantNotifier.mediationScheduled(updated.complaintId, {
+          kind: updated.kind,
+          scheduledAt: input.scheduledAt,
+          location: input.location ?? null,
+          rescheduled: true,
+        });
+      }
     } catch (err) {
       handleError(res, err, "Failed to update mediation");
     }
@@ -94,7 +112,7 @@ const hearingController = {
     }
 
     try {
-      await hearingService.cancel(id);
+      const cancelled = await hearingService.cancel(id);
       res.json({ success: true });
 
       await auditFromRequest(req, {
@@ -102,6 +120,11 @@ const hearingController = {
         entityType: "hearing",
         entityId: id,
         summary: `Cancelled mediation session #${id}`,
+      });
+
+      // Text/email the complainant their session is cancelled.
+      void complainantNotifier.mediationCancelled(cancelled.complaintId, {
+        kind: cancelled.kind,
       });
     } catch (err) {
       handleError(res, err, "Failed to cancel mediation");

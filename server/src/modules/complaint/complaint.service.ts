@@ -55,6 +55,7 @@ const complaintService = {
                 complainantPurok: input.complainantPurok,
                 complainantContact: input.complainantContact,
                 contactNormalized: normalizePhone(input.complainantContact),
+                complainantEmail: input.complainantEmail,
                 complainantAddress: input.complainantAddress,
 
                 respondentName: input.respondentName,
@@ -252,6 +253,7 @@ const complaintService = {
             complainantAge: complaint.complainantAge,
             complainantPurok: complaint.complainantPurok,
             complainantContact: complaint.complainantContact,
+            complainantEmail: complaint.complainantEmail,
             complainantAddress: complaint.complainantAddress,
             respondentAddress: complaint.respondentAddress,
             relationship: complaint.relationship,

@@ -23,6 +23,12 @@ export const createComplaintSchema = z
         respondentAddress: optionalText(200),
         relationship: optionalText(100),
 
+        // Optional: only present when the complainant chooses to give one.
+        complainantEmail: z.preprocess(
+            (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+            z.string().trim().email().max(150).optional(),
+        ).transform((value) => value ?? null),
+
         complaintType: z.string().min(1),
         incidentAt: z.coerce
             .date()
@@ -207,6 +213,7 @@ export type ComplaintDetail = {
   complainantAge: number;
   complainantPurok: string;
   complainantContact: string;
+  complainantEmail: string | null;
   complainantAddress: string;
   respondentAddress: string | null;
   relationship: string | null;

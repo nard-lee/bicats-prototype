@@ -252,6 +252,15 @@ export default function FileComplaint() {
             />
             <FieldError message={fields.complainantContact} />
           </Field>
+          <Field label={t("email") + " (optional)"} hint={t("emailHint")}>
+            <Input
+              name="complainantEmail"
+              type="email"
+              placeholder="juan@email.com"
+              aria-invalid={!!fields.complainantEmail}
+            />
+            <FieldError message={fields.complainantEmail} />
+          </Field>
           <Field label={t("address")} full>
             <Input
               name="complainantAddress"

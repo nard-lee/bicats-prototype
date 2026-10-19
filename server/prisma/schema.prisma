@@ -54,6 +54,7 @@ model Complaint {
   complainantPurok   String
   complainantContact String
   contactNormalized  String
+  complainantEmail   String? // optional; used for email updates
   complainantAddress String
 
   // Respondent

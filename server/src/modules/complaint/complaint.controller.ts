@@ -3,6 +3,7 @@ import { validateRequest } from "../../utils/custom.validator.js";
 
 import complaintService from "./complaint.service.js";
 import notificationService from "../notification/notification.service.js";
+import complainantNotifier from "../notify/complainant.notifier.js";
 import { auditFromRequest } from "../audit/audit.service.js";
 import { CustomError } from "../../utils/custom.exception.js";
 import { COMPLAINT_STATUSES, createComplaintSchema, trackComplaintSchema, updatePrioritySchema } from "./complaint.schema.js";
@@ -138,6 +139,13 @@ const complaintController = {
                 entityId: id,
                 summary: `Status changed to "${status}" for case #${id}`,
                 meta: { status, hasPublicNote: !!publicNote, hasInternalNote: !!internalNote },
+            });
+
+            // Text/email the complainant about the new step (and any mediation date).
+            void complainantNotifier.statusUpdate(id, {
+                status,
+                publicNote: publicNote ?? null,
+                hearingAt: hearingAt ? new Date(hearingAt) : null,
             });
         } catch (err) {
             res.status(500).json({ error: "Failed to update status" });

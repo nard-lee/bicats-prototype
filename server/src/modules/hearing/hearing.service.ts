@@ -144,10 +144,10 @@ const hearingService = {
     });
   },
 
-  async update(id: number, input: UpdateHearingInput): Promise<void> {
+  async update(id: number, input: UpdateHearingInput): Promise<{ complaintId: number; kind: string }> {
     const existing = await prisma.hearing.findUnique({
       where: { id },
-      select: { id: true, status: true },
+      select: { id: true, status: true, complaintId: true },
     });
 
     if (!existing) throw new CustomError("Mediation not found", undefined, 404);
@@ -165,13 +165,18 @@ const hearingService = {
     if (input.notes !== undefined) data.notes = input.notes;
     if (input.outcome !== undefined) data.outcome = input.outcome;
 
-    await prisma.hearing.update({ where: { id }, data });
+    return prisma.hearing.update({
+      where: { id },
+      data,
+      select: { complaintId: true, kind: true },
+    });
   },
 
-  async cancel(id: number): Promise<void> {
-    await prisma.hearing.update({
+  async cancel(id: number): Promise<{ complaintId: number; kind: string }> {
+    return prisma.hearing.update({
       where: { id },
       data: { status: "cancelled" },
+      select: { complaintId: true, kind: true },
     });
   },
 };
