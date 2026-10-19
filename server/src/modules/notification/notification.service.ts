@@ -1,5 +1,6 @@
 import { prisma } from "../../db.js";
 import type { Prisma } from "../../generated/prisma/client.js";
+import { INTERNAL_ROLES } from "../../utils/roles.js";
 import { emitNotification } from "./notification.events.js";
 
 export const notificationService = {
@@ -67,6 +68,33 @@ export const notificationService = {
       where: { userId, complaintId, readAt: null },
       data: { readAt: new Date() },
     });
+  },
+
+  // Tell every active staff member that a new complaint was filed.
+  async notifyNewComplaint(input: {
+    id: number;
+    reference: string;
+    complainantName: string;
+    respondentName: string;
+  }): Promise<number> {
+    const staff = await prisma.user.findMany({
+      where: { isActive: true, role: { in: [...INTERNAL_ROLES] } },
+      select: { id: true },
+    });
+
+    if (staff.length === 0) return 0;
+
+    const rows = staff.map((member) => ({
+      userId: member.id,
+      type: "new_complaint",
+      title: `New complaint ${input.reference}`,
+      body: `${input.complainantName} vs ${input.respondentName} was filed just now.`,
+      complaintId: input.id,
+      reference: input.reference,
+      dedupeKey: `new_complaint:${input.id}:${member.id}`,
+    }));
+
+    return this.createForUsers(rows);
   },
 };
 

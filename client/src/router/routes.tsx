@@ -16,6 +16,9 @@ import { ProfileLoader } from "@/features/admin/user/profile-loader";
 import { profileAction } from "@/features/admin/user/profile-action";
 import AuditLog from "@/features/admin/audit/list/table";
 import { AuditLoader } from "@/features/admin/audit/list/loader";
+import BarangaySettingsPage from "@/features/admin/setting/setting";
+import { SettingsLoader } from "@/features/admin/setting/loader";
+import { settingsAction } from "@/features/admin/setting/action";
 import { loginAction } from "@/features/auth/login/action";
 import Login from "@/features/auth/login/form";
 import { fileComplaintAction } from "@/features/complaint/file/action";
@@ -105,6 +108,13 @@ const router = createBrowserRouter([
         element: <AuditLog />,
         loader: AuditLoader,
         handle: { crumb: () => "Audit Logs" }
+      },
+      {
+        path: 'settings',
+        element: <BarangaySettingsPage />,
+        loader: SettingsLoader,
+        action: settingsAction,
+        handle: { crumb: () => "Settings" }
       },
       {
         path: 'complaints',

@@ -14,6 +14,7 @@ import {
   ExternalLink,
   LayoutDashboard,
   ScrollText,
+  Settings,
   UserCog,
   UserRound,
   ChevronRight,
@@ -63,6 +64,7 @@ const mainLinks: NavLink[] = [
 const adminLinks: NavLink[] = [
   { to: "/admin/accounts", label: "adminAccounts", icon: UserCog, roles: ADMIN_ROLES },
   { to: "/admin/audit", label: "adminAudit", icon: ScrollText, roles: ADMIN_ROLES },
+  { to: "/admin/settings", label: "adminSettings", icon: Settings, roles: ADMIN_ROLES },
 ];
 
 export default function AdminLayout() {

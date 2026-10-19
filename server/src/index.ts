@@ -21,6 +21,7 @@ import analyticsRouter from "@/modules/analytics/analytics.routes.js"
 import notificationRouter from "@/modules/notification/notification.routes.js"
 import hearingRouter from "@/modules/hearing/hearing.routes.js"
 import auditRouter from "@/modules/audit/audit.routes.js"
+import settingRouter from "@/modules/setting/setting.routes.js"
 import { startReminderJob } from "@/jobs/reminder.job.js"
 
 
@@ -78,6 +79,7 @@ app.use('/api/analytics', analyticsRouter);
 app.use('/api/notifications', notificationRouter);
 app.use('/api/hearings', hearingRouter);
 app.use('/api/audit', auditRouter);
+app.use('/api/settings', settingRouter);
 
 // ---- Unknown API route ----
 app.use("/api", (_req, res) => {

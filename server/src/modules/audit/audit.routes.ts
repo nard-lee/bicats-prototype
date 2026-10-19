@@ -7,5 +7,6 @@ import auditController from "./audit.controller.js";
 const router = Router();
 
 router.get("/", requireAuth(...ADMIN_ROLES), auditController.list);
+router.get("/export", requireAuth(...ADMIN_ROLES), auditController.export);
 
 export default router;

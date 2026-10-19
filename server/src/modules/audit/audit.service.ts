@@ -2,7 +2,12 @@ import type { Request } from "express";
 
 import { prisma } from "../../db.js";
 import type { Prisma } from "../../generated/prisma/client.js";
-import type { AuditListResult, ListAuditQuery } from "./audit.schema.js";
+import type {
+  AuditListResult,
+  AuditListRow,
+  ExportAuditQuery,
+  ListAuditQuery,
+} from "./audit.schema.js";
 
 type RecordInput = {
   actorId?: number | null;
@@ -15,6 +20,20 @@ type RecordInput = {
   meta?: Prisma.InputJsonValue;
   ip?: string | null;
 };
+
+function buildWhere(query: { entityType?: string | undefined; q?: string | undefined }) {
+  const where: Prisma.AuditLogWhereInput = {};
+  if (query.entityType && query.entityType !== "all") {
+    where.entityType = query.entityType;
+  }
+  if (query.q) {
+    where.OR = [
+      { summary: { contains: query.q, mode: "insensitive" } },
+      { actorName: { contains: query.q, mode: "insensitive" } },
+    ];
+  }
+  return where;
+}
 
 const auditService = {
   // Never let a failed write break the action it describes.
@@ -39,14 +58,7 @@ const auditService = {
   },
 
   async list(query: ListAuditQuery): Promise<AuditListResult> {
-    const where: Prisma.AuditLogWhereInput = {};
-    if (query.entityType) where.entityType = query.entityType;
-    if (query.q) {
-      where.OR = [
-        { summary: { contains: query.q, mode: "insensitive" } },
-        { actorName: { contains: query.q, mode: "insensitive" } },
-      ];
-    }
+    const where = buildWhere(query);
 
     const page = query.page;
     const pageSize = query.limit;
@@ -81,6 +93,28 @@ const auditService = {
       pageSize,
       totalPages: Math.max(1, Math.ceil(total / pageSize)),
     };
+  },
+
+  // All rows matching the filters, for CSV export (capped to keep it sane).
+  async exportAll(query: ExportAuditQuery): Promise<AuditListRow[]> {
+    return prisma.auditLog.findMany({
+      where: buildWhere(query),
+      orderBy: { id: "desc" },
+      take: 5000,
+      select: {
+        id: true,
+        actorId: true,
+        actorName: true,
+        actorRole: true,
+        action: true,
+        entityType: true,
+        entityId: true,
+        summary: true,
+        meta: true,
+        ip: true,
+        createdAt: true,
+      },
+    });
   },
 };
 

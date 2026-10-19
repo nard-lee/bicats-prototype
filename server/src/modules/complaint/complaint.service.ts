@@ -45,7 +45,7 @@ function getEvidenceUrl(storedName: string): string {
 
 const complaintService = {
 
-    async create(input: CreateComplaintInput, files: Express.Multer.File[]): Promise<{ reference: string }> {
+    async create(input: CreateComplaintInput, files: Express.Multer.File[]): Promise<{ id: number; reference: string }> {
         return prisma.complaint.create({
             data: {
                 reference: makeReference(),
@@ -86,6 +86,7 @@ const complaintService = {
                 },
             },
             select: {
+                id: true,
                 reference: true,
             },
         });
@@ -195,6 +196,12 @@ const complaintService = {
                 evidence: {
                     orderBy: { createdAt: "desc" },
                 },
+                hearings: {
+                    where: { status: "scheduled", scheduledAt: { gte: new Date() } },
+                    orderBy: { scheduledAt: "asc" },
+                    take: 1,
+                    select: { scheduledAt: true, kind: true },
+                },
             },
         });
 
@@ -215,6 +222,8 @@ const complaintService = {
             priority: complaint.priority,
             createdAt: complaint.createdAt.toISOString(),
             dueAt: complaint.dueAt ? complaint.dueAt.toISOString() : null,
+            nextHearingAt: complaint.hearings[0]?.scheduledAt.toISOString() ?? null,
+            nextHearingKind: complaint.hearings[0]?.kind ?? null,
             description: complaint.narrative,
 
             evidence: complaint.evidence.map((evidence) => ({
@@ -298,6 +307,42 @@ const complaintService = {
                 where: { id },
                 data: { status, dueAt },
             });
+
+            // A date entered with a status change is a real mediation session:
+            // mirror it into the Hearing table so the case view and the
+            // mediation calendar stay in sync. Reschedule the next scheduled
+            // session instead of piling up a new one each edit.
+            if (hearingAt) {
+                const kind = status === "conciliation" ? "conciliation" : "mediation";
+
+                const existing = await tx.hearing.findFirst({
+                    where: {
+                        complaintId: id,
+                        status: "scheduled",
+                        scheduledAt: { gte: new Date() },
+                    },
+                    orderBy: { scheduledAt: "asc" },
+                    select: { id: true, scheduledAt: true },
+                });
+
+                if (existing) {
+                    if (existing.scheduledAt.getTime() !== hearingAt.getTime()) {
+                        await tx.hearing.update({
+                            where: { id: existing.id },
+                            data: { scheduledAt: hearingAt, kind },
+                        });
+                    }
+                } else {
+                    await tx.hearing.create({
+                        data: {
+                            complaintId: id,
+                            scheduledAt: hearingAt,
+                            kind,
+                            createdById: userId ?? null,
+                        },
+                    });
+                }
+            }
 
             return tx.statusUpdate.create({
                 data: {

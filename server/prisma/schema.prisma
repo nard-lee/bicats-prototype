@@ -225,3 +225,18 @@ model AuditLog {
   @@index([actorId, createdAt])
 }
 
+// ---- Barangay profile / letterhead, used by printable KP documents ----
+model BarangaySettings {
+  id             Int      @id @default(1)
+  barangayName   String   @default("Barangay Kabayanihan")
+  city           String   @default("City of Baguio")
+  province       String   @default("Benguet")
+  address        String   @default("")
+  contactNumber  String   @default("")
+  email          String   @default("")
+  officeHours    String   @default("Monday–Friday, 8:00 AM – 5:00 PM")
+  punongBarangay String   @default("Hon. Mario D. Santos")
+  luponChairman  String   @default("Mr. Pedro A. Reyes")
+  updatedAt      DateTime @updatedAt
+}
+

@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import DateTimePicker from "@/components/ui/date-time-picker";
 import { api } from "@/lib/api";
 import { useT, type Key } from "@/lib/I18n";
 import type { ComplaintStatus } from "./loader";
@@ -12,7 +13,16 @@ import type { ComplaintStatus } from "./loader";
 interface StatusUpdateModalProps {
   complaintId: number;
   currentStatus: ComplaintStatus;
+  currentHearingAt?: string | null;
   onSuccess: () => void;
+}
+
+// ISO string -> "YYYY-MM-DDTHH:mm" in local time (the picker's value format).
+function isoToLocalInput(iso?: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 const ALLOWED_TRANSITIONS: Record<ComplaintStatus, ComplaintStatus[]> = {
@@ -25,7 +35,7 @@ const ALLOWED_TRANSITIONS: Record<ComplaintStatus, ComplaintStatus[]> = {
   dismissed: [],
 };
 
-export default function StatusUpdateModal({ complaintId, currentStatus, onSuccess }: StatusUpdateModalProps) {
+export default function StatusUpdateModal({ complaintId, currentStatus, currentHearingAt, onSuccess }: StatusUpdateModalProps) {
   const { t } = useT();
   const [open, setOpen] = useState(false);
   
@@ -48,7 +58,7 @@ export default function StatusUpdateModal({ complaintId, currentStatus, onSucces
     (canChangeStatus && newStatus !== currentStatus) ||
     publicNote.trim().length > 0 ||
     internalNote.trim().length > 0 ||
-    (canScheduleHearing && hearingAt.length > 0);
+    (canScheduleHearing && hearingAt !== isoToLocalInput(currentHearingAt));
 
   // Reset form when modal opens
   useEffect(() => {
@@ -56,9 +66,9 @@ export default function StatusUpdateModal({ complaintId, currentStatus, onSucces
       setNewStatus(currentStatus);
       setPublicNote("");
       setInternalNote("");
-      setHearingAt("");
+      setHearingAt(isoToLocalInput(currentHearingAt));
     }
-  }, [open, currentStatus]);
+  }, [open, currentStatus, currentHearingAt]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -168,15 +178,12 @@ export default function StatusUpdateModal({ complaintId, currentStatus, onSucces
 
           <div className="grid gap-2">
             <Label htmlFor="hearingAt">Next Mediation Date (Optional)</Label>
-            <input
+            <DateTimePicker
               id="hearingAt"
-              type="datetime-local"
-              disabled={!canScheduleHearing}
-              className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-                !canScheduleHearing ? "opacity-50 cursor-not-allowed" : ""
-              }`}
               value={hearingAt}
-              onChange={(e) => setHearingAt(e.target.value)}
+              onChange={setHearingAt}
+              disabled={!canScheduleHearing}
+              placeholder="Select date & time"
             />
             {!canScheduleHearing && (
               <p className="text-xs text-muted-foreground">

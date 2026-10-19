@@ -235,6 +235,19 @@ const en = {
   memberSince: "Member since",
   reviewFields: "Please review the highlighted fields below.",
 
+  // admin: barangay settings
+  adminSettings: "Barangay Settings",
+  settingsSub: "Official barangay details used on printed documents and notices.",
+  barangayProfile: "Barangay profile",
+  settingsLetterhead:
+    "This info appears on the letterhead and signatories of printable case documents.",
+  settingsSaved: "Settings saved.",
+  barangayName: "Barangay name",
+  cityLabel: "City / Municipality",
+  province: "Province",
+  punongBarangay: "Punong Barangay",
+  luponChairman: "Lupon Chairman",
+
   // track
   trackTitle: "Track My Complaint",
   trackIntro:
@@ -545,6 +558,20 @@ const tl: Record<Key, string> = {
   changePassword: "Palitan ang password",
   memberSince: "Miyembro mula",
   reviewFields: "Paki-review ang mga naka-highlight na field sa ibaba.",
+
+  // admin: barangay settings
+  adminSettings: "Mga Setting ng Barangay",
+  settingsSub:
+    "Opisyal na detalye ng barangay na ginagamit sa mga naka-print na dokumento at abiso.",
+  barangayProfile: "Profile ng Barangay",
+  settingsLetterhead:
+    "Lumalabas ang impormasyong ito sa letterhead at mga pipirma ng mga naka-print na dokumento ng kaso.",
+  settingsSaved: "Nai-save ang mga setting.",
+  barangayName: "Pangalan ng barangay",
+  cityLabel: "Lungsod / Munisipalidad",
+  province: "Probinsya",
+  punongBarangay: "Punong Barangay",
+  luponChairman: "Tagapangulo ng Lupon",
 
   // track
   trackTitle: "Subaybayan ang Reklamo Ko",

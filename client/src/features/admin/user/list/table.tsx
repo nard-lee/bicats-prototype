@@ -110,11 +110,13 @@ export default function StaffAccounts() {
         <p className="text-sm font-medium text-destructive">{actionData.error}</p>
       )}
 
-      <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto rounded-md border [&>[data-slot=table-container]]:overflow-visible">
+      <div className="-mx-6 min-h-0 flex-1 overflow-x-hidden overflow-y-auto border-y [&>[data-slot=table-container]]:overflow-visible">
         <Table className="[&_td]:px-4 [&_td]:py-3 [&_td]:whitespace-normal [&_th]:px-4 [&_th]:whitespace-normal">
           <TableHeader className="sticky top-0 z-10 bg-background">
             <TableRow>
               <TableHead>Name</TableHead>
+              <TableHead>Username</TableHead>
+              <TableHead>Position</TableHead>
               <TableHead>Contact</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Status</TableHead>
@@ -125,23 +127,20 @@ export default function StaffAccounts() {
           <TableBody>
             {items.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
                   {hasFilters ? "No accounts match your filters." : "No accounts yet."}
                 </TableCell>
               </TableRow>
             )}
             {items.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell>
-                  <div className="flex flex-col">
-                    <span className="font-medium">{user.fullName}</span>
-                    <span className="text-xs text-muted-foreground">{user.position}</span>
-                  </div>
-                </TableCell>
+              <TableRow key={user.id} className="transition-colors hover:bg-muted/50">
+                <TableCell className="font-bold">{user.fullName}</TableCell>
+                <TableCell className="text-muted-foreground">@{user.username}</TableCell>
+                <TableCell>{user.position}</TableCell>
                 <TableCell>
                   <div className="flex flex-col">
                     <span>{user.email}</span>
-                    <span className="text-xs text-muted-foreground">@{user.username}</span>
+                    <span className="text-xs text-muted-foreground">{user.phone}</span>
                   </div>
                 </TableCell>
                 <TableCell>

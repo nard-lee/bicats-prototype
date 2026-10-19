@@ -1,9 +1,12 @@
 import { Form, Link, useLoaderData, useSearchParams } from "react-router";
-import { ScrollText } from "lucide-react";
+import { useState } from "react";
+import { FileDown, ScrollText } from "lucide-react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import DataPagination from "@/components/data-pagination";
+import { api } from "@/lib/api";
 import {
   Select,
   SelectContent,
@@ -23,7 +26,7 @@ import { useT } from "@/lib/I18n";
 import { ROLE_LABEL, isRole } from "@/lib/roles";
 import type { AuditRow, Paginated } from "./loader";
 
-const ENTITY_TYPES = ["complaint", "hearing", "notice", "user", "auth"] as const;
+const ENTITY_TYPES = ["complaint", "hearing", "notice", "user", "auth", "setting"] as const;
 
 // Friendly labels for the dotted action codes written by the server.
 const ACTION_LABEL: Record<string, string> = {
@@ -40,6 +43,7 @@ const ACTION_LABEL: Record<string, string> = {
   "notice.create": "Notice created",
   "notice.update": "Notice updated",
   "notice.delete": "Notice deleted",
+  "setting.update": "Settings updated",
 };
 
 const entityLabel: Record<string, string> = {
@@ -48,6 +52,7 @@ const entityLabel: Record<string, string> = {
   notice: "Notice",
   user: "Account",
   auth: "Auth",
+  setting: "Settings",
 };
 
 export default function AuditLog() {
@@ -59,11 +64,56 @@ export default function AuditLog() {
   const q = params.get("q") ?? "";
   const hasFilters = entityType !== "all" || q !== "";
 
+  const [exporting, setExporting] = useState(false);
+
   const when = (iso: string) =>
     new Date(iso).toLocaleString(lang === "tl" ? "fil-PH" : "en-PH", {
       dateStyle: "medium",
       timeStyle: "short",
     });
+
+  async function exportCsv() {
+    setExporting(true);
+    try {
+      const rows = await api
+        .get("audit/export", {
+          searchParams: {
+            ...(entityType !== "all" ? { entityType } : {}),
+            ...(q ? { q } : {}),
+          },
+        })
+        .json<AuditRow[]>();
+
+      const escape = (value: string) => `"${value.replace(/"/g, '""')}"`;
+      const lines = rows.map((r) =>
+        [
+          when(r.createdAt),
+          r.actorName ?? "System",
+          isRole(r.actorRole) ? t(ROLE_LABEL[r.actorRole]) : "",
+          ACTION_LABEL[r.action] ?? r.action,
+          `${entityLabel[r.entityType] ?? r.entityType}${
+            r.entityId != null ? ` #${r.entityId}` : ""
+          }`,
+          r.summary,
+          r.ip ?? "",
+        ]
+          .map((value) => escape(String(value)))
+          .join(","),
+      );
+
+      const csv = ["When,Who,Role,Action,Target,Details,IP", ...lines].join("\n");
+      const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `audit-log-${new Date().toISOString().slice(0, 10)}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Export failed.");
+    } finally {
+      setExporting(false);
+    }
+  }
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-6">
@@ -107,6 +157,11 @@ export default function AuditLog() {
           </Button>
         )}
 
+        <Button type="button" variant="outline" onClick={exportCsv} disabled={exporting}>
+          <FileDown className="mr-2 h-4 w-4" />
+          {exporting ? "Exporting..." : "Export CSV"}
+        </Button>
+
         <div className="ml-auto">
           <DataPagination
             page={page}
@@ -117,12 +172,13 @@ export default function AuditLog() {
         </div>
       </Form>
 
-      <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto rounded-md border [&>[data-slot=table-container]]:overflow-visible">
+      <div className="-mx-6 min-h-0 flex-1 overflow-x-hidden overflow-y-auto border-y [&>[data-slot=table-container]]:overflow-visible">
         <Table className="[&_td]:px-4 [&_td]:py-3 [&_td]:whitespace-normal [&_th]:px-4 [&_th]:whitespace-normal">
           <TableHeader className="sticky top-0 z-10 bg-background">
             <TableRow>
               <TableHead>{t("auditWhen")}</TableHead>
               <TableHead>{t("auditWho")}</TableHead>
+              <TableHead>{t("role")}</TableHead>
               <TableHead>{t("auditAction")}</TableHead>
               <TableHead>{t("auditTarget")}</TableHead>
               <TableHead>{t("auditDetails")}</TableHead>
@@ -132,7 +188,7 @@ export default function AuditLog() {
           <TableBody>
             {items.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="py-12 text-center text-muted-foreground">
+                <TableCell colSpan={7} className="py-12 text-center text-muted-foreground">
                   <div className="flex flex-col items-center gap-2">
                     <div className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
                       <ScrollText className="size-5" />
@@ -144,19 +200,17 @@ export default function AuditLog() {
             )}
 
             {items.map((row) => (
-              <TableRow key={row.id}>
+              <TableRow key={row.id} className="transition-colors hover:bg-muted/50">
                 <TableCell className="whitespace-nowrap text-muted-foreground tabular-nums">
                   {when(row.createdAt)}
                 </TableCell>
+                <TableCell className="font-bold">{row.actorName ?? "System"}</TableCell>
                 <TableCell>
-                  <div className="flex flex-col">
-                    <span className="font-medium">{row.actorName ?? "System"}</span>
-                    {isRole(row.actorRole) && (
-                      <span className="text-xs text-muted-foreground">
-                        {t(ROLE_LABEL[row.actorRole])}
-                      </span>
-                    )}
-                  </div>
+                  {isRole(row.actorRole) ? (
+                    <Badge variant="secondary">{t(ROLE_LABEL[row.actorRole])}</Badge>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
                 </TableCell>
                 <TableCell>
                   <Badge variant="secondary">

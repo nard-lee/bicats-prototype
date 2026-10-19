@@ -15,6 +15,11 @@ export const listAuditQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20),
 });
 
+export const exportAuditQuerySchema = z.object({
+  entityType: z.string().trim().optional(),
+  q: z.string().trim().optional(),
+});
+
 export type AuditListRow = {
   id: number;
   actorId: number | null;
@@ -38,3 +43,4 @@ export type AuditListResult = {
 };
 
 export type ListAuditQuery = z.infer<typeof listAuditQuerySchema>;
+export type ExportAuditQuery = z.infer<typeof exportAuditQuerySchema>;

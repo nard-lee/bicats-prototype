@@ -188,6 +188,8 @@ export type ComplaintDetail = {
   priority: string;
   createdAt: string;
   dueAt: string | null;
+  nextHearingAt: string | null;
+  nextHearingKind: string | null;
   description: string;
   evidence: Array<{
     originalName: string;

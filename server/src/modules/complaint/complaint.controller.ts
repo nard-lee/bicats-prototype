@@ -14,8 +14,20 @@ const complaintController = {
         const files = (req.files as Express.Multer.File[] | undefined) ?? [];
         try {
             const request = validateRequest(createComplaintSchema, req.body);
-            const { reference } = await complaintService.create(request, files);
+            const { id, reference } = await complaintService.create(request, files);
             res.status(200).json({ reference, success: true });
+
+            // Alert staff to the new filing; never let this break the response.
+            try {
+                await notificationService.notifyNewComplaint({
+                    id,
+                    reference,
+                    complainantName: request.complainantName,
+                    respondentName: request.respondentName,
+                });
+            } catch (err) {
+                console.error("==> notifications: new complaint alert failed", err);
+            }
         } catch (err: unknown) {
             await removeUploadedFiles(files);
 

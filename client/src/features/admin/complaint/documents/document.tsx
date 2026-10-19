@@ -4,12 +4,7 @@ import { ArrowLeft, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useT, type Key } from "@/lib/I18n";
 import type { DocumentLoaderData, DocumentType } from "./loader";
-
-// Prototype placeholder officials. Replace with real signatories later.
-const OFFICIALS = {
-  punongBarangay: "Hon. Mario D. Santos",
-  luponChairman: "Mr. Pedro A. Reyes",
-};
+import type { BarangaySettings } from "@/features/admin/setting/loader";
 
 const DOC_TITLE_KEY: Record<DocumentType, Key> = {
   summons: "doc_summons",
@@ -20,18 +15,19 @@ const DOC_TITLE_KEY: Record<DocumentType, Key> = {
 
 const BLANK = "_____________________";
 
-function Letterhead() {
+function Letterhead({ settings }: { settings: BarangaySettings }) {
   const { t } = useT();
   return (
     <header className="border-b-2 border-black pb-3 text-center">
       <p className="text-xs tracking-wide uppercase">{t("republic")}</p>
-      <p className="text-sm font-semibold tracking-wide uppercase">{t("city")}</p>
+      <p className="text-sm font-semibold tracking-wide uppercase">
+        {settings.province ? `${settings.province} · ` : ""}
+        {settings.city}
+      </p>
       <p className="text-base font-bold tracking-wide uppercase">
-        Barangay Kabayanihan
+        {settings.barangayName}
       </p>
-      <p className="text-xs tracking-wide uppercase">
-        Office of the Punong Barangay
-      </p>
+      <p className="text-xs tracking-wide uppercase">Office of the Punong Barangay</p>
     </header>
   );
 }
@@ -53,7 +49,7 @@ function Paragraph({ children }: { children: ReactNode }) {
 
 export default function ComplaintDocument() {
   const { t, lang } = useT();
-  const { complaint, generatedAt } = useLoaderData() as DocumentLoaderData;
+  const { complaint, settings, generatedAt } = useLoaderData() as DocumentLoaderData;
   const { id, doc } = useParams();
   const type = doc as DocumentType;
   const title = t(DOC_TITLE_KEY[type] ?? "doc_summons");
@@ -80,7 +76,7 @@ export default function ComplaintDocument() {
 
   const issuedLine = (
     <p className="indent-8 text-justify">
-      Issued this {longDate(generatedAt)} at Barangay Kabayanihan, {t("city")},
+      Issued this {longDate(generatedAt)} at {settings.barangayName}, {settings.city},
       Philippines.
     </p>
   );
@@ -103,7 +99,7 @@ export default function ComplaintDocument() {
 
       {/* The paper */}
       <article className="mx-auto w-full max-w-[210mm] bg-white px-6 py-10 text-[13px] leading-relaxed text-black shadow-sm print:max-w-none print:shadow-none sm:px-[18mm] sm:py-[14mm]">
-        <Letterhead />
+        <Letterhead settings={settings} />
 
         <h1 className="mt-8 text-center text-base font-bold tracking-wide uppercase">
           {title}
@@ -127,8 +123,8 @@ export default function ComplaintDocument() {
             </Paragraph>
 
             <Paragraph>
-              You are required to appear at the Barangay Hall, Barangay
-              Kabayanihan, on{" "}
+              You are required to appear at the Barangay Hall,{" "}
+              {settings.barangayName}, on{" "}
               <span className="underline">
                 {hearingIso ? longDate(hearingIso) : BLANK}
               </span>{" "}
@@ -149,7 +145,7 @@ export default function ComplaintDocument() {
             {issuedLine}
 
             <div className="mt-12 max-w-xs">
-              <SignLine label={t("lblPunongBarangay")} name={OFFICIALS.punongBarangay} />
+              <SignLine label={t("lblPunongBarangay")} name={settings.punongBarangay} />
             </div>
           </div>
         )}
@@ -180,8 +176,8 @@ export default function ComplaintDocument() {
             </Paragraph>
 
             <Paragraph>
-              The mediation shall be held at the Barangay Hall, Barangay
-              Kabayanihan. The parties are advised to bring any documents,
+              The mediation shall be held at the Barangay Hall,{" "}
+              {settings.barangayName}. The parties are advised to bring any documents,
               witnesses, or evidence relevant to the case. Only the parties
               themselves, or their duly authorized representatives, may appear.
             </Paragraph>
@@ -195,8 +191,8 @@ export default function ComplaintDocument() {
             {issuedLine}
 
             <div className="mt-12 flex flex-wrap justify-between gap-10">
-              <SignLine label={t("lblPunongBarangay")} name={OFFICIALS.punongBarangay} />
-              <SignLine label={t("lblLuponChairman")} name={OFFICIALS.luponChairman} />
+              <SignLine label={t("lblPunongBarangay")} name={settings.punongBarangay} />
+              <SignLine label={t("lblLuponChairman")} name={settings.luponChairman} />
             </div>
           </div>
         )}
@@ -241,7 +237,7 @@ export default function ComplaintDocument() {
 
             <p className="indent-8">
               IN WITNESS WHEREOF, the parties have signed this Amicable
-              Settlement on {longDate(generatedAt)} at Barangay Kabayanihan.
+              Settlement on {longDate(generatedAt)} at {settings.barangayName}.
             </p>
 
             <div className="mt-12 flex flex-wrap justify-between gap-10">
@@ -250,7 +246,7 @@ export default function ComplaintDocument() {
             </div>
 
             <div className="mt-10 max-w-xs">
-              <SignLine label={t("lblAttestedBy")} name={OFFICIALS.punongBarangay} />
+              <SignLine label={t("lblAttestedBy")} name={settings.punongBarangay} />
             </div>
           </div>
         )}
@@ -284,8 +280,8 @@ export default function ComplaintDocument() {
             {issuedLine}
 
             <div className="mt-12 flex flex-wrap justify-between gap-10">
-              <SignLine label={t("lblPunongBarangay")} name={OFFICIALS.punongBarangay} />
-              <SignLine label={t("lblLuponChairman")} name={OFFICIALS.luponChairman} />
+              <SignLine label={t("lblPunongBarangay")} name={settings.punongBarangay} />
+              <SignLine label={t("lblLuponChairman")} name={settings.luponChairman} />
             </div>
           </div>
         )}

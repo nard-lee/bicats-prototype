@@ -20,6 +20,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { api } from "@/lib/api";
+import DateTimePicker from "@/components/ui/date-time-picker";
+import { toLocalInput } from "@/lib/datetime";
 import { KIND_LABEL, STATUS_LABEL } from "./labels";
 import ComplaintPicker from "./complaint-picker";
 import type { ComplaintOption, HearingItem, HearingKind, HearingStatus } from "./loader";
@@ -46,16 +48,13 @@ const STATUSES: HearingStatus[] = [
 // Module-scope default so we don't call new Date() during render.
 const NOW = new Date();
 
-const pad = (value: number) => String(value).padStart(2, "0");
-
-// ISO -> value for <input type="datetime-local"> (local time, no timezone).
-function toLocalInput(iso: string): string {
-  const d = new Date(iso);
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+// ISO -> value for the DateTimePicker (local time, no timezone).
+function isoToLocalInput(iso: string): string {
+  return toLocalInput(new Date(iso));
 }
 
 function defaultInput(date: Date): string {
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T09:00`;
+  return toLocalInput(new Date(date.getFullYear(), date.getMonth(), date.getDate(), 9, 0));
 }
 
 async function readError(err: unknown): Promise<string> {
@@ -78,7 +77,7 @@ export default function HearingDialog({ mode, complaints, onClose, onSaved }: Pr
     editing ? String(editing.complaintId) : complaints[0] ? String(complaints[0].id) : "",
   );
   const [scheduled, setScheduled] = useState(
-    editing ? toLocalInput(editing.scheduledAt) : defaultInput(mode.type === "create" ? mode.date : NOW),
+    editing ? isoToLocalInput(editing.scheduledAt) : defaultInput(mode.type === "create" ? mode.date : NOW),
   );
   const [kind, setKind] = useState<HearingKind>(editing?.kind ?? "mediation");
   const [status, setStatus] = useState<HearingStatus>(editing?.status ?? "scheduled");
@@ -156,12 +155,11 @@ export default function HearingDialog({ mode, complaints, onClose, onSaved }: Pr
 
           <div className="grid gap-2">
             <Label htmlFor="scheduled">Date &amp; time</Label>
-            <Input
+            <DateTimePicker
               id="scheduled"
-              type="datetime-local"
               value={scheduled}
-              onChange={(e) => setScheduled(e.target.value)}
-              required
+              onChange={setScheduled}
+              placeholder="Select date & time"
             />
           </div>
 

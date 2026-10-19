@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import DateTimePicker from "@/components/ui/date-time-picker";
 import { complaintTypeKeys, useT } from "@/lib/I18n";
 import type { ActionResult } from "./action";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -98,6 +99,7 @@ export default function FileComplaint() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [fileError, setFileError] = useState<string | null>(null);
+  const [incidentAt, setIncidentAt] = useState("");
 
   function resetInput() {
     if (inputRef.current) inputRef.current.value = "";
@@ -306,11 +308,12 @@ export default function FileComplaint() {
             <FieldError message={fields.complaintType} />
           </Field>
           <Field label={t("incidentAt")}>
-            <Input
-              name="incidentAt"
-              type="datetime-local"
+            <DateTimePicker
+              value={incidentAt}
+              onChange={setIncidentAt}
               aria-invalid={!!fields.incidentAt}
             />
+            <input type="hidden" name="incidentAt" value={incidentAt} />
             <FieldError message={fields.incidentAt} />
           </Field>
           <Field label={t("place")} full>

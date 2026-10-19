@@ -2,6 +2,7 @@ import { api } from "@/lib/api";
 import type { LoaderFunctionArgs } from "react-router";
 import { AdminLoader } from "@/layouts/admin/loader";
 import type { ComplaintDetail } from "@/features/admin/complaint/view/loader";
+import type { BarangaySettings } from "@/features/admin/setting/loader";
 
 export type DocumentType = "summons" | "notice" | "settlement" | "cfa";
 
@@ -18,6 +19,7 @@ export function isDocumentType(value: string | undefined): value is DocumentType
 
 export type DocumentLoaderData = {
   complaint: ComplaintDetail;
+  settings: BarangaySettings;
   generatedAt: string;
 };
 
@@ -31,7 +33,10 @@ export async function ComplaintDocumentLoader({
     throw new Response("Not Found", { status: 404 });
   }
 
-  const complaint = await api.get(`/complaints/${id}`).json<ComplaintDetail>();
+  const [complaint, settings] = await Promise.all([
+    api.get(`/complaints/${id}`).json<ComplaintDetail>(),
+    api.get("settings").json<BarangaySettings>(),
+  ]);
 
-  return { complaint, generatedAt: new Date().toISOString() };
+  return { complaint, settings, generatedAt: new Date().toISOString() };
 }

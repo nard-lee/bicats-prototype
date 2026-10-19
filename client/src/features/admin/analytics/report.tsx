@@ -7,6 +7,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   BarChart,
   Bar,
@@ -21,7 +22,7 @@ import {
   LineChart,
   Line,
 } from "recharts";
-import { AlertTriangle, CalendarClock, ClipboardList, MapPin } from "lucide-react";
+import { AlertTriangle, CalendarClock, ClipboardList, FileDown, MapPin, Printer } from "lucide-react";
 import { useT, type Key } from "@/lib/I18n";
 
 // Warm on-brand palette derived from the theme tokens so the charts match the
@@ -134,13 +135,61 @@ export default function AdminReport() {
     },
   ];
 
+  function exportCsv() {
+    const escape = (value: string) => `"${value.replace(/"/g, '""')}"`;
+    const rows: string[][] = [];
+
+    rows.push([`${t("adminAnalytics")} — ${t("anSubtitle")}`]);
+    rows.push(["Generated", new Date().toLocaleString(locale)]);
+    rows.push([]);
+    rows.push([t("anTotal"), String(totalComplaints)]);
+    rows.push([t("anThisMonth"), String(thisMonth)]);
+    rows.push([t("anTopType"), topType ? `${topType.name} (${topType.value})` : "—"]);
+    rows.push([t("anTopPurok"), topPurok ? `${topPurok.name} (${topPurok.cases})` : "—"]);
+    rows.push([]);
+    rows.push([t("anTypes"), "Count"]);
+    for (const item of typeData) rows.push([item.name, String(item.value)]);
+    rows.push([]);
+    rows.push([t("anTrends"), "Count"]);
+    for (const item of trendData) {
+      const month = `${item.date.getFullYear()}-${String(item.date.getMonth() + 1).padStart(2, "0")}`;
+      rows.push([month, String(item.cases)]);
+    }
+    rows.push([]);
+    rows.push([t("anHotspots"), "Cases"]);
+    for (const item of hotspotData) rows.push([item.name, String(item.cases)]);
+    rows.push([]);
+    rows.push([t("anStatusTitle"), "Count"]);
+    for (const item of statusData) rows.push([item.name, String(item.value)]);
+
+    const csv = rows.map((row) => row.map(escape).join(",")).join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `analytics-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div className="space-y-8">
-      <header>
-        <h1 className="text-2xl font-semibold">{t("adminAnalytics")}</h1>
-        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          {t("anSubtitle")}
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold">{t("adminAnalytics")}</h1>
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+            {t("anSubtitle")}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 print-hide">
+          <Button variant="outline" onClick={exportCsv}>
+            <FileDown className="mr-2 h-4 w-4" />
+            Export CSV
+          </Button>
+          <Button variant="outline" onClick={() => window.print()}>
+            <Printer className="mr-2 h-4 w-4" />
+            Print
+          </Button>
+        </div>
       </header>
 
       {/* At a glance */}

@@ -113,6 +113,7 @@ export default function ComplaintView() {
               <StatusUpdateModal
                 complaintId={complaint.id}
                 currentStatus={complaint.status}
+                currentHearingAt={complaint.nextHearingAt}
                 onSuccess={() => revalidator.revalidate()}
               />
               {isClosed && (
@@ -144,20 +145,31 @@ export default function ComplaintView() {
           </p>
         </div>
 
-        {complaint.dueAt ? (
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-muted-foreground">{t("dueDate")}:</span>
-            <span className="font-medium">{formatDateTime(complaint.dueAt)}</span>
-            {isOverdue && (
-              <Badge variant="destructive" className="gap-1">
-                <AlertTriangle className="h-3 w-3" />
-                {t("overdue")}
-              </Badge>
-            )}
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">{t("noDeadline")}</p>
-        )}
+        <div className="flex flex-col items-end gap-1 text-sm">
+          {complaint.nextHearingAt ? (
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">{t("hearing")}:</span>
+              <span className="font-medium">
+                {formatDateTime(complaint.nextHearingAt)}
+              </span>
+            </div>
+          ) : null}
+          {complaint.dueAt ? (
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">{t("dueDate")}:</span>
+              <span className="font-medium">{formatDateTime(complaint.dueAt)}</span>
+              {isOverdue && (
+                <Badge variant="destructive" className="gap-1">
+                  <AlertTriangle className="h-3 w-3" />
+                  {t("overdue")}
+                </Badge>
+              )}
+            </div>
+          ) : (
+            <p className="text-muted-foreground">{t("noDeadline")}</p>
+          )}
+        </div>
       </div>
 
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
