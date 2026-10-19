@@ -42,7 +42,7 @@ export function requireAuth(...allowedRoles: JwtPayload["role"][]) {
             // effect immediately instead of waiting for the token to expire.
             const user = await prisma.user.findUnique({
                 where: { id: payload.userId },
-                select: { id: true, role: true, isActive: true },
+                select: { id: true, fullName: true, role: true, isActive: true },
             });
 
             if (!user || !user.isActive) {
@@ -50,7 +50,7 @@ export function requireAuth(...allowedRoles: JwtPayload["role"][]) {
                 return;
             }
 
-            req.user = { userId: user.id, role: user.role };
+            req.user = { userId: user.id, role: user.role, fullName: user.fullName };
 
             if (
                 allowedRoles.length > 0 &&

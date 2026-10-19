@@ -4,11 +4,18 @@ import ComplaintView from "@/features/admin/complaint/view/complaint";
 import { ComplaintDetailLoader } from "@/features/admin/complaint/view/loader";
 import ComplaintDocument from "@/features/admin/complaint/documents/document";
 import { ComplaintDocumentLoader } from "@/features/admin/complaint/documents/loader";
+import HearingsPage from "@/features/admin/hearing/hearings";
+import { HearingsLoader } from "@/features/admin/hearing/loader";
 import CreateUser from "@/features/admin/user/create";
 import { createUserAction } from "@/features/admin/user/create-action";
 import StaffAccounts from "@/features/admin/user/list/table";
 import { UsersLoader } from "@/features/admin/user/list/loader";
 import { usersAction } from "@/features/admin/user/list/action";
+import Profile from "@/features/admin/user/profile";
+import { ProfileLoader } from "@/features/admin/user/profile-loader";
+import { profileAction } from "@/features/admin/user/profile-action";
+import AuditLog from "@/features/admin/audit/list/table";
+import { AuditLoader } from "@/features/admin/audit/list/loader";
 import { loginAction } from "@/features/auth/login/action";
 import Login from "@/features/auth/login/form";
 import { fileComplaintAction } from "@/features/complaint/file/action";
@@ -87,10 +94,29 @@ const router = createBrowserRouter([
         handle: { crumb: () => "Staff Accounts" }
       },
       {
+        path: 'profile',
+        element: <Profile />,
+        loader: ProfileLoader,
+        action: profileAction,
+        handle: { crumb: () => "My Profile" }
+      },
+      {
+        path: 'audit',
+        element: <AuditLog />,
+        loader: AuditLoader,
+        handle: { crumb: () => "Audit Logs" }
+      },
+      {
         path: 'complaints',
         element: <ComplaintsList />,
         loader: ComplaintsLoader,
         handle: { crumb: () => "Complaints" }
+      },
+      {
+        path: 'hearings',
+        element: <HearingsPage />,
+        loader: HearingsLoader,
+        handle: { crumb: () => "Mediation" }
       },
       {
         path: 'complaints/:id',

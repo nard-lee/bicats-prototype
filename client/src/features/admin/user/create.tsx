@@ -2,10 +2,11 @@
 import { useEffect, useRef } from "react";
 import {
     Form,
+    Link,
     useActionData,
     useNavigation,
 } from "react-router";
-import { UserPlus, AlertCircle, InfoIcon } from "lucide-react";
+import { UserPlus, AlertCircle, InfoIcon, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,6 +41,18 @@ export default function CreateUser() {
     return (
         <div className="flex  w-full items-center justify-center px-4 py-10 sm:px-6 lg:px-8">
             <div className="w-full max-w-4xl space-y-8">
+                <Button
+                    asChild
+                    variant="ghost"
+                    size="sm"
+                    className="-ml-2 w-fit text-muted-foreground"
+                >
+                    <Link to="/admin/accounts">
+                        <ArrowLeft />
+                        {t("backToList")}
+                    </Link>
+                </Button>
+
                 {/* Header */}
                 <div className="flex flex-col items-center gap-3 text-center">
                     <div className="flex size-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
@@ -181,6 +194,12 @@ export default function CreateUser() {
                                     <SelectContent>
                                         <SelectItem value="staff">
                                             {t("roleStaff")}
+                                        </SelectItem>
+                                        <SelectItem value="secretary">
+                                            {t("roleSecretary")}
+                                        </SelectItem>
+                                        <SelectItem value="lupon">
+                                            {t("roleLupon")}
                                         </SelectItem>
                                         <SelectItem value="admin">
                                             {t("roleAdmin")}

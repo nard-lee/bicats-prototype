@@ -1,9 +1,10 @@
 import { Router } from "express";
 import { noticeController } from "./notice.controller.js";
 import { requireAuth } from "@/middlewares/auth.middleware.js";
+import { NOTICE_ROLES } from "@/utils/roles.js";
 
 const router = Router();
-const staffOnly = requireAuth("staff", "admin");
+const staffOnly = requireAuth(...NOTICE_ROLES);
 
 // Public notice board
 router.get("/list", noticeController.listPublished);

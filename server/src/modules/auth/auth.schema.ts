@@ -41,4 +41,8 @@ export type AuthToken = {
   refreshToken: string;
 };
 
+export type LoginResult = AuthToken & {
+  user: { id: number; fullName: string; role: string };
+};
+
 export type LoginInput = z.infer<typeof loginSchema>;

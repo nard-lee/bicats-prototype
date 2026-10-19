@@ -5,6 +5,7 @@ import { config } from '@/utils/env.config.js';
 export interface JwtPayload {
   userId: number;
   role: string;
+  fullName?: string;
 }
 export function signAccessToken(payload: JwtPayload): string {
   return jwt.sign(payload, config.jwtSecret, { expiresIn: config.jwtExpiresIn });

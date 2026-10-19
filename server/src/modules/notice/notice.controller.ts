@@ -3,6 +3,7 @@ import { createNoticeSchema, updateNoticeSchema } from "./notice.schema.js";
 import { validateRequest } from "@/utils/custom.validator.js";
 import { noticeService } from "./notice.service.js";
 import { CustomError } from "@/utils/custom.exception.js";
+import { auditFromRequest } from "@/modules/audit/audit.service.js";
 
 function parseId(raw: string | string[] | undefined): number {
   const id = Number(Array.isArray(raw) ? raw[0] : raw);
@@ -41,17 +42,39 @@ export const noticeController = {
     const data = validateRequest(createNoticeSchema, req.body);
     const notice = await noticeService.create(data, req.user?.userId);
     res.status(201).json(notice);
+
+    await auditFromRequest(req, {
+      action: "notice.create",
+      entityType: "notice",
+      entityId: notice.id,
+      summary: `Published notice "${notice.title}"`,
+    });
   },
 
   async update(req: Request, res: Response): Promise<void> {
     const id = parseId(req.params.id);
     const data = validateRequest(updateNoticeSchema, req.body);
-    res.json(await noticeService.update(id, data));
+    const notice = await noticeService.update(id, data);
+    res.json(notice);
+
+    await auditFromRequest(req, {
+      action: "notice.update",
+      entityType: "notice",
+      entityId: id,
+      summary: `Updated notice "${notice.title}"`,
+    });
   },
 
   async remove(req: Request, res: Response): Promise<void> {
     const id = parseId(req.params.id);
     await noticeService.remove(id);
     res.json({ success: true });
+
+    await auditFromRequest(req, {
+      action: "notice.delete",
+      entityType: "notice",
+      entityId: id,
+      summary: `Deleted notice #${id}`,
+    });
   },
 };

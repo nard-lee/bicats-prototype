@@ -141,7 +141,7 @@ export default function ComplaintDocument() {
 
             <Paragraph>
               <span className="font-semibold">FAILURE TO APPEAR</span> at the
-              scheduled hearing without justifiable cause may be construed as a
+              scheduled mediation without justifiable cause may be construed as a
               waiver of your right to be heard and the case may proceed in your
               absence.
             </Paragraph>
@@ -168,7 +168,7 @@ export default function ComplaintDocument() {
               complaint docketed as{" "}
               <span className="font-semibold">{complaint.reference}</span>, filed
               by {complaint.complainantName} against {complaint.respondentName}{" "}
-              for {t(complaint.complaintType as Key)}, is set for hearing on{" "}
+              for {t(complaint.complaintType as Key)}, is set for mediation on{" "}
               <span className="underline">
                 {hearingIso ? longDate(hearingIso) : BLANK}
               </span>{" "}
@@ -180,7 +180,7 @@ export default function ComplaintDocument() {
             </Paragraph>
 
             <Paragraph>
-              The hearing shall be held at the Barangay Hall, Barangay
+              The mediation shall be held at the Barangay Hall, Barangay
               Kabayanihan. The parties are advised to bring any documents,
               witnesses, or evidence relevant to the case. Only the parties
               themselves, or their duly authorized representatives, may appear.

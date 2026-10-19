@@ -20,6 +20,7 @@ const userService = {
             select: {
                 id: true,
                 fullName: true,
+                position: true,
                 email: true,
                 phone: true,
                 role: true,

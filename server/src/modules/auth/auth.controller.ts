@@ -6,6 +6,7 @@ import { loginSchema } from "./auth.schema.js";
 import authService from "./auth.service.js";
 import { config } from "@/utils/env.config.js";
 import userService from "@/modules/user/user.service.js";
+import auditService from "@/modules/audit/audit.service.js";
 
 const authController = {
 
@@ -26,7 +27,7 @@ const authController = {
     async login(req: Request, res: Response): Promise<void> {
         try {
             const request = validateRequest(loginSchema, req.body);
-            const { accessToken, refreshToken } = await authService.login(request);
+            const { accessToken, refreshToken, user } = await authService.login(request);
 
             res.cookie('access_token', accessToken, {
                 httpOnly: true,
@@ -43,6 +44,17 @@ const authController = {
             })
 
             res.status(200).json({ success: true });
+
+            await auditService.record({
+                actorId: user.id,
+                actorName: user.fullName,
+                actorRole: user.role,
+                action: "auth.login",
+                entityType: "auth",
+                entityId: user.id,
+                summary: `${user.fullName} signed in`,
+                ip: req.ip ?? null,
+            });
         } catch (err: unknown) {
             if (err instanceof CustomError) {
                 res.status(400).json({ error: err.message, fields: err.fields });

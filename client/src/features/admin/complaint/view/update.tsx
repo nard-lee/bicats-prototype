@@ -106,7 +106,7 @@ export default function StatusUpdateModal({ complaintId, currentStatus, onSucces
         <DialogHeader>
           <DialogTitle>Update Case Details</DialogTitle>
           <DialogDescription>
-            Add notes, schedule hearings, or move the case to the next stage.
+            Add notes, schedule mediation, or move the case to the next stage.
           </DialogDescription>
         </DialogHeader>
         
@@ -158,7 +158,7 @@ export default function StatusUpdateModal({ complaintId, currentStatus, onSucces
             <Label htmlFor="internalNote">Internal Note (Staff Only)</Label>
             <Textarea
               id="internalNote"
-              placeholder="e.g., Respondent failed to appear during the first hearing."
+              placeholder="e.g., Respondent failed to appear during the first mediation."
               value={internalNote}
               onChange={(e) => setInternalNote(e.target.value)}
               rows={2}
@@ -167,7 +167,7 @@ export default function StatusUpdateModal({ complaintId, currentStatus, onSucces
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="hearingAt">Next Hearing Date (Optional)</Label>
+            <Label htmlFor="hearingAt">Next Mediation Date (Optional)</Label>
             <input
               id="hearingAt"
               type="datetime-local"
@@ -180,7 +180,7 @@ export default function StatusUpdateModal({ complaintId, currentStatus, onSucces
             />
             {!canScheduleHearing && (
               <p className="text-xs text-muted-foreground">
-                Hearings cannot be scheduled for closed cases.
+                Mediation cannot be scheduled for closed cases.
               </p>
             )}
           </div>

@@ -1,7 +1,9 @@
 import { Link, NavLink, Outlet, useRouteLoaderData } from "react-router";
 import { Button } from "@/components/ui/button";
 import TopLoader from "@/components/top-loader";
-import { useT, type Key, type Lang } from "@/lib/I18n";
+import LanguageToggle from "@/components/language-toggle";
+import ModeToggle from "@/components/mode-toggle";
+import { useT, type Key } from "@/lib/I18n";
 import type { getCurrentUser } from "@/hooks/use-auth";
 
 const links: { to: string; label: Key; end?: boolean }[] = [
@@ -13,7 +15,7 @@ const links: { to: string; label: Key; end?: boolean }[] = [
 type User = Awaited<ReturnType<typeof getCurrentUser>>;
 
 export default function RootLayout() {
-  const { t, lang, setLang } = useT();
+  const { t } = useT();
   const user = useRouteLoaderData("root") as User;
 
   return (
@@ -32,7 +34,7 @@ export default function RootLayout() {
             </Link>
           </div>
 
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex items-center gap-4">
             <Button asChild variant="ghost">
               {user ? (
                 <Link to="/admin">{t("navStaff")}</Link>
@@ -40,23 +42,8 @@ export default function RootLayout() {
                 <Link to="/login">{t("login")}</Link>
               )}
             </Button>
-            {/* Language toggle */}
-            <div className="flex overflow-hidden rounded-md border text-xs font-medium">
-              {(["tl", "en"] as Lang[]).map((l) => (
-                <button
-                  key={l}
-                  type="button"
-                  onClick={() => setLang(l)}
-                  aria-pressed={lang === l}
-                  className={`px-2.5 py-1.5 ${lang === l
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                    }`}
-                >
-                  {l.toUpperCase()}
-                </button>
-              ))}
-            </div>
+            <ModeToggle />
+            <LanguageToggle />
           </div>
         </div>
 

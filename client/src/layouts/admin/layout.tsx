@@ -8,11 +8,14 @@ import {
 } from "react-router";
 import {
   Bell,
+  CalendarDays,
   ChartColumn,
   ClipboardList,
   ExternalLink,
   LayoutDashboard,
+  ScrollText,
   UserCog,
+  UserRound,
   ChevronRight,
   Home,
 } from "lucide-react";
@@ -31,8 +34,11 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { useT, type Key, type Lang } from "@/lib/I18n";
+import { useT, type Key } from "@/lib/I18n";
+import { HEARING_ROLES, NOTICE_ROLES, ADMIN_ROLES, type Role } from "@/lib/roles";
 import TopLoader from "@/components/top-loader";
+import LanguageToggle from "@/components/language-toggle";
+import ModeToggle from "@/components/mode-toggle";
 import NotificationsBell from "@/features/admin/notifications/bell";
 import { LogoutButton } from "./logout";
 import type { AppRouteHandle } from "@/types/react-router";
@@ -43,43 +49,50 @@ type NavLink = {
   label: Key;
   icon: typeof Bell;
   end?: boolean;
+  roles?: Role[];
 };
 
 const mainLinks: NavLink[] = [
   { to: "/admin", label: "adminOverview", icon: LayoutDashboard, end: true },
   { to: "/admin/analytics", label: "adminAnalytics", icon: ChartColumn },
   { to: "/admin/complaints", label: "adminComplaints", icon: ClipboardList },
-  { to: "/admin/notices", label: "adminNotices", icon: Bell },
+  { to: "/admin/hearings", label: "adminHearings", icon: CalendarDays, roles: HEARING_ROLES },
+  { to: "/admin/notices", label: "adminNotices", icon: Bell, roles: NOTICE_ROLES },
 ];
 
 const adminLinks: NavLink[] = [
-  { to: "/admin/accounts", label: "adminAccounts", icon: UserCog },
+  { to: "/admin/accounts", label: "adminAccounts", icon: UserCog, roles: ADMIN_ROLES },
+  { to: "/admin/audit", label: "adminAudit", icon: ScrollText, roles: ADMIN_ROLES },
 ];
 
 export default function AdminLayout() {
-  const { t, lang, setLang } = useT();
+  const { t } = useT();
   const { pathname } = useLocation();
   const user = useRouteLoaderData("admin") as CurrentUser | null;
 
-  const isAdmin = user?.role === "admin";
+  const role = (user?.role ?? "staff") as Role;
+  const isAdmin = role === "admin";
 
   // Type the matches to include our custom Handle and unknown Data
   const matches = useMatches() as UIMatch<unknown, AppRouteHandle>[];
 
   const renderLinks = (items: NavLink[]) =>
-    items.map(({ to, label, icon: Icon, end }) => (
-      <SidebarMenuItem key={to}>
-        <SidebarMenuButton
-          asChild
-          isActive={end ? pathname === to : pathname.startsWith(to)}
-        >
-          <Link to={to}>
-            <Icon />
-            <span>{t(label)}</span>
-          </Link>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-    ));
+    items
+      .filter((item) => !item.roles || item.roles.includes(role))
+      .map(({ to, label, icon: Icon, end }) => (
+        <SidebarMenuItem key={to}>
+          <SidebarMenuButton
+            asChild
+            tooltip={t(label)}
+            isActive={end ? pathname === to : pathname.startsWith(to)}
+          >
+            <Link to={to}>
+              <Icon />
+              <span>{t(label)}</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      ));
 
   // Generate breadcrumbs
   const breadcrumbs = matches
@@ -98,12 +111,20 @@ export default function AdminLayout() {
   return (
     <SidebarProvider>
       <TopLoader />
-      <Sidebar>
-        <SidebarHeader className="px-4 py-4">
-          <Link to="/admin" className="text-lg font-semibold leading-tight">
+      <Sidebar collapsible="icon">
+        <SidebarHeader className="px-4 py-4 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-2">
+          <Link
+            to="/admin"
+            className="hidden size-8 items-center justify-center rounded-md group-data-[collapsible=icon]:flex"
+          >
+            <img src="/seal.png" alt="Barangay seal" className="size-8 rounded-full" />
+          </Link>
+          <Link to="/admin" className="text-lg font-semibold leading-tight group-data-[collapsible=icon]:hidden">
             Barangay Kabayanihan
           </Link>
-          <p className="text-xs text-muted-foreground">{t("adminPanel")}</p>
+          <p className="text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
+            {t("adminPanel")}
+          </p>
         </SidebarHeader>
 
         <SidebarContent>
@@ -123,37 +144,22 @@ export default function AdminLayout() {
           )}
         </SidebarContent>
 
-        <SidebarFooter className="gap-3 p-4">
-          {/* Language toggle */}
-          <div className="flex overflow-hidden rounded-md border text-xs font-medium">
-            {(["tl", "en"] as Lang[]).map((l) => (
-              <button
-                key={l}
-                type="button"
-                onClick={() => setLang(l)}
-                aria-pressed={lang === l}
-                className={`flex-1 py-1.5 ${lang === l
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-                  }`}
-              >
-                {l.toUpperCase()}
-              </button>
-            ))}
-          </div>
-
-          <div className="text-sm">
-            <p className="font-medium">
-              {user ? user.fullName : ""}
-            </p>
-            {user?.email && (
-              <p className="text-xs text-muted-foreground">{user.email}</p>
-            )}
-          </div>
-
+        <SidebarFooter className="gap-3 p-4 group-data-[collapsible=icon]:p-2">
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton asChild>
+              <SidebarMenuButton
+                asChild
+                tooltip={t("myProfile")}
+                isActive={pathname === "/admin/profile"}
+              >
+                <Link to="/admin/profile">
+                  <UserRound />
+                  <span>{t("myProfile")}</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild tooltip={t("viewSite")}>
                 <Link to="/" reloadDocument>
                   <ExternalLink />
                   <span>{t("viewSite")}</span>
@@ -168,7 +174,7 @@ export default function AdminLayout() {
       </Sidebar>
 
       <SidebarInset className="h-screen flex flex-col">
-        <header className="sticky top-0 z-10 flex h-12 items-center justify-between border-b bg-background px-4">
+        <header className="sticky top-0 z-30 flex h-12 items-center justify-between border-b bg-background px-4">
           <div className="flex min-w-0 flex-1 items-center gap-2">
             <SidebarTrigger />
             
@@ -192,8 +198,18 @@ export default function AdminLayout() {
             </nav>
           </div>
 
-          <div className="flex shrink-0 items-center gap-1">
+          <div className="flex shrink-0 items-center gap-4">
+            {user && (
+              <Link
+                to="/admin/profile"
+                className="hidden text-sm font-medium hover:text-primary sm:inline"
+              >
+                {user.fullName}
+              </Link>
+            )}
             <NotificationsBell />
+            <ModeToggle />
+            <LanguageToggle />
           </div>
         </header>
         

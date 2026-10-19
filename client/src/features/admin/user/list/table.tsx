@@ -26,6 +26,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useT } from "@/lib/I18n";
+import { ROLE_LABEL } from "@/lib/roles";
 import type { StaffUser, Paginated } from "./loader";
 import type { UsersActionResult } from "./action";
 
@@ -71,6 +72,8 @@ export default function StaffAccounts() {
             <SelectItem value="all">All roles</SelectItem>
             <SelectItem value="admin">Admin</SelectItem>
             <SelectItem value="staff">Staff</SelectItem>
+            <SelectItem value="secretary">Secretary</SelectItem>
+            <SelectItem value="lupon">Lupon Member</SelectItem>
           </SelectContent>
         </Select>
 
@@ -143,7 +146,7 @@ export default function StaffAccounts() {
                 </TableCell>
                 <TableCell>
                   <Badge variant={user.role === "admin" ? "default" : "secondary"}>
-                    {user.role === "admin" ? t("roleAdmin") : t("roleStaff")}
+                    {t(ROLE_LABEL[user.role])}
                   </Badge>
                 </TableCell>
                 <TableCell>

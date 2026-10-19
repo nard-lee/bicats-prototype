@@ -76,6 +76,7 @@ export type ComplaintListRow = {
   respondentName: string;
   complaintType: string;
   status: string;
+  priority: string;
   createdAt: Date;
   viewedAt: Date | null;
   dueAt: Date | null;
@@ -99,6 +100,35 @@ export const TERMINAL_STATUSES: readonly ComplaintStatus[] = [
   "certified",
   "dismissed",
 ];
+
+// ---- Priority triage ----
+export const COMPLAINT_PRIORITIES = ["low", "normal", "high", "urgent"] as const;
+export type ComplaintPriority = (typeof COMPLAINT_PRIORITIES)[number];
+
+const PRIORITY_RANK: Record<ComplaintPriority, number> = {
+  low: 0,
+  normal: 1,
+  high: 2,
+  urgent: 3,
+};
+
+export function priorityRank(priority: string): number {
+  return PRIORITY_RANK[priority as ComplaintPriority] ?? PRIORITY_RANK.normal;
+}
+
+// Which priority an overdue case escalates to. Never downgrades, so returns
+// null when the case is already at or above the target level.
+export function escalatedPriority(
+  current: string,
+  overdueDays: number,
+): ComplaintPriority | null {
+  const desired: ComplaintPriority = overdueDays >= 7 ? "urgent" : "high";
+  return priorityRank(desired) > priorityRank(current) ? desired : null;
+}
+
+export const updatePrioritySchema = z.object({
+  priority: z.enum(COMPLAINT_PRIORITIES),
+});
 
 // Katarungang Pambarangay flow: for each status, how many days the barangay
 // has to take the next step (see the KP rules cited in the barangay handbook).
@@ -143,6 +173,7 @@ export type ComplaintListFilters = {
   q?: string | undefined;
   status?: string | undefined;
   type?: string | undefined;
+  priority?: string | undefined;
   overdue?: boolean | undefined;
   dueSoon?: boolean | undefined;
 };
@@ -154,6 +185,7 @@ export type ComplaintDetail = {
   respondentName: string;
   complaintType: string;
   status: string;
+  priority: string;
   createdAt: string;
   dueAt: string | null;
   description: string;

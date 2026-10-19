@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router";
+import { Link, useLocation } from "react-router";
 import { Bell, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
@@ -19,13 +19,14 @@ type Notification = {
 type Payload = { items: Notification[]; unread: number };
 
 const dotColor = (type: string) => {
-  if (type === "overdue") return "bg-destructive";
+  if (type === "overdue" || type === "escalation") return "bg-destructive";
   if (type === "reminder") return "bg-amber-500";
   return "bg-muted-foreground";
 };
 
 export default function NotificationsBell() {
   const { t, lang } = useT();
+  const { pathname } = useLocation();
   const [data, setData] = useState<Payload>({ items: [], unread: 0 });
   const [open, setOpen] = useState(false);
 
@@ -42,6 +43,21 @@ export default function NotificationsBell() {
     const id = setInterval(() => void load(), 60_000);
     return () => clearInterval(id);
   }, [load]);
+
+  // Real-time: the server pushes a tick whenever we get a new notification.
+  // EventSource reconnects on its own if the connection drops.
+  useEffect(() => {
+    const source = new EventSource("/api/notifications/stream", {
+      withCredentials: true,
+    });
+    source.onmessage = () => void load();
+    return () => source.close();
+  }, [load]);
+
+  // Re-sync after navigating (e.g. opening a case marks its alerts read).
+  useEffect(() => {
+    void load();
+  }, [pathname, load]);
 
   const markAllRead = async () => {
     const now = new Date().toISOString();

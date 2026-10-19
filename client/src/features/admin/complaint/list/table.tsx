@@ -1,15 +1,21 @@
+import { useEffect, useState } from "react";
 import {
   Form,
   Link,
   useLoaderData,
   useNavigate,
   useRevalidator,
+  useRouteLoaderData,
   useSearchParams,
 } from "react-router";
-import { RefreshCw } from "lucide-react";
+import { FileDown, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
+import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import DataPagination from "@/components/data-pagination";
+import { api } from "@/lib/api";
 import {
   Select,
   SelectContent,
@@ -27,7 +33,9 @@ import {
 } from "@/components/ui/table";
 import { complaintTypeKeys, useT, type Key } from "@/lib/I18n";
 import { ComplaintSearch } from "./search";
+import { PRIORITIES, PRIORITY_STYLE } from "../priority";
 import type { ComplaintListItem, ComplaintStatus, Paginated } from "./loader";
+import type { CurrentUser } from "@/hooks/use-auth";
 
 const STATUSES: ComplaintStatus[] = [
   "received",
@@ -46,6 +54,10 @@ const OPEN_STATUSES: ComplaintStatus[] = [
   "conciliation",
 ];
 
+// Transparent checkbox: just an empty box that turns into a check when picked.
+const CHECKBOX =
+  "border-input bg-transparent shadow-none dark:bg-transparent data-checked:border-input data-checked:bg-transparent data-checked:text-primary dark:data-checked:bg-transparent";
+
 export default function ComplaintsList() {
   const { t, lang } = useT();
   const { items, total, page, pageSize, totalPages } = useLoaderData() as Paginated<ComplaintListItem>;
@@ -53,11 +65,87 @@ export default function ComplaintsList() {
   const revalidator = useRevalidator();
   const [params] = useSearchParams();
 
+  // Secretaries keep the register but cannot change it.
+  const user = useRouteLoaderData("admin") as CurrentUser | null;
+  const canWrite = user?.role !== "secretary";
+  const columnCount = canWrite ? 9 : 8;
+
   const q = params.get("q") ?? "";
   const status = params.get("status") ?? "all";
   const type = params.get("type") ?? "all";
+  const priority = params.get("priority") ?? "all";
   const risk = params.get("risk") ?? "all";
-  const hasFilters = q !== "" || status !== "all" || type !== "all" || risk !== "all";
+  const hasFilters =
+    q !== "" || status !== "all" || type !== "all" || priority !== "all" || risk !== "all";
+
+  const [selected, setSelected] = useState<number[]>([]);
+  const [bulkStatus, setBulkStatus] = useState<ComplaintStatus>("received");
+  const [applying, setApplying] = useState(false);
+
+  // Keep the selection across a plain reload, but drop it when the
+  // filters or page change (different set of rows).
+  const viewKey = params.toString();
+
+  useEffect(() => {
+    setSelected([]);
+  }, [viewKey]);
+
+  const allSelected = items.length > 0 && selected.length === items.length;
+  const someSelected = selected.length > 0 && !allSelected;
+
+  const toggleAll = () =>
+    setSelected(allSelected ? [] : items.map((c) => c.id));
+
+  const toggleOne = (id: number) =>
+    setSelected((current) =>
+      current.includes(id) ? current.filter((x) => x !== id) : [...current, id],
+    );
+
+  async function applyBulkStatus() {
+    if (selected.length === 0) return;
+
+    setApplying(true);
+    try {
+      await api.post("/complaints/bulk-status", {
+        json: { ids: selected, status: bulkStatus },
+      });
+      toast.success(`Updated ${selected.length} complaint(s).`);
+      setSelected([]);
+      revalidator.revalidate();
+    } catch {
+      toast.error("Failed to update complaints.");
+    } finally {
+      setApplying(false);
+    }
+  }
+
+  function exportCsv() {
+    const rows = items.filter((c) => selected.includes(c.id));
+
+    const escape = (value: string) => `"${value.replace(/"/g, '""')}"`;
+    const lines = rows.map((c) =>
+      [
+        c.reference,
+        c.complainantName,
+        c.respondentName,
+        t(c.complaintType as Key),
+        t(`st_${c.status}` as Key),
+        t(`pr_${c.priority}` as Key),
+        c.createdAt,
+        c.dueAt ?? "",
+      ]
+        .map((value) => escape(String(value)))
+        .join(","),
+    );
+
+    const csv = ["Reference,Complainant,Respondent,Type,Status,Priority,Filed,Due", ...lines].join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `complaints-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
 
   const date = (iso: string) =>
     new Date(iso).toLocaleDateString(lang === "tl" ? "fil-PH" : "en-PH", {
@@ -136,6 +224,20 @@ export default function ComplaintsList() {
           </SelectContent>
         </Select>
 
+        <Select name="priority" defaultValue={priority}>
+          <SelectTrigger className="w-[160px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t("anyPriority")}</SelectItem>
+            {PRIORITIES.map((p) => (
+              <SelectItem key={p} value={p}>
+                {t(`pr_${p}` as Key)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
         <Select name="risk" defaultValue={risk}>
           <SelectTrigger className="w-[160px]">
             <SelectValue />
@@ -165,15 +267,61 @@ export default function ComplaintsList() {
         </div>
       </Form>
 
-      <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto rounded-md border [&>[data-slot=table-container]]:overflow-visible">
+      {selected.length > 0 && (
+        <div className="flex shrink-0 flex-wrap items-center gap-2 rounded-md border bg-muted/50 px-3 py-2">
+          <span className="text-sm font-medium">{selected.length} selected</span>
+
+          <Select
+            value={bulkStatus}
+            onValueChange={(value) => setBulkStatus(value as ComplaintStatus)}
+          >
+            <SelectTrigger className="w-[170px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {STATUSES.map((s) => (
+                <SelectItem key={s} value={s}>
+                  {t(`st_${s}` as Key)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Button size="sm" onClick={applyBulkStatus} disabled={applying}>
+            {applying ? "Applying..." : "Apply status"}
+          </Button>
+
+          <Button size="sm" variant="outline" onClick={exportCsv}>
+            <FileDown className="mr-2 h-4 w-4" />
+            Export CSV
+          </Button>
+
+          <Button size="sm" variant="ghost" onClick={() => setSelected([])}>
+            Clear
+          </Button>
+        </div>
+      )}
+
+      <div className="-mx-6 min-h-0 flex-1 overflow-x-hidden overflow-y-auto border-y [&>[data-slot=table-container]]:overflow-visible">
         <Table className="[&_td]:px-4 [&_td]:py-3 [&_td]:whitespace-normal [&_th]:px-4 [&_th]:whitespace-normal">
           <TableHeader className="sticky top-0 z-10 bg-background">
             <TableRow>
+              {canWrite && (
+                <TableHead className="w-10">
+                  <Checkbox
+                    className={CHECKBOX}
+                    checked={allSelected ? true : someSelected ? "indeterminate" : false}
+                    onCheckedChange={toggleAll}
+                    aria-label="Select all"
+                  />
+                </TableHead>
+              )}
               <TableHead>{t("refNumber")}</TableHead>
               <TableHead>Complainant</TableHead>
               <TableHead>Respondent</TableHead>
               <TableHead>{t("complaintType")}</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>{t("priority")}</TableHead>
               <TableHead>{t("dueDate")}</TableHead>
               <TableHead>Filed</TableHead>
             </TableRow>
@@ -181,7 +329,7 @@ export default function ComplaintsList() {
           <TableBody>
             {items.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
+                <TableCell colSpan={columnCount} className="py-10 text-center text-muted-foreground">
                   {hasFilters
                     ? "No complaints match your filters."
                     : "No complaints yet."}
@@ -191,9 +339,20 @@ export default function ComplaintsList() {
             {items.map((c) => (
               <TableRow
                 key={c.id}
+                data-state={selected.includes(c.id) ? "selected" : undefined}
                 className="cursor-pointer hover:bg-muted/50 transition-colors"
                 onClick={() => navigate(`/admin/complaints/${c.id}`)}
               >
+                <TableCell onClick={(e) => e.stopPropagation()}>
+                  {canWrite && (
+                    <Checkbox
+                      className={CHECKBOX}
+                      checked={selected.includes(c.id)}
+                      onCheckedChange={() => toggleOne(c.id)}
+                      aria-label={`Select ${c.reference}`}
+                    />
+                  )}
+                </TableCell>
                 <TableCell className="font-bold">
                   <span className="inline-flex items-center gap-2">
                     {c.reference}
@@ -209,6 +368,11 @@ export default function ComplaintsList() {
                 <TableCell>{t(c.complaintType as Key)}</TableCell>
                 <TableCell>
                   <Badge variant="secondary">{t(`st_${c.status}` as Key)}</Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge className={cn("border", PRIORITY_STYLE[c.priority])}>
+                    {t(`pr_${c.priority}` as Key)}
+                  </Badge>
                 </TableCell>
                 <TableCell className="whitespace-nowrap">
                   {c.dueAt ? (

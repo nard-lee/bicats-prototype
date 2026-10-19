@@ -12,7 +12,8 @@
     "db:studio": "pnpm exec prisma studio",
     "db:seed": "tsx prisma/complaint-seeder.ts",
     "db:seed:users": "tsx prisma/user-seeder.ts",
-    "db:seed:all": "pnpm db:seed:users && pnpm db:seed"
+    "db:seed:audit": "tsx prisma/audit-seeder.ts",
+    "db:seed:all": "pnpm db:seed:users && pnpm db:seed && pnpm db:seed:audit"
   },
   "keywords": [],
   "author": "",

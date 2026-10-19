@@ -22,7 +22,23 @@ const en = {
   adminComplaints: "Complaints",
   adminNotices: "Notices",
   adminAccounts: "Staff Accounts",
+  adminAudit: "Audit Logs",
+  roleSecretary: "Secretary",
+  roleLupon: "Lupon Member",
+  themeLight: "Switch to light mode",
+  themeDark: "Switch to dark mode",
+  auditSubtitle: "A record of who did what and when.",
+  auditEmpty: "No activity recorded yet.",
+  auditWhen: "When",
+  auditWho: "Who",
+  auditAction: "Action",
+  auditTarget: "Target",
+  auditDetails: "Details",
+  auditIp: "IP",
+  auditSearchPlaceholder: "Search details or staff…",
+  auditAllTypes: "All activity",
   adminAnalytics: "Analytics & Reports",
+  adminHearings: "Mediation",
   anTypes: "Most Common Complaints",
   anTrends: "Case Filing Trends",
   anHotspots: "Top Affected Areas (Purok)",
@@ -52,7 +68,7 @@ const en = {
   contact: "Contact",
   officeHours: "Office Hours",
   monFri: "Mon–Fri 8:00 AM – 5:00 PM",
-  luponHearings: "Lupon hearings every Saturday, 9:00 AM",
+  luponHearings: "Lupon mediation every Saturday, 9:00 AM",
   tagline: "Honest service, for everyone.",
 
   // home
@@ -81,7 +97,7 @@ const en = {
   noticesTitle: "Notice Board",
   noticesEmpty: "No announcements at the moment.",
   n1Date: "10 Aug 2026",
-  n1Title: "Lupon hearing schedule moved to Saturdays",
+  n1Title: "Lupon mediation schedule moved to Saturdays",
   n1Text:
     "Mediation sessions are now held every Saturday, 9:00 AM at the Barangay Session Hall.",
   n2Date: "04 Aug 2026",
@@ -206,6 +222,19 @@ const en = {
   creating: "Creating...",
   accountCreated: "Account created.",
 
+  // admin: my profile
+  myProfile: "My Profile",
+  profileSub: "Update your own account details and password.",
+  saveChanges: "Save changes",
+  saving: "Saving...",
+  profileSaved: "Profile updated.",
+  newPassword: "New password",
+  newPasswordHint: "Leave blank to keep your current password.",
+  accountInfo: "Account details",
+  changePassword: "Change password",
+  memberSince: "Member since",
+  reviewFields: "Please review the highlighted fields below.",
+
   // track
   trackTitle: "Track My Complaint",
   trackIntro:
@@ -220,7 +249,7 @@ const en = {
   errTrack: "Something went wrong. Please try again.",
   currentStatus: "Current status",
   history: "History",
-  hearing: "Hearing",
+  hearing: "Mediation",
   st_received: "Received",
   st_summoned: "Respondent summoned",
   st_mediation: "Under mediation",
@@ -228,6 +257,12 @@ const en = {
   st_settled: "Settled",
   st_certified: "Certified to file action",
   st_dismissed: "Dismissed",
+  priority: "Priority",
+  anyPriority: "Any priority",
+  pr_low: "Low",
+  pr_normal: "Normal",
+  pr_high: "High",
+  pr_urgent: "Urgent",
   dueDate: "Next deadline",
   overdue: "Overdue",
   overdueOnly: "Overdue only",
@@ -275,7 +310,7 @@ const en = {
   printDoc: "Print / Save as PDF",
   backToCase: "Back to case",
   doc_summons: "Summons",
-  doc_notice: "Notice of Hearing",
+  doc_notice: "Notice of Mediation",
   doc_settlement: "Amicable Settlement",
   doc_cfa: "Certificate to File Action",
   lblPunongBarangay: "Punong Barangay",
@@ -304,7 +339,23 @@ const tl: Record<Key, string> = {
   adminComplaints: "Mga Reklamo",
   adminNotices: "Mga Paskil",
   adminAccounts: "Mga Account ng Kawani",
+  adminAudit: "Talaan ng Gawain",
+  roleSecretary: "Kalihim",
+  roleLupon: "Kagawad ng Lupon",
+  themeLight: "Lumipat sa maliwanag na tema",
+  themeDark: "Lumipat sa madilim na tema",
+  auditSubtitle: "Talaan kung sino ang gumawa ng ano at kailan.",
+  auditEmpty: "Wala pang naitalang gawain.",
+  auditWhen: "Kailan",
+  auditWho: "Sino",
+  auditAction: "Galaw",
+  auditTarget: "Puntirya",
+  auditDetails: "Detalye",
+  auditIp: "IP",
+  auditSearchPlaceholder: "Maghanap ng detalye o kawani…",
+  auditAllTypes: "Lahat ng gawain",
   adminAnalytics: "Mga Ulat at Analitiks",
+  adminHearings: "Mediatasyon",
   anTypes: "Pinakakaraniwang Reklamo",
   anTrends: "Takbo ng Paghahain ng Kaso",
   anHotspots: "Mga Pinaka-apektadong Lugar (Purok)",
@@ -334,7 +385,7 @@ const tl: Record<Key, string> = {
   contact: "Makipag-ugnayan",
   officeHours: "Oras ng Opisina",
   monFri: "Lun–Biy 8:00 AM – 5:00 PM",
-  luponHearings: "Pagdinig ng Lupon tuwing Sabado, 9:00 AM",
+  luponHearings: "Mediatasyon ng Lupon tuwing Sabado, 9:00 AM",
   tagline: "Serbisyong totoo, para sa lahat.",
 
   eyebrow: "Katarungang Pambarangay · Serbisyong Totoo",
@@ -361,7 +412,7 @@ const tl: Record<Key, string> = {
   noticesTitle: "Mga Paskil / Notice Board",
   noticesEmpty: "Walang anunsyo sa ngayon.",
   n1Date: "10 Ago 2026",
-  n1Title: "Inilipat sa Sabado ang iskedyul ng pagdinig ng Lupon",
+  n1Title: "Inilipat sa Sabado ang iskedyul ng mediatasyon ng Lupon",
   n1Text:
     "Ang mga mediation ay idinaraos na tuwing Sabado, 9:00 AM sa Barangay Session Hall.",
   n2Date: "04 Ago 2026",
@@ -482,6 +533,19 @@ const tl: Record<Key, string> = {
   creating: "Ginagawa...",
   accountCreated: "Nagawa na ang account.",
 
+  // admin: my profile
+  myProfile: "Aking Profile",
+  profileSub: "I-update ang sariling detalye ng account at password.",
+  saveChanges: "I-save ang mga pagbabago",
+  saving: "Sine-save...",
+  profileSaved: "Na-update ang profile.",
+  newPassword: "Bagong password",
+  newPasswordHint: "Iwanang blangko para panatilihin ang kasalukuyang password.",
+  accountInfo: "Detalye ng account",
+  changePassword: "Palitan ang password",
+  memberSince: "Miyembro mula",
+  reviewFields: "Paki-review ang mga naka-highlight na field sa ibaba.",
+
   // track
   trackTitle: "Subaybayan ang Reklamo Ko",
   trackIntro:
@@ -496,7 +560,7 @@ const tl: Record<Key, string> = {
   errTrack: "May problema. Subukan muli.",
   currentStatus: "Kasalukuyang status",
   history: "Kasaysayan",
-  hearing: "Pagdinig",
+  hearing: "Mediatasyon",
   st_received: "Natanggap",
   st_summoned: "Pinatawag ang inirereklamo",
   st_mediation: "Nasa mediation",
@@ -504,6 +568,12 @@ const tl: Record<Key, string> = {
   st_settled: "Naayos",
   st_certified: "Binigyan ng sertipiko para magsampa ng kaso",
   st_dismissed: "Ibinasura",
+  priority: "Priyoridad",
+  anyPriority: "Kahit anong priyoridad",
+  pr_low: "Mababa",
+  pr_normal: "Karaniwan",
+  pr_high: "Mataas",
+  pr_urgent: "Apurahan",
   dueDate: "Susunod na takda",
   overdue: "Lampas na sa takda",
   overdueOnly: "Lampas na takda lang",
@@ -555,7 +625,7 @@ const tl: Record<Key, string> = {
   printDoc: "I-print / I-save bilang PDF",
   backToCase: "Bumalik sa kaso",
   doc_summons: "Patawag (Summons)",
-  doc_notice: "Abiso ng Pagdinig",
+  doc_notice: "Abiso ng Mediatasyon",
   doc_settlement: "Kasunduang Pag-aayos",
   doc_cfa: "Sertipiko para Magsampa ng Kaso",
   lblPunongBarangay: "Punong Barangay",
@@ -579,9 +649,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const [lang, setLang] = useState<Lang>(() => {
     try {
       const saved = localStorage.getItem("lang");
-      return saved === "en" || saved === "tl" ? saved : "tl";
+      return saved === "en" || saved === "tl" ? saved : "en";
     } catch {
-      return "tl";
+      return "en";
     }
   });
 

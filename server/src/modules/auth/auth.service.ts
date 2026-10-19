@@ -2,13 +2,13 @@ import argon2 from "argon2";
 
 import { prisma } from "@/db.js";
 import { CustomError } from "@/utils/custom.exception.js";
-import type { AuthToken, LoginInput } from "./auth.schema.js";
+import type { AuthToken, LoginInput, LoginResult } from "./auth.schema.js";
 import { generateRefreshToken, signAccessToken } from "@/utils/jwt.js";
 import { config } from "@/utils/env.config.js";
 
 const authService = {
 
-  async login(request: LoginInput): Promise<AuthToken> {
+  async login(request: LoginInput): Promise<LoginResult> {
     const { identifier, password } = request;
     const normalizedIdentifier = identifier.trim();
 
@@ -49,7 +49,11 @@ const authService = {
       }
     })
 
-    return { accessToken, refreshToken }
+    return {
+      accessToken,
+      refreshToken,
+      user: { id: user.id, fullName: user.fullName, role: user.role },
+    };
   },
 
   async refresh(oldRefreshToken: string): Promise<AuthToken> {

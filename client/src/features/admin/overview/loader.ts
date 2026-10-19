@@ -12,8 +12,10 @@ export type RecentComplaint = {
 
 export type UpcomingHearing = {
   id: number;
-  hearingAt: string;
+  scheduledAt: string;
+  kind: string;
   status: string;
+  location: string | null;
   complaint: {
     id: number;
     reference: string;

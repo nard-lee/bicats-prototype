@@ -16,7 +16,7 @@ model User {
   phone        String   @unique
   username     String   @unique
   passwordHash String
-  role         String   @default("staff") // "admin" | "staff"
+  role         String   @default("staff") // "admin" | "staff" | "secretary" | "lupon"
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -25,6 +25,8 @@ model User {
   statusUpdates StatusUpdate[]
   notices       Notice[]
   notifications Notification[]
+  hearings      Hearing[]
+  auditLogs     AuditLog[]
 
   // Staff management filters
   @@index([role, isActive])
@@ -67,6 +69,8 @@ model Complaint {
 
   // received | summoned | mediation | conciliation | settled | certified | dismissed
   status    String    @default("received")
+  // low | normal | high | urgent (auto-escalated when a deadline lapses)
+  priority  String    @default("normal")
   // Deadline for the next Katarungang Pambarangay step (null for terminal cases)
   dueAt     DateTime?
   consentAt DateTime
@@ -77,6 +81,7 @@ model Complaint {
   evidence Evidence[]
   updates  StatusUpdate[]
   notifications Notification[]
+  hearings Hearing[]
 
   // Public tracking by normalized contact
   @@index([contactNormalized])
@@ -84,6 +89,8 @@ model Complaint {
   @@index([status, createdAt])
   // Overdue open cases
   @@index([status, dueAt])
+  // Priority triage and escalation
+  @@index([priority, createdAt])
   // Unopened-first staff lists
   @@index([viewedAt, updatedAt])
   // Date-based reports and chronological filtering
@@ -129,6 +136,32 @@ model StatusUpdate {
   @@index([hearingAt])
 }
 
+// ---- Scheduled hearings / mediation sessions ----
+model Hearing {
+  id          Int       @id @default(autoincrement())
+  complaintId Int
+  complaint   Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  scheduledAt DateTime
+  // mediation | conciliation | hearing
+  kind        String    @default("mediation")
+  // scheduled | completed | cancelled | no_show
+  status      String    @default("scheduled")
+  location    String?
+  notes       String?
+  outcome     String?
+  createdById Int?
+  createdBy   User?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Calendar range queries
+  @@index([scheduledAt])
+  // A case's hearing history
+  @@index([complaintId, scheduledAt])
+  // Status-filtered scheduling lists
+  @@index([status, scheduledAt])
+}
+
 // ---- Notice board on the Home page ----
 model Notice {
   id          Int      @id @default(autoincrement())
@@ -165,5 +198,30 @@ model Notification {
   @@index([userId, readAt, createdAt])
   // Retention / cleanup scans
   @@index([createdAt])
+}
+
+// ---- Audit trail: who did what, when ----
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  actorId    Int?
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  // Snapshots so the log survives account deletion / renames.
+  actorName  String?
+  actorRole  String?
+  action     String   // e.g. complaint.status.update
+  entityType String   // complaint | user | hearing | notice | auth
+  entityId   Int?
+  summary    String
+  meta       Json?
+  ip         String?
+  createdAt  DateTime @default(now())
+
+  // Global activity feed, newest first
+  @@index([createdAt])
+  // Filter the feed by entity type / action
+  @@index([entityType, createdAt])
+  @@index([action, createdAt])
+  // "What did this person do?" queries
+  @@index([actorId, createdAt])
 }
 

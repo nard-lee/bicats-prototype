@@ -1,5 +1,6 @@
 import { api } from "@/lib/api";
 import type { LoaderFunctionArgs } from "react-router";
+import type { ComplaintPriority } from "../priority";
 
 export type ComplaintStatus =
   | "received"
@@ -17,6 +18,7 @@ export type ComplaintDetail = {
   respondentName: string;
   complaintType: string;
   status: ComplaintStatus;
+  priority: ComplaintPriority;
   createdAt: string;
   dueAt: string | null;
   description: string;

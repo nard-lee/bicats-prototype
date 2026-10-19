@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { useLoaderData, useRevalidator, Link } from "react-router";
+import { useLoaderData, useRevalidator, useRouteLoaderData, Link } from "react-router";
+import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,7 +28,10 @@ import { useT, type Key } from "@/lib/I18n";
 import type { ComplaintDetail } from "./loader";
 import StatusUpdateModal from "./update";
 import ReopenCaseModal from "./reopen";
+import PrioritySelect from "./priority-select";
+import { PRIORITY_STYLE } from "../priority";
 import { DOCUMENT_TYPES } from "../documents/loader";
+import type { CurrentUser } from "@/hooks/use-auth";
 
 function Info({ label, value }: { label: string; value: ReactNode }) {
   return (
@@ -44,6 +48,8 @@ export default function ComplaintView() {
   const { t, lang } = useT();
   const complaint = useLoaderData() as ComplaintDetail;
   const revalidator = useRevalidator();
+  const user = useRouteLoaderData("admin") as CurrentUser | null;
+  const canWrite = user?.role !== "secretary";
 
   const formatDateTime = (iso: string) =>
     new Date(iso).toLocaleString(lang === "tl" ? "fil-PH" : "en-PH", {
@@ -81,63 +87,80 @@ export default function ComplaintView() {
     !isClosed;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="-mx-6 -my-6">
+      {/* Sticky actions */}
+      <div className="sticky -top-6 z-20 flex flex-wrap items-center justify-between gap-4 border-b bg-background px-6 py-3">
+        <Button
+          asChild
+          variant="ghost"
+          size="sm"
+          className="-ml-2 text-muted-foreground hover:text-foreground"
+        >
+          <Link to="/admin/complaints">
+            <ArrowLeft className="mr-1 h-4 w-4" />
+            {t("backToList")}
+          </Link>
+        </Button>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {canWrite && (
+            <>
+              <PrioritySelect
+                complaintId={complaint.id}
+                current={complaint.priority}
+                onSuccess={() => revalidator.revalidate()}
+              />
+              <StatusUpdateModal
+                complaintId={complaint.id}
+                currentStatus={complaint.status}
+                onSuccess={() => revalidator.revalidate()}
+              />
+              {isClosed && (
+                <ReopenCaseModal
+                  complaintId={complaint.id}
+                  onSuccess={() => revalidator.revalidate()}
+                />
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className="space-y-6 p-6">
+      {/* Title */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="space-y-2">
-          <Button
-            asChild
-            variant="ghost"
-            size="sm"
-            className="-ml-2 text-muted-foreground hover:text-foreground"
-          >
-            <Link to="/admin/complaints">
-              <ArrowLeft className="mr-1 h-4 w-4" />
-              {t("backToList")}
-            </Link>
-          </Button>
-
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-semibold">{t("complaintDetails")}</h1>
             <Badge>{t(`st_${complaint.status}` as Key)}</Badge>
+            <Badge className={cn("border", PRIORITY_STYLE[complaint.priority])}>
+              {t(`pr_${complaint.priority}` as Key)}
+            </Badge>
           </div>
 
           <p className="text-sm text-muted-foreground">
             {complaint.reference} · {t(complaint.complaintType as Key)} ·{" "}
             {formatDateTime(complaint.createdAt)}
           </p>
-
-          {complaint.dueAt ? (
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-muted-foreground">{t("dueDate")}:</span>
-              <span className="font-medium">{formatDateTime(complaint.dueAt)}</span>
-              {isOverdue && (
-                <Badge variant="destructive" className="gap-1">
-                  <AlertTriangle className="h-3 w-3" />
-                  {t("overdue")}
-                </Badge>
-              )}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">{t("noDeadline")}</p>
-          )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <StatusUpdateModal
-            complaintId={complaint.id}
-            currentStatus={complaint.status}
-            onSuccess={() => revalidator.revalidate()}
-          />
-          {isClosed && (
-            <ReopenCaseModal
-              complaintId={complaint.id}
-              onSuccess={() => revalidator.revalidate()}
-            />
-          )}
-        </div>
+        {complaint.dueAt ? (
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-muted-foreground">{t("dueDate")}:</span>
+            <span className="font-medium">{formatDateTime(complaint.dueAt)}</span>
+            {isOverdue && (
+              <Badge variant="destructive" className="gap-1">
+                <AlertTriangle className="h-3 w-3" />
+                {t("overdue")}
+              </Badge>
+            )}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">{t("noDeadline")}</p>
+        )}
       </div>
 
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
       {/* Documents */}
       <Card>
         <CardHeader>
@@ -334,6 +357,8 @@ export default function ComplaintView() {
           </CardContent>
         </Card>
       )}
+      </div>
+      </div>
     </div>
   );
 }

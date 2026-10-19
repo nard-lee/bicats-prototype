@@ -3,7 +3,7 @@ import { randomInt } from "node:crypto";
 import { prisma } from "../../db.js";
 import { Prisma } from "../../generated/prisma/client.js";
 
-import { COMPLAINT_STATUSES, computeNextDueAt } from "./complaint.schema.js";
+import { COMPLAINT_STATUSES, COMPLAINT_PRIORITIES, computeNextDueAt } from "./complaint.schema.js";
 import type {
     ComplaintDetail,
     ComplaintListFilters,
@@ -117,6 +117,13 @@ const complaintService = {
             conditions.push(Prisma.sql`"complaintType" = ${filters.type}`);
         }
 
+        if (
+            filters.priority &&
+            (COMPLAINT_PRIORITIES as readonly string[]).includes(filters.priority)
+        ) {
+            conditions.push(Prisma.sql`"priority" = ${filters.priority}`);
+        }
+
         if (filters.overdue) {
             conditions.push(
                 Prisma.sql`("dueAt" IS NOT NULL AND "dueAt" < NOW() AND "status" NOT IN ('settled', 'certified', 'dismissed'))`,
@@ -136,13 +143,13 @@ const complaintService = {
         const offset = (page - 1) * pageSize;
 
         const [items, countRows] = await Promise.all([
-            // New (unopened) cases float to the top, then most recently updated.
+            // Newest filed first.
             prisma.$queryRaw<ComplaintListRow[]>`
                 SELECT id, reference, "complainantName", "respondentName",
-                       "complaintType", status, "createdAt", "viewedAt", "dueAt"
+                       "complaintType", status, priority, "createdAt", "viewedAt", "dueAt"
                 FROM "Complaint"
                 ${whereSql}
-                ORDER BY ("viewedAt" IS NULL) DESC, "updatedAt" DESC, id DESC
+                ORDER BY "createdAt" DESC, id DESC
                 LIMIT ${pageSize} OFFSET ${offset}
             `,
             prisma.$queryRaw<{ count: number }[]>`
@@ -205,6 +212,7 @@ const complaintService = {
             respondentName: complaint.respondentName,
             complaintType: complaint.complaintType,
             status: currentStatus,
+            priority: complaint.priority,
             createdAt: complaint.createdAt.toISOString(),
             dueAt: complaint.dueAt ? complaint.dueAt.toISOString() : null,
             description: complaint.narrative,
@@ -302,6 +310,36 @@ const complaintService = {
                 },
             });
         });
+    },
+
+    async bulkUpdateStatus(ids: number[], status: string, userId?: number): Promise<number> {
+        const dueAt = computeNextDueAt(status);
+
+        return prisma.$transaction(async (tx) => {
+            const { count } = await tx.complaint.updateMany({
+                where: { id: { in: ids } },
+                data: { status, dueAt },
+            });
+
+            await tx.statusUpdate.createMany({
+                data: ids.map((id) => ({
+                    complaintId: id,
+                    status,
+                    createdById: userId ?? null,
+                })),
+            });
+
+            return count;
+        });
+    },
+
+    async setPriority(id: number, priority: string): Promise<number> {
+        const { count } = await prisma.complaint.updateMany({
+            where: { id },
+            data: { priority },
+        });
+
+        return count;
     },
 
     async reopenCase(id: number, reason: string, userId?: number) {

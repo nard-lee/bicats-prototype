@@ -1,6 +1,7 @@
 import { z } from "zod";
+import { ROLES } from "@/utils/roles.js";
 
-export const roleSchema = z.enum(["admin", "staff"]);
+export const roleSchema = z.enum(ROLES);
 const fullName = z.string().trim().min(1, "Full name is required").max(100);
 const position = z.string().trim().min(1, "Position is required").max(100);
 const email = z.email("Invalid email address").trim().toLowerCase();
@@ -62,6 +63,20 @@ export const updateUserSchema = z
     message: "At least one field must be provided",
   });
 
+// A user edits their own profile: no role / isActive / username changes
+export const updateProfileSchema = z
+  .object({
+    fullName,
+    position,
+    email,
+    phone,
+    password,
+  })
+  .partial()
+  .refine((v) => Object.keys(v).length > 0, {
+    message: "At least one field must be provided",
+  });
+
 // GET /users?role=staff&isActive=true
 export const listUsersQuerySchema = z.object({
   role: roleSchema.optional(),
@@ -78,6 +93,7 @@ export const userIdParamSchema = z.object({
 export type UserDetail = {
     id: number;
     fullName: string;
+    position: string;
     email: string;
     phone: string;
     role: string;
@@ -106,4 +122,5 @@ export type Paginated<T> = {
 
 export type CreateUserInput = z.infer<typeof createUserSchema>;
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;
+export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 export type ListUsersQuery = z.infer<typeof listUsersQuerySchema>;

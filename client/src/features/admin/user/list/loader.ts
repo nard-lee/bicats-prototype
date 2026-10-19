@@ -1,6 +1,7 @@
 import { redirect, type LoaderFunctionArgs } from "react-router";
 import { api } from "@/lib/api";
 import { getCurrentUser } from "@/hooks/use-auth";
+import type { Role } from "@/lib/roles";
 
 export type StaffUser = {
   id: number;
@@ -9,7 +10,7 @@ export type StaffUser = {
   email: string;
   phone: string;
   username: string;
-  role: "admin" | "staff";
+  role: Role;
   isActive: boolean;
   createdAt: string;
 };

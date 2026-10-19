@@ -146,20 +146,18 @@ export default function AdminReport() {
       {/* At a glance */}
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {kpis.map(({ label, value, hint, icon: Icon }) => (
-          <Card key={label}>
-            <CardContent className="flex items-center justify-between">
-              <div className="min-w-0">
-                <p className="text-sm text-muted-foreground">{label}</p>
-                <p className="mt-1 truncate text-xl font-semibold" title={value}>
-                  {value}
-                </p>
-                {hint && (
-                  <p className="text-xs text-muted-foreground">{hint}</p>
-                )}
+          <Card key={label} size="sm">
+            <CardContent className="flex flex-row items-center gap-2 overflow-hidden">
+              <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Icon className="size-4" />
               </div>
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <Icon className="size-5" />
-              </div>
+              <p className="shrink-0 text-xl leading-none font-semibold" title={value}>
+                {value}
+              </p>
+              <p className="truncate text-sm text-muted-foreground">{label}</p>
+              {hint && (
+                <p className="shrink-0 text-xs text-muted-foreground">· {hint}</p>
+              )}
             </CardContent>
           </Card>
         ))}

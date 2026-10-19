@@ -85,14 +85,16 @@ export const analyticsService = {
           createdAt: true,
         },
       }),
-      prisma.statusUpdate.findMany({
-        where: { hearingAt: { gte: now } },
-        orderBy: { hearingAt: "asc" },
+      prisma.hearing.findMany({
+        where: { status: "scheduled", scheduledAt: { gte: now } },
+        orderBy: { scheduledAt: "asc" },
         take: 5,
         select: {
           id: true,
-          hearingAt: true,
+          scheduledAt: true,
+          kind: true,
           status: true,
+          location: true,
           complaint: {
             select: { id: true, reference: true, complainantName: true },
           },
