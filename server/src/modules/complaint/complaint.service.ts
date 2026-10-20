@@ -128,9 +128,7 @@ const complaintService = {
             conditions.push(Prisma.sql`"status" = ${filters.status}`);
         }
 
-        if (filters.type) {
-            conditions.push(Prisma.sql`"complaintType" = ${filters.type}`);
-        }
+        if (filters.type) conditions.push(Prisma.sql`"complaintType" = ${filters.type}`);
 
         if (
             filters.priority &&
@@ -328,18 +326,24 @@ const complaintService = {
         return prisma.$transaction(async (tx) => {
             const previous = await tx.complaint.findUnique({
                 where: { id },
-                select: { reference: true, status: true },
+                select: { reference: true, status: true, priority: true },
             });
+
+            const TERMINAL_STATUSES = ["settled", "certified", "dismissed"] as const;
 
             await tx.complaint.update({
                 where: { id },
-                data: { status, dueAt },
+                data: {
+                    status,
+                    dueAt,
+                    ...(TERMINAL_STATUSES.includes(
+                        status as (typeof TERMINAL_STATUSES)[number],
+                    )
+                        ? { priority: "none" }
+                        : {}),
+                },
             });
 
-            // A date entered with a status change is a real mediation session:
-            // mirror it into the Hearing table so the case view and the
-            // mediation calendar stay in sync. Reschedule the next scheduled
-            // session instead of piling up a new one each edit.
             if (hearingAt) {
                 const kind = status === "conciliation" ? "conciliation" : "mediation";
 
@@ -440,7 +444,7 @@ const complaintService = {
         return prisma.$transaction(async (tx) => {
             const updated = await tx.complaint.update({
                 where: { id },
-                data: { status: "received", dueAt },
+                data: { status: "received", dueAt, priority: "normal" },
                 select: { reference: true },
             });
 

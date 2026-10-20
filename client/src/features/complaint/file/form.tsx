@@ -60,15 +60,17 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-md border">
-      <div className="border-b bg-muted/50 px-5 py-3">
-        <h2 className="font-semibold">
-          <span className="mr-2 text-muted-foreground">{number}</span>
-          {title}
-        </h2>
+    <section className="overflow-hidden rounded-xl border bg-card shadow-sm">
+      <div className="flex items-start gap-3 border-b bg-muted/40 px-5 py-4">
+        <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+          {number}
+        </span>
+        <div>
+        <h2 className="font-semibold">{title}</h2>
         <p className="text-xs text-muted-foreground">{subtitle}</p>
+        </div>
       </div>
-      <div className="grid gap-5 p-5 sm:grid-cols-2">{children}</div>
+      <div className="grid gap-5 p-5 sm:grid-cols-2 sm:p-6">{children}</div>
     </section>
   );
 }
@@ -199,9 +201,32 @@ export default function FileComplaint() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-12">
-      <h1 className="text-3xl font-bold tracking-tight">{t("fcTitle")}</h1>
-      <p className="mt-2 text-sm text-muted-foreground">{t("fcIntro")}</p>
+    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12">
+      <div className="rounded-2xl border bg-gradient-to-br from-primary/10 via-background to-background p-6 sm:p-8">
+        <p className="text-xs font-semibold tracking-[0.16em] text-primary uppercase">
+          Barangay Kabayanihan · Online Desk
+        </p>
+        <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">{t("fcTitle")}</h1>
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">{t("fcIntro")}</p>
+
+        <ol className="mt-6 grid gap-3 text-sm sm:grid-cols-3">
+          {[
+            ["1", "Your details", "Tell us how to contact you."],
+            ["2", "Incident", "Describe what happened."],
+            ["3", "Submit", "Keep your reference number."],
+          ].map(([step, title, description]) => (
+            <li key={step} className="flex items-center gap-3 rounded-lg border bg-background/80 p-3">
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                {step}
+              </span>
+              <span>
+                <span className="block font-medium">{title}</span>
+                <span className="block text-xs text-muted-foreground">{description}</span>
+              </span>
+            </li>
+          ))}
+        </ol>
+      </div>
 
       <Form
         method="post"
@@ -428,11 +453,11 @@ export default function FileComplaint() {
             </Alert>
           )}
 
-        <div className="flex items-center gap-4">
-          <Button type="submit" size="lg" disabled={submitting}>
+        <div className="sticky bottom-3 flex flex-col gap-3 rounded-xl border bg-background/95 p-4 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-muted-foreground">{t("refNote")}</p>
+          <Button type="submit" size="lg" disabled={submitting} className="sm:min-w-48">
             {submitting ? t("submitting") : t("submitComplaint")}
           </Button>
-          <p className="text-xs text-muted-foreground">{t("refNote")}</p>
         </div>
       </Form>
     </div>

@@ -1,22 +1,13 @@
-import ComplaintsList from "@/features/admin/complaint/list/table";
 import { ComplaintsLoader } from "@/features/admin/complaint/list/loader";
-import ComplaintView from "@/features/admin/complaint/view/complaint";
 import { ComplaintDetailLoader } from "@/features/admin/complaint/view/loader";
-import ComplaintDocument from "@/features/admin/complaint/documents/document";
 import { ComplaintDocumentLoader } from "@/features/admin/complaint/documents/loader";
-import HearingsPage from "@/features/admin/hearing/hearings";
 import { HearingsLoader } from "@/features/admin/hearing/loader";
-import CreateUser from "@/features/admin/user/create";
 import { createUserAction } from "@/features/admin/user/create-action";
-import StaffAccounts from "@/features/admin/user/list/table";
 import { UsersLoader } from "@/features/admin/user/list/loader";
 import { usersAction } from "@/features/admin/user/list/action";
-import Profile from "@/features/admin/user/profile";
 import { ProfileLoader } from "@/features/admin/user/profile-loader";
 import { profileAction } from "@/features/admin/user/profile-action";
-import AuditLog from "@/features/admin/audit/list/table";
 import { AuditLoader } from "@/features/admin/audit/list/loader";
-import BarangaySettingsPage from "@/features/admin/setting/setting";
 import { SettingsLoader } from "@/features/admin/setting/loader";
 import { settingsAction } from "@/features/admin/setting/action";
 import { loginAction } from "@/features/auth/login/action";
@@ -34,16 +25,28 @@ import RootError from "@/layouts/root/error";
 import RootLayout from "@/layouts/root/layout";
 import { RootLoader } from "@/layouts/root/loader";
 import { createBrowserRouter } from "react-router";
-import NoticesList from "@/features/admin/notice/list/table";
 import { NoticesLoader } from "@/features/admin/notice/list/loader";
-import CreateNotice from "@/features/admin/notice/create/form";
 import { createNoticeAction } from "@/features/admin/notice/create/action";
 import { noticesAction } from "@/features/admin/notice/list/action";
-import AdminReport from "@/features/admin/analytics/report";
-import AdminOverview from "@/features/admin/overview/overview";
 import { OverviewLoader } from "@/features/admin/overview/loader";
 import { HomeLoader } from "@/features/guest/loader";
 import { api } from "@/lib/api";
+import {
+  AdminOverview,
+  AdminReport,
+  AuditLog,
+  BarangaySettingsPage,
+  ComplaintDocument,
+  ComplaintsList,
+  ComplaintView,
+  CreateNotice,
+  CreateUser,
+  HearingsPage,
+  LazyRoute,
+  NoticesList,
+  Profile,
+  StaffAccounts,
+} from "./lazy-routes";
 
 const router = createBrowserRouter([
   {
@@ -72,78 +75,78 @@ const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <AdminOverview />,
+        element: <LazyRoute Component={AdminOverview} />,
         loader: OverviewLoader,
         handle: { crumb: () => "Overview" }
       },
       {
         path: 'analytics',
-        element: <AdminReport />,
+        element: <LazyRoute Component={AdminReport} />,
         loader: () => api.get("/analytics/report").json(),
         handle: { crumb: () => "Analytics" }
       },
       {
         path: 'create',
-        element: <CreateUser />,
+        element: <LazyRoute Component={CreateUser} />,
         loader: AdminOnlyLoader,
         action: createUserAction,
         handle: { crumb: () => "Create Account" }
       },
       {
         path: 'accounts',
-        element: <StaffAccounts />,
+        element: <LazyRoute Component={StaffAccounts} />,
         loader: UsersLoader,
         action: usersAction,
         handle: { crumb: () => "Staff Accounts" }
       },
       {
         path: 'profile',
-        element: <Profile />,
+        element: <LazyRoute Component={Profile} />,
         loader: ProfileLoader,
         action: profileAction,
         handle: { crumb: () => "My Profile" }
       },
       {
         path: 'audit',
-        element: <AuditLog />,
+        element: <LazyRoute Component={AuditLog} />,
         loader: AuditLoader,
         handle: { crumb: () => "Audit Logs" }
       },
       {
         path: 'settings',
-        element: <BarangaySettingsPage />,
+        element: <LazyRoute Component={BarangaySettingsPage} />,
         loader: SettingsLoader,
         action: settingsAction,
         handle: { crumb: () => "Settings" }
       },
       {
         path: 'complaints',
-        element: <ComplaintsList />,
+        element: <LazyRoute Component={ComplaintsList} />,
         loader: ComplaintsLoader,
         handle: { crumb: () => "Complaints" }
       },
       {
         path: 'hearings',
-        element: <HearingsPage />,
+        element: <LazyRoute Component={HearingsPage} />,
         loader: HearingsLoader,
         handle: { crumb: () => "Mediation" }
       },
       {
         path: 'complaints/:id',
-        element: <ComplaintView />,
+        element: <LazyRoute Component={ComplaintView} />,
         loader: ComplaintDetailLoader,
         handle: { crumb: (data: any) => data?.reference ? `Ref: ${data.reference}` : "View Complaint" }
       },
       {
         path: 'notices',
-        element: <NoticesList />,
+        element: <LazyRoute Component={NoticesList} />,
         loader: NoticesLoader,
         action: noticesAction,
         handle: { crumb: () => "Notices" }
       },
       {
         path: 'notices/create',
-        element: <CreateNotice />,
+        element: <LazyRoute Component={CreateNotice} />,
         action: createNoticeAction,
         handle: { crumb: (data: any) => data?.reference ? `Ref: ${data.reference}` : "Create Notice" }
       },
@@ -153,7 +156,7 @@ const router = createBrowserRouter([
   // printable KP documents render on their own (no app chrome)
   {
     path: '/admin/complaints/:id/documents/:doc',
-    element: <ComplaintDocument />,
+    element: <LazyRoute Component={ComplaintDocument} />,
     loader: ComplaintDocumentLoader,
     errorElement: <AdminError />,
   },

@@ -1,4 +1,5 @@
 import { isRouteErrorResponse, Link, useRouteError } from "react-router";
+import { HTTPError } from "ky";
 import { Button } from "@/components/ui/button";
 
 export default function RootError() {
@@ -9,9 +10,18 @@ export default function RootError() {
 
   if (isRouteErrorResponse(error)) {
     status = error.status;
-    message = error.statusText || message;
+    if (status === 401) message = "Your session has ended. Please sign in again.";
+    else if (status === 403) message = "You do not have permission to view this page.";
+    else if (status === 404) message = "We couldn't find the page you requested.";
+    else message = error.statusText || message;
+  } else if (error instanceof HTTPError) {
+    status = error.response.status;
+    if (status === 401) message = "Your session has ended. Please sign in again.";
+    else if (status === 403) message = "You do not have permission to view this page.";
+    else if (status === 404) message = "We couldn't find the page you requested.";
+    else if (status >= 500) message = "The server is temporarily unavailable. Please try again shortly.";
   } else if (error instanceof Error) {
-    message = error.message;
+    message = "We couldn't reach the server. Check your connection and try again.";
   }
 
   return (

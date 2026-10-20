@@ -172,6 +172,7 @@ const en = {
   submitting: "Submitting...",
   refNote: "A reference number will be issued upon submission.",
   errComplaint: "Your complaint could not be submitted. Please try again.",
+  errUnavailable: "We couldn't reach the server. Check your connection and try again.",
 
   // file complaint success
   fcSuccessTitle: "Complaint submitted",
@@ -545,6 +546,7 @@ const tl: Record<Key, string> = {
   submitting: "Isinusumite...",
   refNote: "Bibigyan kayo ng reference number pagkatapos isumite.",
   errComplaint: "Hindi naisumite ang reklamo. Subukan muli.",
+  errUnavailable: "Hindi maabot ang server. Suriin ang koneksyon at subukang muli.",
 
   // file complaint success
   fcSuccessTitle: "Naisumite ang reklamo",

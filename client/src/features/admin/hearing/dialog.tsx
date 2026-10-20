@@ -37,6 +37,7 @@ type Props = {
   onSaved: () => void;
 };
 
+const DEFAULT_LOCATION = "Barangay Hall Session Room";
 const KINDS: HearingKind[] = ["mediation", "conciliation", "hearing"];
 const STATUSES: HearingStatus[] = [
   "scheduled",
@@ -58,15 +59,32 @@ function defaultInput(date: Date): string {
 }
 
 async function readError(err: unknown): Promise<string> {
-  const response = (err as { response?: Response })?.response;
-  if (response) {
+  console.error("Request failed:", err); // temporary, remove once it works
+
+  const e = err as {
+    data?: { error?: string; message?: string };
+    response?: Response;
+    message?: string;
+  };
+
+  // Some versions of ky expose the parsed body directly.
+  if (e?.data?.error || e?.data?.message) {
+    return (e.data.error ?? e.data.message)!;
+  }
+
+  // Otherwise read it from the response (clone so we never hit "body already used").
+  if (e?.response) {
     try {
-      const data = (await response.json()) as { error?: string; message?: string };
+      const data = (await e.response.clone().json()) as {
+        error?: string;
+        message?: string;
+      };
       return data.error ?? data.message ?? "Something went wrong.";
     } catch {
       /* fall through */
     }
   }
+
   return "Something went wrong.";
 }
 
@@ -81,7 +99,9 @@ export default function HearingDialog({ mode, complaints, onClose, onSaved }: Pr
   );
   const [kind, setKind] = useState<HearingKind>(editing?.kind ?? "mediation");
   const [status, setStatus] = useState<HearingStatus>(editing?.status ?? "scheduled");
-  const [location, setLocation] = useState(editing?.location ?? "");
+  const [location, setLocation] = useState(
+    editing ? (editing.location ?? "") : DEFAULT_LOCATION,
+  );
   const [notes, setNotes] = useState(editing?.notes ?? "");
   const [outcome, setOutcome] = useState(editing?.outcome ?? "");
   const [saving, setSaving] = useState(false);

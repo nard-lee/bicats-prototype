@@ -457,9 +457,11 @@ export default function ComplaintsList() {
                   <Badge variant="secondary">{t(`st_${c.status}` as Key)}</Badge>
                 </TableCell>
                 <TableCell>
-                  <Badge className={cn("border", PRIORITY_STYLE[c.priority])}>
-                    {t(`pr_${c.priority}` as Key)}
-                  </Badge>
+                  {c.priority == "none" ? (<span className="text-muted-foreground">—</span>) : (
+                    <Badge className={cn("border", PRIORITY_STYLE[c.priority])}>
+                      {t(`pr_${c.priority}` as Key)}
+                    </Badge>
+                  )}
                 </TableCell>
                 <TableCell className="whitespace-nowrap">
                   {c.dueAt ? (

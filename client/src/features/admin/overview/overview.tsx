@@ -144,6 +144,48 @@ export default function AdminOverview() {
         ))}
       </div>
 
+      <section className="grid gap-3 rounded-xl border bg-muted/30 p-4 sm:grid-cols-3">
+        <Link
+          to="/admin/complaints?overdue=true"
+          className="group flex items-center gap-3 rounded-lg bg-background p-3 transition-colors hover:bg-rose-500/10"
+        >
+          <span className="flex size-10 items-center justify-center rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400">
+            <AlertTriangle className="size-5" />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-xl font-semibold tabular-nums">{data.totals.overdue}</span>
+            <span className="block text-xs text-muted-foreground group-hover:text-foreground">Overdue cases to review</span>
+          </span>
+          <ChevronRight className="ml-auto size-4 text-muted-foreground" />
+        </Link>
+        <Link
+          to="/admin/complaints?dueSoon=true"
+          className="group flex items-center gap-3 rounded-lg bg-background p-3 transition-colors hover:bg-amber-500/10"
+        >
+          <span className="flex size-10 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
+            <Timer className="size-5" />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-xl font-semibold tabular-nums">{data.totals.atRisk}</span>
+            <span className="block text-xs text-muted-foreground group-hover:text-foreground">Cases due soon</span>
+          </span>
+          <ChevronRight className="ml-auto size-4 text-muted-foreground" />
+        </Link>
+        <Link
+          to="/admin/hearings"
+          className="group flex items-center gap-3 rounded-lg bg-background p-3 transition-colors hover:bg-sky-500/10"
+        >
+          <span className="flex size-10 items-center justify-center rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400">
+            <Calendar className="size-5" />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-xl font-semibold tabular-nums">{data.upcomingHearings.length}</span>
+            <span className="block text-xs text-muted-foreground group-hover:text-foreground">Upcoming mediation</span>
+          </span>
+          <ChevronRight className="ml-auto size-4 text-muted-foreground" />
+        </Link>
+      </section>
+
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
           {/* Recent complaints */}

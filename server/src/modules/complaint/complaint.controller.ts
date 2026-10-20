@@ -148,6 +148,7 @@ const complaintController = {
                 publicNote: publicNote ?? null,
                 hearingAt: hearingAt ? new Date(hearingAt) : null,
             });
+            
         } catch (err) {
             res.status(500).json({ error: "Failed to update status" });
         }

@@ -11,7 +11,7 @@ const COMPLAINT_TYPES = [
   "type7", "type8", "type9", "type10", "type11", "type12",
 ];
 
-const TOTAL = 100;
+const TOTAL = 2;
 
 // Fallback when the settings row has not been created yet.
 const RECEIVED_DEADLINE_DAYS = 3;

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 const optionalText = (max: number) =>
-  z.string().trim().max(max).optional().transform((v) => v || null);
+  z.string().trim().max(max).nullable().optional().transform((v) => v || null);
 
 // For PATCH: absent = leave unchanged, null = clear.
 const patchText = (max: number) =>

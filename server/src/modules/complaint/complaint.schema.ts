@@ -119,14 +119,15 @@ export const TERMINAL_STATUSES: readonly ComplaintStatus[] = [
 ];
 
 // ---- Priority triage ----
-export const COMPLAINT_PRIORITIES = ["low", "normal", "high", "urgent"] as const;
+export const COMPLAINT_PRIORITIES = ["none", "low", "normal", "high", "urgent"] as const;
 export type ComplaintPriority = (typeof COMPLAINT_PRIORITIES)[number];
 
 const PRIORITY_RANK: Record<ComplaintPriority, number> = {
-  low: 0,
-  normal: 1,
-  high: 2,
-  urgent: 3,
+  none: 0,
+  low: 1,
+  normal: 2,
+  high: 3,
+  urgent: 4,
 };
 
 export function priorityRank(priority: string): number {

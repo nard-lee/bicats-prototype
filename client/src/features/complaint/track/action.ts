@@ -34,8 +34,9 @@ export async function trackAction({ request }: ActionFunctionArgs): Promise<Trac
       const status = err.response.status;
       if (status === 404) return { error: "errNotFound" };
       if (status === 429) return { error: "errTooMany" };
+      if (status >= 500) return { error: "errServer" };
     }
 
-    return { error: "errTrack" };
+    return { error: "errUnavailable" };
   }
 }

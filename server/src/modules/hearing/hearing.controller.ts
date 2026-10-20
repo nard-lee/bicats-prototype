@@ -106,6 +106,13 @@ const hearingController = {
           rescheduled: true,
         });
       }
+
+      if (input.status === "cancelled" && updated.previousStatus !== "cancelled") {
+        void complainantNotifier.mediationCancelled(updated.complaintId, {
+          kind: updated.kind,
+        });
+      }
+
     } catch (err) {
       handleError(res, err, "Failed to update mediation");
     }

@@ -37,15 +37,15 @@ export async function fileComplaintAction({
         };
       }
 
+      if (status === 429) return { error: "errTooMany" };
+      if (status >= 500) return { error: "errServer" };
+
       return {
         error: "errFailed",
         message: body?.error ?? body?.message ?? `Request failed (${status})`,
       };
     }
 
-    return {
-      error: "errFailed",
-      message: err instanceof Error ? err.message : "An unexpected error occurred.",
-    };
+    return { error: "errUnavailable" };
   }
 }

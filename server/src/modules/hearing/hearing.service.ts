@@ -63,6 +63,41 @@ const hearingSelect = {
   },
 } satisfies Prisma.HearingSelect;
 
+const PH_OFFSET_MS = 8 * 60 * 60 * 1000; // Philippines is UTC+8, no DST
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// Start/end of the calendar day (Philippine time) that contains `date`.
+function phDayRange(date: Date) {
+  const start =
+    Math.floor((date.getTime() + PH_OFFSET_MS) / DAY_MS) * DAY_MS - PH_OFFSET_MS;
+  return { gte: new Date(start), lt: new Date(start + DAY_MS) };
+}
+
+// A case can have only one live session per day. Reschedule it instead.
+async function assertNoDuplicateForComplaint(
+  complaintId: number,
+  scheduledAt: Date,
+  excludeId?: number,
+) {
+  const duplicate = await prisma.hearing.findFirst({
+    where: {
+      complaintId,
+      scheduledAt: phDayRange(scheduledAt),
+      status: { not: "cancelled" },
+      ...(excludeId ? { id: { not: excludeId } } : {}),
+    },
+    select: { id: true },
+  });
+
+  if (duplicate) {
+    throw new CustomError(
+      "This case already has a session on that day. Edit it to reschedule instead.",
+      { scheduledAt: "This case already has a session that day" },
+      409,
+    );
+  }
+}
+
 // One hearing at a time: block the exact same slot unless it's been cancelled.
 async function assertNoConflict(scheduledAt: Date, excludeId?: number) {
   const conflict = await prisma.hearing.findFirst({
@@ -133,6 +168,7 @@ const hearingService = {
 
     if (!complaint) throw new CustomError("Complaint not found", undefined, 404);
 
+    await assertNoDuplicateForComplaint(input.complaintId, input.scheduledAt);
     await assertNoConflict(input.scheduledAt);
 
     const hearing = await prisma.hearing.create({
@@ -158,6 +194,7 @@ const hearingService = {
     kind: string;
     rescheduled: boolean;
     reference: string;
+    previousStatus: string;
   }> {
     const existing = await prisma.hearing.findUnique({
       where: { id },
@@ -172,9 +209,20 @@ const hearingService = {
 
     if (!existing) throw new CustomError("Mediation not found", undefined, 404);
 
-    const becomingCancelled = input.status === "cancelled";
-    if (input.scheduledAt && !becomingCancelled && existing.status !== "cancelled") {
-      await assertNoConflict(input.scheduledAt, id);
+    // Work out what the hearing will look like after this save.
+    const finalStatus = input.status ?? existing.status;
+    const finalTime = input.scheduledAt ?? existing.scheduledAt;
+    const timeChanged =
+      !!input.scheduledAt &&
+      input.scheduledAt.getTime() !== existing.scheduledAt.getTime();
+    const reopening =
+      existing.status === "cancelled" && finalStatus !== "cancelled";
+
+    // Only check when it will occupy a slot, and either it moved or it's
+    // coming back from cancelled.
+    if (finalStatus !== "cancelled" && (timeChanged || reopening)) {
+      await assertNoDuplicateForComplaint(existing.complaintId, finalTime, id);
+      await assertNoConflict(finalTime, id);
     }
 
     const data: Prisma.HearingUpdateInput = {};
@@ -191,15 +239,18 @@ const hearingService = {
       select: { complaintId: true, kind: true },
     });
 
-    const rescheduled =
-      !!input.scheduledAt &&
-      input.scheduledAt.getTime() !== existing.scheduledAt.getTime();
+    const rescheduled = timeChanged;
 
     if ((input.status && input.status !== "scheduled") || rescheduled) {
       await notificationService.clearByDedupePrefix(`hearing_overdue:${id}:`);
     }
 
-    return { ...updated, rescheduled, reference: existing.complaint.reference };
+    return {
+      ...updated,
+      rescheduled,
+      reference: existing.complaint.reference,
+      previousStatus: existing.status,
+    };
   },
 
   async cancel(
