@@ -1,8 +1,5 @@
 import { lazy, Suspense, type ComponentType } from "react";
 
-// Admin screens are loaded only after the user navigates to them. This keeps
-// public complaint filing and tracking fast, and avoids shipping charts and
-// print-document code to every visitor.
 export const AdminOverview = lazy(() => import("@/features/admin/overview/overview"));
 export const AdminReport = lazy(() => import("@/features/admin/analytics/report"));
 export const ComplaintsList = lazy(() => import("@/features/admin/complaint/list/table"));

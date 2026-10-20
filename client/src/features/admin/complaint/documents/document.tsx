@@ -161,10 +161,11 @@ export default function ComplaintDocument() {
             </Paragraph>
 
             <Paragraph>
-              <span className="font-semibold">FAILURE TO APPEAR</span> at the
-              scheduled mediation without justifiable cause may be construed as a
-              waiver of your right to be heard and the case may proceed in your
-              absence.
+              <span className="font-semibold">IMPORTANT:</span> Please appear
+              personally on the date and time stated above. Your failure to appear
+              will be recorded and handled in accordance with the applicable
+              Katarungang Pambarangay procedures. If you cannot attend for a
+              valid reason, promptly inform the Barangay Office.
             </Paragraph>
 
             {issuedLine}
@@ -189,13 +190,13 @@ export default function ComplaintDocument() {
             </div>
 
             <Paragraph>
-              You are hereby notified that the mediation/conciliation of the
-              complaint docketed as{" "}
+              You are hereby notified to appear for the scheduled barangay
+              proceeding concerning the complaint docketed as{" "}
               <span className="font-semibold">{complaint.reference}</span>, filed
               by {complaint.complainantName} against {complaint.respondentName}{" "}
               for{" "}
               {complaintTypeLabel(complaint.complaintType, complaint.complaintTypeOther, t)},
-              is set for mediation on{" "}
+              on{" "}
               <span className="underline">
                 {hearingIso ? longDate(hearingIso) : BLANK}
               </span>{" "}
@@ -206,17 +207,23 @@ export default function ComplaintDocument() {
               .
             </Paragraph>
 
+            <div className="ml-8 space-y-1">
+              <p>Proceeding (select one):</p>
+              <p>☐ Mediation before the Punong Barangay</p>
+              <p>☐ Conciliation before the Pangkat ng Tagapagkasundo</p>
+            </div>
+
             <Paragraph>
-              The mediation shall be held at the Barangay Hall,{" "}
-              {settings.barangayName}. The parties are advised to bring any documents,
-              witnesses, or evidence relevant to the case. Only the parties
-              themselves, or their duly authorized representatives, may appear.
+              The proceeding will be held at the Barangay Hall of{" "}
+              {settings.barangayName}. Please bring relevant documents and other
+              evidence. Parties are generally required to appear personally,
+              subject to the exceptions provided by law.
             </Paragraph>
 
             <Paragraph>
-              This proceeding is part of the Katarungang Pambarangay process
-              required by Republic Act No. 7160 before a case may be filed in
-              court.
+              This proceeding forms part of the Katarungang Pambarangay process
+              under Republic Act No. 7160, where barangay conciliation is required
+              by law before an action may be filed.
             </Paragraph>
 
             {issuedLine}
@@ -263,15 +270,30 @@ export default function ComplaintDocument() {
               amicably under the following terms and conditions:
             </Paragraph>
 
-            <div className="min-h-24 border border-black p-3">
-              {complaint.history.find((event) => event.note)?.note ?? (
-                <span className="text-neutral-400">— terms —</span>
-              )}
+            <div className="min-h-40 border border-black p-3">
+              <p className="mb-2 text-xs font-semibold uppercase">
+                Terms and Conditions of Settlement
+              </p>
+              <p className="mb-3 text-xs italic">
+                Write the specific obligations agreed to by the parties, including
+                amounts, dates, manner of payment or performance, and any other
+                agreed conditions. Do not use a general status-history note as the
+                settlement terms.
+              </p>
+              <div className="space-y-6">
+                <div className="border-b border-dotted border-black" />
+                <div className="border-b border-dotted border-black" />
+                <div className="border-b border-dotted border-black" />
+                <div className="border-b border-dotted border-black" />
+              </div>
             </div>
 
             <Paragraph>
-              The parties hereby acknowledge that this Amicable Settlement is
-              binding upon them and may be enforced as provided for by law.
+              The parties confirm that they have read or have had the terms
+              explained to them in a language or dialect they understand, and that
+              they are signing this settlement voluntarily. Its legal effect and
+              enforcement are subject to the applicable provisions of Republic Act
+              No. 7160, including the rules on repudiation and execution.
             </Paragraph>
 
             <p className="indent-8">
@@ -309,30 +331,36 @@ export default function ComplaintDocument() {
             </Paragraph>
 
             <Paragraph>
-              That the parties failed to amicably settle their dispute despite
-              the mediation and conciliation proceedings conducted under the
-              Katarungang Pambarangay, and no settlement was reached.
+              The records of this Office show that the applicable Katarungang
+              Pambarangay proceedings for this dispute were conducted and that
+              the ground supporting this certification is the following (the
+              issuing officer must select and complete the applicable ground):
             </Paragraph>
+
+            <div className="ml-8 space-y-2">
+              <p>☐ No amicable settlement was reached before the Punong Barangay.</p>
+              <p>☐ No amicable settlement was reached before the Pangkat ng Tagapagkasundo.</p>
+              <p>☐ An amicable settlement was repudiated on a ground and in the manner provided by law.</p>
+              <p>☐ Other legally applicable ground: {BLANK}</p>
+            </div>
 
             <Paragraph>
               This certification is issued pursuant to Section 412 of Republic
-              Act No. 7160, otherwise known as the Local Government Code of
-              1991, to enable the complainant to file the appropriate action in
-              court.
+              Act No. 7160, otherwise known as the Local Government Code of 1991,
+              only upon verification that the legal and procedural requirements
+              for its issuance have been satisfied. It is intended to support the
+              filing of the appropriate action with the proper court or
+              government office, as applicable.
             </Paragraph>
 
             {issuedLine}
 
             <div className="mt-12 flex flex-wrap justify-between gap-10">
               <SignLine
-                label={settings.punongTitle || t("lblPunongBarangay")}
-                name={settings.punongBarangay}
-                signatureUrl={settings.punongSignatureUrl}
+                label="Certified by: Lupon Secretary / Pangkat Secretary"
               />
               <SignLine
-                label={settings.luponTitle || t("lblLuponChairman")}
-                name={settings.luponChairman}
-                signatureUrl={settings.luponSignatureUrl}
+                label="Attested by: Punong Barangay / Pangkat Chairperson"
               />
             </div>
           </div>
