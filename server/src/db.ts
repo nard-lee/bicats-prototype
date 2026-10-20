@@ -1,9 +1,15 @@
+import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "./generated/prisma/client.js";
 
-const connectionString = process.env.DATABASE_URL;
-if (!connectionString) throw new Error("DATABASE_URL is missing from .env");
+const databaseUrl = process.env.DATABASE_URL;
+
+if (!databaseUrl) throw new Error("DATABASE_URL is missing.");
 
 export const prisma = new PrismaClient({
-  adapter: new PrismaPg({ connectionString }),
+  adapter: new PrismaPg({ connectionString: databaseUrl }),
 });
+
+export async function connectDatabase(): Promise<void> {
+  await prisma.$connect();
+}

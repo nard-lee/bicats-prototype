@@ -1,4 +1,3 @@
-import "dotenv/config";
 import express, {
   type NextFunction,
   type Request,
@@ -27,7 +26,7 @@ import { startReminderJob } from "@/jobs/reminder.job.js"
 
 import { config } from "@/utils/env.config.js";
 import { doubleCsrfProtection, ensureCsrfSession, generateCsrfToken } from "@/utils/csrf.js";
-import { prisma } from "@/db.js";
+import { connectDatabase, prisma } from "@/db.js";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -113,8 +112,8 @@ app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
 
 async function start() {
   try {
-    await prisma.$connect();
-    console.log('==> database: connected');
+    await connectDatabase();
+    console.log("==> database: connected");
   } catch (err) {
     console.error('==> database: connection failed', err);
     process.exit(1);
