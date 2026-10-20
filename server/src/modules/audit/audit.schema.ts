@@ -1,13 +1,5 @@
 import { z } from "zod";
 
-export const AUDIT_ENTITY_TYPES = [
-  "complaint",
-  "hearing",
-  "notice",
-  "user",
-  "auth",
-] as const;
-
 export const listAuditQuerySchema = z.object({
   entityType: z.string().trim().optional(),
   q: z.string().trim().optional(),

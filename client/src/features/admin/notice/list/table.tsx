@@ -46,9 +46,12 @@ export default function NoticesList() {
     if (!actionData?.success) return;
 
     if (actionData.intent === "delete") {
+      // Close the dialog only after the router action succeeds.
+      // oxlint-disable-next-line react/set-state-in-effect
       setDeleting(null);
       toast.success("Notice deleted.");
     } else if (actionData.intent === "update") {
+      // oxlint-disable-next-line react/set-state-in-effect
       setEditing(null);
       toast.success("Notice updated.");
     }

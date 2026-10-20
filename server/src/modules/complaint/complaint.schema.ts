@@ -52,8 +52,6 @@ export const trackComplaintSchema = z.object({
     phone: z.string().trim().min(7).max(20),
 });
 
-export type TrackComplaintInput = z.infer<typeof trackComplaintSchema>;
-
 export type ComplaintTrackUpdate = {
     status: string;
     publicNote: string | null;

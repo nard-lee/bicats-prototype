@@ -33,6 +33,8 @@ import { PRIORITY_STYLE } from "../priority";
 import { DOCUMENT_TYPES } from "../documents/loader";
 import type { AdminLoaderData } from "@/layouts/admin/loader";
 
+const NOW_MS = Date.now();
+
 function Info({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="space-y-1">
@@ -83,7 +85,7 @@ export default function ComplaintView() {
 
   const isOverdue =
     !!complaint.dueAt &&
-    new Date(complaint.dueAt).getTime() < Date.now() &&
+    new Date(complaint.dueAt).getTime() < NOW_MS &&
     !isClosed;
 
   return (

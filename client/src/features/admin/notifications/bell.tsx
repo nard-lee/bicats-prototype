@@ -40,6 +40,8 @@ export default function NotificationsBell() {
   }, []);
 
   useEffect(() => {
+    // Async fetch: state is set after the request resolves.
+    // oxlint-disable-next-line react/set-state-in-effect
     void load();
     const id = setInterval(() => void load(), 60_000);
     return () => clearInterval(id);
@@ -57,6 +59,8 @@ export default function NotificationsBell() {
 
   // Re-sync after navigating (e.g. opening a case marks its alerts read).
   useEffect(() => {
+    // Async fetch: state is set after the request resolves.
+    // oxlint-disable-next-line react/set-state-in-effect
     void load();
   }, [pathname, load]);
 

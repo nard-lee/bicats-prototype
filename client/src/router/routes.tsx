@@ -24,7 +24,7 @@ import Login from "@/features/auth/login/form";
 import { fileComplaintAction } from "@/features/complaint/file/action";
 import FileComplaint from "@/features/complaint/file/form";
 import Track from "@/features/complaint/track/form";
-import { trackAction } from "@/features/complaint/track/form";
+import { trackAction } from "@/features/complaint/track/action";
 import Home from "@/features/guest/welcome";
 import NotFound from "@/features/errors/not-found";
 import AdminLayout from "@/layouts/admin/layout";
@@ -68,7 +68,7 @@ const router = createBrowserRouter([
     Component: AdminLayout,
     loader: AdminLoader,
     errorElement: <AdminError />,
-    handle: { crumb: () => "Admin" }, 
+    handle: { crumb: () => "Admin" },
     children: [
       {
         index: true,

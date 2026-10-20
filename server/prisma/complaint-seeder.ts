@@ -11,9 +11,9 @@ const COMPLAINT_TYPES = [
   "type7", "type8", "type9", "type10", "type11", "type12",
 ];
 
-const TOTAL = 25;
+const TOTAL = 100;
 
-// "received" complaints get a 3-day deadline to issue the summons.
+// Fallback when the settings row has not been created yet.
 const RECEIVED_DEADLINE_DAYS = 3;
 
 const UPLOAD_DIR = path.resolve("uploads");
@@ -190,15 +190,40 @@ async function main() {
   await prisma.statusUpdate.deleteMany();
   await prisma.complaint.deleteMany();
 
+  // Start the demo dataset from BK-<year>-000001 again.
+  const year = new Date().getFullYear();
+  await prisma.referenceCounter.upsert({
+    where: { year },
+    update: { lastValue: 0 },
+    create: { year, lastValue: 0 },
+  });
+
+  const settings = await prisma.barangaySettings.findUnique({
+    where: { id: 1 },
+    select: { deadlineReceived: true },
+  });
+  const receivedDeadlineDays = settings?.deadlineReceived ?? RECEIVED_DEADLINE_DAYS;
+
+  let sequence = 0;
+
   for (let i = 0; i < TOTAL; i++) {
     const incidentAt = faker.date.past({ years: 1 });
     const createdAt = faker.date.between({ from: incidentAt, to: new Date() });
     const contact = faker.phone.number({ style: "international" });
     const evidence = await makeEvidence();
 
+    sequence += 1;
+    const reference = `BK-${year}-${String(sequence).padStart(6, "0")}`;
+
+    // Roughly three in five cases have already been opened by staff.
+    const openedAt =
+      faker.number.float({ min: 0, max: 1 }) < 0.6
+        ? faker.date.between({ from: createdAt, to: new Date() })
+        : null;
+
     await prisma.complaint.create({
       data: {
-        reference: `BK-${faker.number.int({ min: 2024, max: 2026 })}-${faker.string.alphanumeric(6).toUpperCase()}`,
+        reference,
 
         // Complainant
         complainantName: faker.person.fullName(),
@@ -230,9 +255,10 @@ async function main() {
         // Every seeded case starts at the first KP stage.
         status: "received",
         priority: faker.helpers.arrayElement(["low", "normal", "normal", "high"]),
-        dueAt: new Date(createdAt.getTime() + RECEIVED_DEADLINE_DAYS * 24 * 60 * 60 * 1000),
+        dueAt: new Date(createdAt.getTime() + receivedDeadlineDays * 24 * 60 * 60 * 1000),
         createdAt,
         consentAt: faker.date.between({ from: createdAt, to: new Date() }),
+        viewedAt: openedAt,
 
         evidence: { create: evidence },
         updates: {
@@ -246,7 +272,53 @@ async function main() {
     });
   }
 
+  await prisma.referenceCounter.update({
+    where: { year },
+    data: { lastValue: sequence },
+  });
+
   console.log(`✅ Seeded ${TOTAL} received complaints with evidence.`);
+
+  // ---- Staff inbox: recent cases with a mix of read and unread alerts ----
+  const staff = await prisma.user.findMany({
+    where: { isActive: true },
+    select: { id: true },
+  });
+
+  if (staff.length > 0) {
+    const inboxCases = await prisma.complaint.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 20,
+      select: {
+        id: true,
+        reference: true,
+        complainantName: true,
+        respondentName: true,
+        createdAt: true,
+      },
+    });
+
+    const rows = inboxCases.flatMap((complaint) =>
+      staff.map((member) => ({
+        userId: member.id,
+        type: "new_complaint",
+        title: `New complaint ${complaint.reference}`,
+        body: `${complaint.complainantName} vs ${complaint.respondentName} was filed.`,
+        complaintId: complaint.id,
+        reference: complaint.reference,
+        dedupeKey: `seed:new_complaint:${complaint.id}:${member.id}`,
+        readAt:
+          faker.number.float({ min: 0, max: 1 }) < 0.45
+            ? faker.date.between({ from: complaint.createdAt, to: new Date() })
+            : null,
+        createdAt: complaint.createdAt,
+      })),
+    );
+
+    await prisma.notification.createMany({ data: rows, skipDuplicates: true });
+    const readCount = rows.filter((row) => row.readAt !== null).length;
+    console.log(`✅ Seeded ${rows.length} staff notifications (${readCount} already read).`);
+  }
 
   // ---- Hearings spread around the current month ----
   const KINDS = ["mediation", "conciliation", "hearing"] as const;

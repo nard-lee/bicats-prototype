@@ -56,34 +56,3 @@ export const updateSettingsSchema = z.object({
 });
 
 export type UpdateSettingsInput = z.infer<typeof updateSettingsSchema>;
-
-export type BarangaySettingsDTO = {
-  id: number;
-  barangayName: string;
-  city: string;
-  province: string;
-  address: string;
-  contactNumber: string;
-  email: string;
-  officeHours: string;
-  punongBarangay: string;
-  luponChairman: string;
-  logoUrl: string;
-  punongSignatureUrl: string;
-  luponSignatureUrl: string;
-  punongTitle: string;
-  luponTitle: string;
-  hotline: string;
-  tanodNumber: string;
-  deadlineReceived: number;
-  deadlineSummoned: number;
-  deadlineConciliation: number;
-  riskWindowDays: number;
-  notifyStatusSms: boolean;
-  notifyStatusEmail: boolean;
-  notifyMediationSms: boolean;
-  notifyMediationEmail: boolean;
-  notifyCancelledSms: boolean;
-  notifyCancelledEmail: boolean;
-  updatedAt: string;
-};

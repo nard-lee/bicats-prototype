@@ -1,17 +1,9 @@
 import rateLimit from 'express-rate-limit';
 import { ApiError } from '@/utils/api.error.js';
 
-export const globalLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    limit: 100,
-    standardHeaders: true,
-    legacyHeaders: false,
-    handler: (req, res, next) => { next(new ApiError(429, 'Too many requests, please try again later')) }
-});
-
 export const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    limit: 10,                    
+    limit: 10,
     skipSuccessfulRequests: true,
     standardHeaders: true,
     legacyHeaders: false,

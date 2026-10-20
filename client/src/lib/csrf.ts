@@ -15,7 +15,3 @@ export function getCsrfToken(): Promise<string> {
     }
     return tokenPromise;
 }
-
-export function clearCsrfToken() {
-    tokenPromise = null;
-}

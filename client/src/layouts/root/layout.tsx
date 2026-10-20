@@ -12,6 +12,8 @@ const links: { to: string; label: Key; end?: boolean }[] = [
   { to: "/track-complaint", label: "navTrack" },
 ];
 
+const YEAR = new Date().getFullYear();
+
 export default function RootLayout() {
   const { t } = useT();
   const { user, settings } = useRouteLoaderData("root") as RootLoaderData;
@@ -104,7 +106,7 @@ export default function RootLayout() {
           </div>
         </div>
         <div className="border-t py-4 text-center text-xs text-muted-foreground">
-          © {new Date().getFullYear()}{" "}
+          © {YEAR}{" "}
           {settings?.barangayName || "Barangay Kabayanihan"}. {t("tagline")}
         </div>
       </footer>

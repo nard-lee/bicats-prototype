@@ -3,9 +3,7 @@ import {
   useActionData,
   useNavigation,
   useSearchParams,
-  type ActionFunctionArgs,
 } from "react-router";
-import { HTTPError } from "ky";
 import {
   Calendar,
   CheckCircle2,
@@ -23,46 +21,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useT, type Key } from "@/lib/I18n";
-import { api } from "@/lib/api";
-
-type Update = {
-  status: string;
-  publicNote: string | null;
-  hearingAt: string | null;
-  createdAt: string;
-};
-type Result = { reference: string; status: string; updates: Update[] };
-type ActionData = { result?: Result; error?: Key };
-
-// Sent with POST so the phone number never ends up in the URL, history or logs
-export async function trackAction({ request }: ActionFunctionArgs): Promise<ActionData> {
-  const form = await request.formData();
-
-  try {
-    const result = await api
-      .post("/complaints/track", {
-        json: {
-          reference: form.get("reference"),
-          phone: form.get("phone"),
-        },
-      })
-      .json<Result>();
-
-    return { result };
-  } catch (err: unknown) {
-    if (err instanceof HTTPError) {
-      const status = err.response.status;
-      if (status === 404) return { error: "errNotFound" };
-      if (status === 429) return { error: "errTooMany" };
-    }
-
-    return { error: "errTrack" };
-  }
-}
+import type { TrackActionData } from "./action";
 
 export default function Track() {
   const { t, lang } = useT();
-  const data = useActionData() as ActionData | undefined;
+  const data = useActionData() as TrackActionData | undefined;
   const submitting = useNavigation().state === "submitting";
   const [params] = useSearchParams();
 
@@ -112,7 +75,7 @@ export default function Track() {
             id="reference"
             name="reference"
             defaultValue={params.get("ref") ?? ""}
-            placeholder="BK-2026-K7M4Q9"
+            placeholder="BK-2026-000001"
             required
           />
         </div>

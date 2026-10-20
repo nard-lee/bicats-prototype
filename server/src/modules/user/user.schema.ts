@@ -86,10 +86,6 @@ export const listUsersQuerySchema = z.object({
 });
 
 // Route param
-export const userIdParamSchema = z.object({
-  id: z.coerce.number().int().positive(),
-});
-
 export type UserDetail = {
     id: number;
     fullName: string;
@@ -122,5 +118,4 @@ export type Paginated<T> = {
 
 export type CreateUserInput = z.infer<typeof createUserSchema>;
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;
-export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 export type ListUsersQuery = z.infer<typeof listUsersQuerySchema>;

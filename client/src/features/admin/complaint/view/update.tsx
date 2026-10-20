@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -38,13 +38,13 @@ const ALLOWED_TRANSITIONS: Record<ComplaintStatus, ComplaintStatus[]> = {
 export default function StatusUpdateModal({ complaintId, currentStatus, currentHearingAt, onSuccess }: StatusUpdateModalProps) {
   const { t } = useT();
   const [open, setOpen] = useState(false);
-  
+
   // Form State
   const [newStatus, setNewStatus] = useState<ComplaintStatus>(currentStatus);
   const [publicNote, setPublicNote] = useState("");
   const [internalNote, setInternalNote] = useState("");
   const [hearingAt, setHearingAt] = useState<string>("");
-  
+
   // Loading States
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -54,28 +54,31 @@ export default function StatusUpdateModal({ complaintId, currentStatus, currentH
   const canScheduleHearing = !["settled", "certified", "dismissed"].includes(currentStatus);
 
   // Check if any field in the main form has been modified
-  const hasChanges = 
+  const hasChanges =
     (canChangeStatus && newStatus !== currentStatus) ||
     publicNote.trim().length > 0 ||
     internalNote.trim().length > 0 ||
     (canScheduleHearing && hearingAt !== isoToLocalInput(currentHearingAt));
 
   // Reset form when modal opens
-  useEffect(() => {
-    if (open) {
-      setNewStatus(currentStatus);
-      setPublicNote("");
-      setInternalNote("");
-      setHearingAt(isoToLocalInput(currentHearingAt));
-    }
-  }, [open, currentStatus, currentHearingAt]);
+  function resetForm() {
+    setNewStatus(currentStatus);
+    setPublicNote("");
+    setInternalNote("");
+    setHearingAt(isoToLocalInput(currentHearingAt));
+  }
+
+  function handleOpenChange(next: boolean) {
+    if (next) resetForm();
+    setOpen(next);
+  }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!hasChanges) return;
 
     setIsSubmitting(true);
-    
+
     try {
       await api.patch(`/complaints/${complaintId}/status`, {
         json: {
@@ -85,7 +88,7 @@ export default function StatusUpdateModal({ complaintId, currentStatus, currentH
           hearingAt: canScheduleHearing && hearingAt ? hearingAt : null,
         },
       });
-      
+
       setOpen(false);
       toast.success("Status updated.");
       onSuccess();
@@ -108,7 +111,7 @@ export default function StatusUpdateModal({ complaintId, currentStatus, currentH
   ];
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant="default">Update Status</Button>
       </DialogTrigger>
@@ -119,12 +122,12 @@ export default function StatusUpdateModal({ complaintId, currentStatus, currentH
             Add notes, schedule mediation, or move the case to the next stage.
           </DialogDescription>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="grid gap-2">
             <Label htmlFor="status">Status</Label>
-            <Select 
-              value={newStatus} 
+            <Select
+              value={newStatus}
               onValueChange={(val) => setNewStatus(val as ComplaintStatus)}
               disabled={!canChangeStatus}
             >
@@ -135,9 +138,9 @@ export default function StatusUpdateModal({ complaintId, currentStatus, currentH
                 {allStatuses.map((s) => {
                   const isAllowed = allowedNextStatuses.includes(s);
                   return (
-                    <SelectItem 
-                      key={s} 
-                      value={s} 
+                    <SelectItem
+                      key={s}
+                      value={s}
                       disabled={!isAllowed && s !== currentStatus}
                     >
                       {t(`st_${s}` as Key)}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Form,
   Link,
@@ -68,6 +68,8 @@ const OPEN_STATUSES: ComplaintStatus[] = [
 const CHECKBOX =
   "border-input bg-transparent shadow-none dark:bg-transparent data-checked:border-input data-checked:bg-transparent data-checked:text-primary dark:data-checked:bg-transparent";
 
+const NOW_MS = Date.now();
+
 export default function ComplaintsList() {
   const { t, lang } = useT();
   const { items, total, page, pageSize, totalPages, stats } = useLoaderData() as ComplaintsPage;
@@ -120,17 +122,20 @@ export default function ComplaintsList() {
     navigate(`/admin/complaints${qs ? `?${qs}` : ""}`);
   };
 
-  const [selected, setSelected] = useState<number[]>([]);
   const [bulkStatus, setBulkStatus] = useState<ComplaintStatus>("received");
   const [applying, setApplying] = useState(false);
 
   // Keep the selection across a plain reload, but drop it when the
   // filters or page change (different set of rows).
   const viewKey = params.toString();
-
-  useEffect(() => {
-    setSelected([]);
-  }, [viewKey]);
+  const [selection, setSelection] = useState({ viewKey, ids: [] as number[] });
+  const selected = selection.viewKey === viewKey ? selection.ids : [];
+  const setSelected = (ids: number[] | ((current: number[]) => number[])) => {
+    setSelection((current) => {
+      const base = current.viewKey === viewKey ? current.ids : [];
+      return { viewKey, ids: typeof ids === "function" ? ids(base) : ids };
+    });
+  };
 
   const allSelected = items.length > 0 && selected.length === items.length;
   const someSelected = selected.length > 0 && !allSelected;
@@ -198,13 +203,13 @@ export default function ComplaintsList() {
 
   const isOverdue = (c: ComplaintListItem) =>
     !!c.dueAt &&
-    new Date(c.dueAt).getTime() < Date.now() &&
+    new Date(c.dueAt).getTime() < NOW_MS &&
     OPEN_STATUSES.includes(c.status);
 
   const isDueSoon = (c: ComplaintListItem) => {
     if (!c.dueAt || !OPEN_STATUSES.includes(c.status)) return false;
     const time = new Date(c.dueAt).getTime();
-    return time >= Date.now() && time <= Date.now() + DUE_SOON_MS;
+    return time >= NOW_MS && time <= NOW_MS + DUE_SOON_MS;
   };
 
   return (

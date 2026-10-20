@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -25,9 +25,10 @@ export default function ReopenCaseModal({ complaintId, onSuccess }: ReopenCaseMo
   const [reason, setReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (open) setReason("");
-  }, [open]);
+  function handleOpenChange(next: boolean) {
+    if (next) setReason("");
+    setOpen(next);
+  }
 
   async function handleReopen() {
     if (!reason.trim()) {
@@ -52,7 +53,7 @@ export default function ReopenCaseModal({ complaintId, onSuccess }: ReopenCaseMo
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant="outline">
           <RotateCcw className="mr-2 h-4 w-4" />
