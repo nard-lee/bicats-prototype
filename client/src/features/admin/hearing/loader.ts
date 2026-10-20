@@ -13,6 +13,7 @@ export type HearingItem = {
   scheduledAt: string;
   kind: HearingKind;
   status: HearingStatus;
+  overdue: boolean;
   location: string | null;
   notes: string | null;
   outcome: string | null;

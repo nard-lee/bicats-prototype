@@ -17,6 +17,7 @@ export type ComplaintDetail = {
   complainantName: string;
   respondentName: string;
   complaintType: string;
+  complaintTypeOther: string | null;
   status: ComplaintStatus;
   priority: ComplaintPriority;
   createdAt: string;

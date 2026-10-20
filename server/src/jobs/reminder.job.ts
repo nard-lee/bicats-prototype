@@ -6,8 +6,15 @@ import {
 } from "../modules/complaint/complaint.schema.js";
 import { INTERNAL_ROLES } from "../utils/roles.js";
 import notificationService from "../modules/notification/notification.service.js";
+import { isHearingOverdue } from "../modules/hearing/hearing.schema.js";
 
 const DAY = 24 * 60 * 60 * 1000;
+
+const HEARING_KIND_LABEL: Record<string, string> = {
+  mediation: "mediation",
+  conciliation: "conciliation",
+  hearing: "arbitration",
+};
 
 function dayKey(date: Date): string {
   return date.toISOString().slice(0, 10);
@@ -19,8 +26,9 @@ function prettyDate(date: Date): string {
 
 /**
  * Scan open cases whose KP deadline is within the next day (or already past):
- *  1. auto-escalate overdue cases that are still at a low priority, and
- *  2. create one in-app notification per active staff member, per case, per day.
+ *  1. auto-escalate overdue cases that are still at a low priority,
+ *  2. create one in-app notification per active staff member, per case, per day, and
+ *  3. remind staff about mediation sessions whose date has passed without an outcome.
  * Dedupe keys keep the scan idempotent.
  */
 export async function runReminderScan(): Promise<number> {
@@ -37,12 +45,23 @@ export async function runReminderScan(): Promise<number> {
     select: { id: true, reference: true, status: true, priority: true, dueAt: true },
   });
 
-  if (cases.length === 0) return 0;
-
-  const staff = await prisma.user.findMany({
-    where: { isActive: true, role: { in: [...INTERNAL_ROLES] } },
-    select: { id: true },
-  });
+  const [overdueHearings, staff] = await Promise.all([
+    prisma.hearing.findMany({
+      where: { status: "scheduled", scheduledAt: { lt: now } },
+      select: {
+        id: true,
+        complaintId: true,
+        scheduledAt: true,
+        kind: true,
+        status: true,
+        complaint: { select: { reference: true } },
+      },
+    }),
+    prisma.user.findMany({
+      where: { isActive: true, role: { in: [...INTERNAL_ROLES] } },
+      select: { id: true },
+    }),
+  ]);
 
   if (staff.length === 0) return 0;
 
@@ -109,7 +128,25 @@ export async function runReminderScan(): Promise<number> {
     })),
   );
 
-  const rows = [...reminderRows, ...escalationRows];
+  // ---- Missed sessions that still have no outcome on record ----
+  const hearingRows = overdueHearings
+    .filter((hearing) => isHearingOverdue(hearing.scheduledAt, hearing.status, now))
+    .flatMap((hearing) => {
+      const label = HEARING_KIND_LABEL[hearing.kind] ?? "mediation";
+      const reference = hearing.complaint.reference;
+
+      return staff.map((member) => ({
+        userId: member.id,
+        type: "hearing_overdue",
+        title: `${reference} ${label} session is overdue`,
+        body: `The ${label} session scheduled for ${prettyDate(hearing.scheduledAt)} has no recorded outcome. Mark it completed, no-show, or reschedule it.`,
+        complaintId: hearing.complaintId,
+        reference,
+        dedupeKey: `hearing_overdue:${hearing.id}:${stamp}:${member.id}`,
+      }));
+    });
+
+  const rows = [...reminderRows, ...escalationRows, ...hearingRows];
   if (rows.length === 0) return 0;
 
   return notificationService.createForUsers(rows);

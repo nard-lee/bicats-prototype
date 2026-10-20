@@ -42,6 +42,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { complaintTypeKeys, useT, type Key } from "@/lib/I18n";
+import { complaintTypeLabel } from "../type-label";
 import { ComplaintSearch } from "./search";
 import { PRIORITIES, PRIORITY_STYLE } from "../priority";
 import type { ComplaintListItem, ComplaintStatus, ComplaintsPage } from "./loader";
@@ -175,7 +176,7 @@ export default function ComplaintsList() {
         c.reference,
         c.complainantName,
         c.respondentName,
-        t(c.complaintType as Key),
+        complaintTypeLabel(c.complaintType, c.complaintTypeOther, t),
         t(`st_${c.status}` as Key),
         t(`pr_${c.priority}` as Key),
         c.createdAt,
@@ -449,7 +450,9 @@ export default function ComplaintsList() {
                 </TableCell>
                 <TableCell>{c.complainantName}</TableCell>
                 <TableCell>{c.respondentName}</TableCell>
-                <TableCell>{t(c.complaintType as Key)}</TableCell>
+                <TableCell>
+                  {complaintTypeLabel(c.complaintType, c.complaintTypeOther, t)}
+                </TableCell>
                 <TableCell>
                   <Badge variant="secondary">{t(`st_${c.status}` as Key)}</Badge>
                 </TableCell>

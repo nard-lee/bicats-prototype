@@ -30,3 +30,6 @@ export const STATUS_STYLE: Record<HearingStatus, string> = {
   no_show:
     "border-amber-500/20 bg-amber-500/15 text-amber-700 dark:text-amber-300",
 };
+
+export const OVERDUE_STYLE =
+  "border-amber-500/20 bg-amber-500/15 text-amber-700 dark:text-amber-300";

@@ -18,6 +18,21 @@ export const HEARING_STATUSES = [
 export type HearingKind = (typeof HEARING_KINDS)[number];
 export type HearingStatus = (typeof HEARING_STATUSES)[number];
 
+// Don't flag a session the moment its start time passes; give the barangay
+// time to finish the meeting before treating it as a missed one.
+export const HEARING_GRACE_MS = 2 * 60 * 60 * 1000;
+
+export function isHearingOverdue(
+  scheduledAt: Date,
+  status: string,
+  now: Date = new Date(),
+): boolean {
+  return (
+    status === "scheduled" &&
+    scheduledAt.getTime() + HEARING_GRACE_MS < now.getTime()
+  );
+}
+
 export const createHearingSchema = z.object({
   complaintId: z.coerce.number().int().positive(),
   scheduledAt: z.coerce.date(),
@@ -61,6 +76,7 @@ export type HearingRow = {
   status: HearingStatus;
   scheduledAt: string;
   kind: HearingKind;
+  overdue: boolean;
   location: string | null;
   notes: string | null;
   outcome: string | null;

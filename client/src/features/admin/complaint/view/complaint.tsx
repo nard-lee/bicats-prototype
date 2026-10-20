@@ -31,6 +31,7 @@ import ReopenCaseModal from "./reopen";
 import PrioritySelect from "./priority-select";
 import { PRIORITY_STYLE } from "../priority";
 import { DOCUMENT_TYPES } from "../documents/loader";
+import { complaintTypeLabel } from "../type-label";
 import type { AdminLoaderData } from "@/layouts/admin/loader";
 
 const NOW_MS = Date.now();
@@ -142,7 +143,8 @@ export default function ComplaintView() {
           </div>
 
           <p className="text-sm text-muted-foreground">
-            {t(complaint.complaintType as Key)} · {formatDateTime(complaint.createdAt)}
+            {complaintTypeLabel(complaint.complaintType, complaint.complaintTypeOther, t)} ·{" "}
+            {formatDateTime(complaint.createdAt)}
           </p>
         </div>
 
@@ -243,7 +245,10 @@ export default function ComplaintView() {
           <CardTitle>{t("s3Title")}</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-3">
-          <Info label={t("complaintType")} value={t(complaint.complaintType as Key)} />
+          <Info
+            label={t("complaintType")}
+            value={complaintTypeLabel(complaint.complaintType, complaint.complaintTypeOther, t)}
+          />
           <Info label={t("incidentAt")} value={formatDateTime(complaint.incidentAt)} />
           <Info label={t("place")} value={complaint.incidentPlace} />
         </CardContent>

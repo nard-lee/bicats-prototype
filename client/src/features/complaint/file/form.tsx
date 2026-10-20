@@ -100,6 +100,7 @@ export default function FileComplaint() {
   const [files, setFiles] = useState<File[]>([]);
   const [fileError, setFileError] = useState<string | null>(null);
   const [incidentAt, setIncidentAt] = useState("");
+  const [complaintType, setComplaintType] = useState("");
 
   function resetInput() {
     if (inputRef.current) inputRef.current.value = "";
@@ -302,7 +303,11 @@ export default function FileComplaint() {
         {/* 03 Incident */}
         <Section number="03" title={t("s3Title")} subtitle={t("s3Sub")}>
           <Field label={t("complaintType")}>
-            <Select name="complaintType">
+            <Select
+              name="complaintType"
+              value={complaintType}
+              onValueChange={setComplaintType}
+            >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder={t("selectType")} />
               </SelectTrigger>
@@ -316,6 +321,18 @@ export default function FileComplaint() {
             </Select>
             <FieldError message={fields.complaintType} />
           </Field>
+          {complaintType === "type12" && (
+            <Field label={t("otherType")} hint={t("otherTypeHint")} full>
+              <Input
+                name="complaintTypeOther"
+                required
+                maxLength={150}
+                placeholder={t("phOtherType")}
+                aria-invalid={!!fields.complaintTypeOther}
+              />
+              <FieldError message={fields.complaintTypeOther} />
+            </Field>
+          )}
           <Field label={t("incidentAt")}>
             <DateTimePicker
               value={incidentAt}

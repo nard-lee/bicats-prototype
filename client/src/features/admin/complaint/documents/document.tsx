@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useT, type Key } from "@/lib/I18n";
 import type { DocumentLoaderData, DocumentType } from "./loader";
 import type { BarangaySettings } from "@/features/admin/setting/loader";
+import { complaintTypeLabel } from "../type-label";
 
 const DOC_TITLE_KEY: Record<DocumentType, Key> = {
   summons: "doc_summons",
@@ -140,7 +141,9 @@ export default function ComplaintDocument() {
               connection with the complaint filed by{" "}
               <span className="font-semibold">{complaint.complainantName}</span>,
               docketed as <span className="font-semibold">{complaint.reference}</span>
-              , for {t(complaint.complaintType as Key)}, committed on{" "}
+              , for{" "}
+              {complaintTypeLabel(complaint.complaintType, complaint.complaintTypeOther, t)},
+              committed on{" "}
               {longDate(complaint.incidentAt)} at {complaint.incidentPlace}.
             </Paragraph>
 
@@ -190,7 +193,9 @@ export default function ComplaintDocument() {
               complaint docketed as{" "}
               <span className="font-semibold">{complaint.reference}</span>, filed
               by {complaint.complainantName} against {complaint.respondentName}{" "}
-              for {t(complaint.complaintType as Key)}, is set for mediation on{" "}
+              for{" "}
+              {complaintTypeLabel(complaint.complaintType, complaint.complaintTypeOther, t)},
+              is set for mediation on{" "}
               <span className="underline">
                 {hearingIso ? longDate(hearingIso) : BLANK}
               </span>{" "}
@@ -294,7 +299,8 @@ export default function ComplaintDocument() {
             <Paragraph>
               <span className="mr-2 font-semibold">TO WHOM IT MAY CONCERN:</span>
               This is to certify that a complaint for{" "}
-              {t(complaint.complaintType as Key)} was filed by{" "}
+              {complaintTypeLabel(complaint.complaintType, complaint.complaintTypeOther, t)} was
+              filed by{" "}
               <span className="font-semibold">{complaint.complainantName}</span>{" "}
               against{" "}
               <span className="font-semibold">{complaint.respondentName}</span>{" "}

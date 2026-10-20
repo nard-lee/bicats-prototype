@@ -89,8 +89,8 @@ const hearingController = {
         ...(input.status ? { meta: { status: input.status } } : {}),
       });
 
-      // Text/email the complainant when the session is moved to a new slot.
-      if (input.scheduledAt && input.status !== "cancelled") {
+      // Text/email the complainant only when the session actually moved.
+      if (updated.rescheduled && input.scheduledAt && input.status !== "cancelled") {
         void complainantNotifier.mediationScheduled(updated.complaintId, {
           kind: updated.kind,
           scheduledAt: input.scheduledAt,

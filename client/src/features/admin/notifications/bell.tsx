@@ -20,6 +20,7 @@ type Payload = { items: Notification[]; unread: number };
 
 const dotColor = (type: string) => {
   if (type === "overdue" || type === "escalation") return "bg-destructive";
+  if (type === "hearing_overdue") return "bg-amber-500";
   if (type === "reminder") return "bg-amber-500";
   if (type === "new_complaint") return "bg-blue-500";
   return "bg-muted-foreground";

@@ -145,6 +145,13 @@ export default function HearingDialog({ mode, complaints, onClose, onSaved }: Pr
           </DialogDescription>
         </DialogHeader>
 
+        {editing?.overdue && (
+          <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-300">
+            This session date has passed with no outcome recorded. Set the status to
+            Completed or No show, or pick a new date to reschedule it.
+          </div>
+        )}
+
         <form onSubmit={submit} className="space-y-4 py-2">
           {!editing && (
             <div className="grid gap-2">

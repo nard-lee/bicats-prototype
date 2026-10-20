@@ -74,6 +74,7 @@ const complaintService = {
                     relationship: input.relationship || null,
 
                     complaintType: input.complaintType,
+                    complaintTypeOther: input.complaintTypeOther,
                     incidentAt: new Date(input.incidentAt),
                     incidentPlace: input.incidentPlace,
                     narrative: input.narrative,
@@ -166,7 +167,7 @@ const complaintService = {
             // Newest filed first.
             prisma.$queryRaw<ComplaintListRow[]>`
                 SELECT id, reference, "complainantName", "respondentName",
-                       "complaintType", status, priority, "createdAt", "viewedAt", "dueAt"
+                       "complaintType", "complaintTypeOther", status, priority, "createdAt", "viewedAt", "dueAt"
                 FROM "Complaint"
                 ${whereSql}
                 ORDER BY "createdAt" DESC, id DESC
@@ -237,6 +238,7 @@ const complaintService = {
             complainantName: complaint.complainantName,
             respondentName: complaint.respondentName,
             complaintType: complaint.complaintType,
+            complaintTypeOther: complaint.complaintTypeOther,
             status: currentStatus,
             priority: complaint.priority,
             createdAt: complaint.createdAt.toISOString(),

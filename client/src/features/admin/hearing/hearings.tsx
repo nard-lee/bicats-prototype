@@ -22,7 +22,13 @@ import {
 import { cn } from "cn";
 import { useT } from "@/lib/I18n";
 import HearingDialog, { type HearingDialogMode } from "./dialog";
-import { KIND_LABEL, KIND_STYLE, STATUS_LABEL, STATUS_STYLE } from "./labels";
+import {
+  KIND_LABEL,
+  KIND_STYLE,
+  OVERDUE_STYLE,
+  STATUS_LABEL,
+  STATUS_STYLE,
+} from "./labels";
 import type { HearingsData, HearingItem } from "./loader";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -95,6 +101,7 @@ export default function HearingsPage() {
   }, [year, month]);
 
   const scheduledCount = data.hearings.filter((h) => h.status === "scheduled").length;
+  const overdueCount = data.hearings.filter((h) => h.overdue).length;
 
   const fmtTime = (iso: string) =>
     new Date(iso).toLocaleTimeString(locale, { hour: "numeric", minute: "2-digit" });
@@ -125,6 +132,7 @@ export default function HearingsPage() {
           <h1 className="font-heading text-2xl font-semibold">Mediation</h1>
           <p className="text-sm text-muted-foreground">
             Schedule and track mediation, conciliation, and arbitration sessions.
+            Sessions past their date without a recorded outcome are flagged overdue.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -161,7 +169,12 @@ export default function HearingsPage() {
       <Card>
         <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 space-y-0">
           <CardTitle>{monthLabel}</CardTitle>
-          <Badge variant="secondary">{scheduledCount} scheduled</Badge>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="secondary">{scheduledCount} scheduled</Badge>
+            {overdueCount > 0 && (
+              <Badge className={cn("border", OVERDUE_STYLE)}>{overdueCount} overdue</Badge>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-7 gap-1">
@@ -244,7 +257,9 @@ export default function HearingsPage() {
                         "cursor-pointer truncate rounded border px-1.5 py-0.5 text-[11px] font-medium transition-colors hover:ring-1 hover:ring-foreground/25",
                         KIND_STYLE[hearing.kind],
                         hearing.status === "cancelled" && "line-through opacity-60",
+                        hearing.overdue && "border-amber-500/60 ring-1 ring-amber-500/40",
                       )}
+                      title={hearing.overdue ? "Overdue: no outcome recorded" : undefined}
                     >
                       <span className="tabular-nums">{fmtTime(hearing.scheduledAt)}</span>{" "}
                       {hearing.reference}
@@ -313,8 +328,13 @@ export default function HearingsPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge className={cn("border", STATUS_STYLE[hearing.status])}>
-                        {STATUS_LABEL[hearing.status]}
+                      <Badge
+                        className={cn(
+                          "border",
+                          hearing.overdue ? OVERDUE_STYLE : STATUS_STYLE[hearing.status],
+                        )}
+                      >
+                        {hearing.overdue ? "Overdue" : STATUS_LABEL[hearing.status]}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground">

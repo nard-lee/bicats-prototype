@@ -11,6 +11,7 @@ import type {
   HearingKind,
   UpdateHearingInput,
 } from "./hearing.schema.js";
+import { isHearingOverdue } from "./hearing.schema.js";
 
 const TERMINAL_STATUSES = ["settled", "certified", "dismissed"];
 
@@ -30,7 +31,7 @@ type HearingRecord = {
   };
 };
 
-function mapHearing(record: HearingRecord): HearingRow {
+function mapHearing(record: HearingRecord, now: Date): HearingRow {
   return {
     id: record.id,
     complaintId: record.complaintId,
@@ -40,6 +41,7 @@ function mapHearing(record: HearingRecord): HearingRow {
     scheduledAt: record.scheduledAt.toISOString(),
     kind: record.kind as HearingKind,
     status: record.status as HearingStatus,
+    overdue: isHearingOverdue(record.scheduledAt, record.status, now),
     location: record.location,
     notes: record.notes,
     outcome: record.outcome,
@@ -100,7 +102,8 @@ const hearingService = {
       select: hearingSelect,
     });
 
-    return rows.map(mapHearing);
+    const now = new Date();
+    return rows.map((row) => mapHearing(row, now));
   },
 
   async complaintOptions(): Promise<HearingComplaintOption[]> {
@@ -144,10 +147,13 @@ const hearingService = {
     });
   },
 
-  async update(id: number, input: UpdateHearingInput): Promise<{ complaintId: number; kind: string }> {
+  async update(
+    id: number,
+    input: UpdateHearingInput,
+  ): Promise<{ complaintId: number; kind: string; rescheduled: boolean }> {
     const existing = await prisma.hearing.findUnique({
       where: { id },
-      select: { id: true, status: true, complaintId: true },
+      select: { id: true, status: true, complaintId: true, scheduledAt: true },
     });
 
     if (!existing) throw new CustomError("Mediation not found", undefined, 404);
@@ -165,11 +171,18 @@ const hearingService = {
     if (input.notes !== undefined) data.notes = input.notes;
     if (input.outcome !== undefined) data.outcome = input.outcome;
 
-    return prisma.hearing.update({
+    const updated = await prisma.hearing.update({
       where: { id },
       data,
       select: { complaintId: true, kind: true },
     });
+
+    return {
+      ...updated,
+      rescheduled:
+        !!input.scheduledAt &&
+        input.scheduledAt.getTime() !== existing.scheduledAt.getTime(),
+    };
   },
 
   async cancel(id: number): Promise<{ complaintId: number; kind: string }> {

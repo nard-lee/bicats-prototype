@@ -30,6 +30,7 @@ export const createComplaintSchema = z
         ).transform((value) => value ?? null),
 
         complaintType: z.string().min(1),
+        complaintTypeOther: optionalText(150),
         incidentAt: z.coerce
             .date()
             .refine((d) => d <= new Date(), "The incident can't be in the future"),
@@ -42,9 +43,20 @@ export const createComplaintSchema = z
         path: ["complainantContact"],
         message: "Enter a valid mobile number, like 0917 000 0000",
     })
+    .refine(
+        (d) =>
+            d.complaintType !== "type12" ||
+            (d.complaintTypeOther?.trim().length ?? 0) >= 3,
+        {
+            path: ["complaintTypeOther"],
+            message: "Please describe the complaint type",
+        },
+    )
     .transform(({ consent: _consent, ...d }) => ({
         ...d,
         contactNormalized: normalizePhone(d.complainantContact),
+        complaintTypeOther:
+            d.complaintType === "type12" ? d.complaintTypeOther : null,
     }));
 
 export const trackComplaintSchema = z.object({
@@ -79,6 +91,7 @@ export type ComplaintListRow = {
   complainantName: string;
   respondentName: string;
   complaintType: string;
+  complaintTypeOther: string | null;
   status: string;
   priority: string;
   createdAt: Date;
@@ -206,6 +219,7 @@ export type ComplaintDetail = {
   complainantName: string;
   respondentName: string;
   complaintType: string;
+  complaintTypeOther: string | null;
   status: string;
   priority: string;
   createdAt: string;

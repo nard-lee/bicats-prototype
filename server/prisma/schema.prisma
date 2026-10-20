@@ -70,7 +70,8 @@ model Complaint {
   relationship      String?
 
   // Incident
-  complaintType String
+  complaintType      String
+  complaintTypeOther String? // free-text description when complaintType = "type12"
   incidentAt    DateTime
   incidentPlace String
   narrative     String
@@ -191,7 +192,7 @@ model Notification {
   id          Int        @id @default(autoincrement())
   userId      Int
   user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type        String     @default("info") // reminder | overdue | info
+  type        String     @default("info") // reminder | overdue | escalation | hearing_overdue | new_complaint | info
   title       String
   body        String
   complaintId Int?

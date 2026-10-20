@@ -16,7 +16,8 @@ export type ComplaintListItem = {
   reference: string;
   complainantName: string;
   respondentName: string;
-  complaintType: string; 
+  complaintType: string;
+  complaintTypeOther: string | null;
   status: ComplaintStatus;
   priority: ComplaintPriority;
   createdAt: string; 

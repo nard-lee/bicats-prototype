@@ -47,6 +47,8 @@ University of Baguio
 | 1.3 | Delos Reyes, Santiago | 10/19/2026 | | | Barangay settings, audit and analytics CSV export, custom date/time picker, new-complaint alerts |
 | 1.4 | Santiago, Ocampo | 10/19/2026 | | | Resident SMS (UniSMS) and email (Brevo) notifications |
 | 1.5 | Santiago, Ocampo | 10/20/2026 | | | Configurable branding, KP deadlines and notification channels; read-only settings for staff; sequential case references |
+| 1.6 | Santiago, Ocampo | 10/20/2026 | | | Overdue mediation detection, calendar/status flags, and daily staff alerts for sessions with no recorded outcome |
+| 1.7 | Santiago, Ocampo | 10/20/2026 | | | Free-text description required when the complaint type is "Others" |
 
 ---
 
@@ -96,7 +98,7 @@ BICATS is a comprehensive web-based complaint and dispute management application
 - Track the status of a complaint using a reference number and the registered contact number.
 - Authenticate staff through secure role-based accounts (admin, staff, secretary, lupon).
 - Manage cases through the full KP status workflow (received → summoned → mediation → conciliation → settled / certified / dismissed).
-- Schedule and manage mediation, conciliation, and arbitration sessions.
+- Schedule and manage mediation, conciliation, and arbitration sessions, flagging past sessions that still have no recorded outcome.
 - Triage cases by priority with automatic escalation when a step exceeds its deadline.
 - Publish public advisories on a notice board.
 - Generate analytics, reports, and CSV exports of case and audit data.
@@ -695,7 +697,7 @@ This ERD represents the BICATS system and connects directly to the functions des
 - **StatusUpdate Table** — The case timeline. Each status change records a public note, an optional internal note, and an optional mediation date (`hearingAt`) that is mirrored to a Hearing record.
 - **Hearing Table** — Scheduled mediation, conciliation, or arbitration sessions, including date, kind, status, location, notes, and outcome.
 - **Notice Table** — Public advisories with a published flag for the home-page notice board.
-- **Notification Table** — In-app notifications for staff (reminders, overdue alerts, escalations, new-complaint alerts), deduplicated by `dedupeKey`.
+- **Notification Table** — In-app notifications for staff (reminders, overdue alerts, escalations, missed-session alerts, new-complaint alerts), deduplicated by `dedupeKey`.
 - **AuditLog Table** — An immutable trail of who did what, when, and from which IP, with actor name/role snapshots that survive account changes.
 - **BarangaySettings Table** — A singleton row (id = 1) holding the barangay profile, branding assets, signatory names and printed titles, public hotlines, configurable KP deadline lengths and the per-event SMS/email notification toggles used across the system.
 - **ReferenceCounter Table** — One row per calendar year holding the last sequence number issued, used to generate sequential case references (`BK-2026-000001`).
@@ -746,6 +748,7 @@ This ERD represents the BICATS system and connects directly to the functions des
 | respondentAddress | Address of the respondent | VARCHAR(200) | Optional | None | "14 Purok 3, Baguio" |
 | relationship | Relationship between parties | VARCHAR(80) | Optional | None | "Neighbor" |
 | complaintType | Category of the complaint | VARCHAR(80) | Required | Index | "Noise disturbance" |
+| complaintTypeOther | Free-text description when the type is "Others" | VARCHAR(150) | Optional | None | "Videoke noise after 10 PM" |
 | incidentAt | Date/time of the incident | TIMESTAMP | Required | Index | 2026-10-15 22:30:00 |
 | incidentPlace | Location of the incident | VARCHAR(200) | Required | None | "Purok 3 basketball court" |
 | narrative | Free-text account of the complaint | TEXT | Required | None | "Loud videoke every night..." |
@@ -815,7 +818,7 @@ This ERD represents the BICATS system and connects directly to the functions des
 | --- | --- | --- | --- | --- | --- |
 | id | Unique identifier | INT | Required | PK | 5012 |
 | userId | Recipient staff (FK to User) | INT | Required | FK | 1 |
-| type | Notification category | ENUM('reminder','overdue','escalation','new_complaint','info') | Required | None | reminder |
+| type | Notification category | ENUM('reminder','overdue','escalation','hearing_overdue','new_complaint','info') | Required | None | hearing_overdue |
 | title | Short headline | VARCHAR(200) | Required | None | "Case due tomorrow" |
 | body | Notification text | TEXT | Required | None | "BK-2026-000001 is due by Oct 22." |
 | complaintId | Related complaint (FK to Complaint) | INT | Optional | FK | 356 |
@@ -1055,7 +1058,7 @@ The Software Requirements Specification (SRS) is submitted as a separate documen
 - **FR-10** Notice board management and public display.
 - **FR-11** Analytics and reporting with CSV export.
 - **FR-12** Audit logging of all significant actions.
-- **FR-13** Automated deadline reminders and in-app notifications.
+- **FR-13** Automated deadline reminders, missed-session alerts, and in-app notifications.
 - **FR-14** Barangay settings (branding, signatories, contacts, deadlines, notification channels) and printable KP documents.
 - **FR-15** Resident SMS and email notifications.
 - **FR-16** Bilingual (English/Filipino) UI and light/dark theme.
@@ -1101,6 +1104,7 @@ Representative test cases (to be maintained alongside the QA plan).
 | TC-10 | Reminder idempotency | Run the reminder scan twice for the same day | Exactly one notification per case/day/user |
 | TC-11 | Audit completeness | Perform a status update | An AuditLog row records actor, action, entity, and IP |
 | TC-12 | Session security | Use an expired/invalid token | Access is denied; the client refreshes or forces login |
+| TC-13 | Overdue mediation flag | Leave a scheduled session past its date + grace period with no outcome | Session is flagged overdue in the calendar/list; staff receive a daily in-app alert until it is resolved |
 
 ## 6.4 TESTIMONIALS
 
