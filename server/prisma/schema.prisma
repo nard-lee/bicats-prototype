@@ -43,10 +43,17 @@ model RefreshToken {
   revokedAt DateTime?
 }
 
+// ---- Per-year sequential reference counter (BK-<year>-000001) ----
+model ReferenceCounter {
+  year      Int      @id
+  lastValue Int
+  createdAt DateTime @default(now())
+}
+
 // ---- Complaints ----
 model Complaint {
   id        Int    @id @default(autoincrement())
-  reference String @unique // e.g. SI-2026-K7M4Q9
+  reference String @unique // e.g. BK-2026-000001
 
   // Complainant
   complainantName    String
@@ -238,6 +245,34 @@ model BarangaySettings {
   officeHours    String   @default("Monday–Friday, 8:00 AM – 5:00 PM")
   punongBarangay String   @default("Hon. Mario D. Santos")
   luponChairman  String   @default("Mr. Pedro A. Reyes")
-  updatedAt      DateTime @updatedAt
+
+  // Branding assets (paths under /uploads; empty falls back to the default seal)
+  logoUrl            String @default("")
+  punongSignatureUrl String @default("")
+  luponSignatureUrl  String @default("")
+
+  // Signatory titles printed under the names
+  punongTitle String @default("Punong Barangay")
+  luponTitle  String @default("Lupong Tagapamayapa Chairman")
+
+  // Public contact channels shown on the website
+  hotline     String @default("")
+  tanodNumber String @default("")
+
+  // KP deadlines (days) and the "due soon" warning window
+  deadlineReceived     Int @default(3)
+  deadlineSummoned     Int @default(15)
+  deadlineConciliation Int @default(15)
+  riskWindowDays       Int @default(3)
+
+  // Complainant notifications per event and channel
+  notifyStatusSms      Boolean @default(true)
+  notifyStatusEmail    Boolean @default(true)
+  notifyMediationSms   Boolean @default(true)
+  notifyMediationEmail Boolean @default(true)
+  notifyCancelledSms   Boolean @default(true)
+  notifyCancelledEmail Boolean @default(true)
+
+  updatedAt DateTime @updatedAt
 }
 

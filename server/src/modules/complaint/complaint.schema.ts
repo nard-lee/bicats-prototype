@@ -138,20 +138,36 @@ export const updatePrioritySchema = z.object({
 
 // Katarungang Pambarangay flow: for each status, how many days the barangay
 // has to take the next step (see the KP rules cited in the barangay handbook).
-export const KP_DEADLINE_DAYS: Partial<Record<ComplaintStatus, number>> = {
+export type DeadlineDays = Partial<Record<ComplaintStatus, number>>;
+
+export const KP_DEADLINE_DAYS: DeadlineDays = {
   received: 3, // summon the respondent
   summoned: 15, // hold mediation
   conciliation: 15, // conclude the Pangkat conciliation
 };
 
+// Build a deadline map from the admin-configurable barangay settings.
+export function deadlineDaysFrom(settings: {
+  deadlineReceived: number;
+  deadlineSummoned: number;
+  deadlineConciliation: number;
+}): DeadlineDays {
+  return {
+    received: settings.deadlineReceived,
+    summoned: settings.deadlineSummoned,
+    conciliation: settings.deadlineConciliation,
+  };
+}
+
 // Deadline for the step required by the given status, measured from `from`.
 export function computeNextDueAt(
   status: string,
   from: Date = new Date(),
+  days: DeadlineDays = KP_DEADLINE_DAYS,
 ): Date | null {
-  const days = KP_DEADLINE_DAYS[status as ComplaintStatus];
-  if (days === undefined) return null;
-  return new Date(from.getTime() + days * 24 * 60 * 60 * 1000);
+  const value = days[status as ComplaintStatus];
+  if (value === undefined) return null;
+  return new Date(from.getTime() + value * 24 * 60 * 60 * 1000);
 }
 
 // A case is "due soon" when its deadline falls within this window.
@@ -163,13 +179,14 @@ export type ComplaintRisk = "overdue" | "due_soon" | "on_track" | "none";
 export function complaintRisk(
   dueAt: Date | null,
   status: string,
+  windowDays: number = RISK_WINDOW_DAYS,
 ): ComplaintRisk {
   if (!dueAt) return "none";
   if (TERMINAL_STATUSES.includes(status as ComplaintStatus)) return "none";
 
   const now = Date.now();
   if (dueAt.getTime() < now) return "overdue";
-  if (dueAt.getTime() <= now + RISK_WINDOW_DAYS * 24 * 60 * 60 * 1000) {
+  if (dueAt.getTime() <= now + windowDays * 24 * 60 * 60 * 1000) {
     return "due_soon";
   }
   return "on_track";
@@ -180,6 +197,7 @@ export type ComplaintListFilters = {
   status?: string | undefined;
   type?: string | undefined;
   priority?: string | undefined;
+  open?: boolean | undefined;
   overdue?: boolean | undefined;
   dueSoon?: boolean | undefined;
 };

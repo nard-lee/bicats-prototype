@@ -32,7 +32,19 @@ export type Paginated<T> = {
   totalPages: number;
 };
 
-export async function ComplaintsLoader({ request }: LoaderFunctionArgs) {
+export type ComplaintStats = {
+  total: number;
+  open: number;
+  overdue: number;
+  dueSoon: number;
+  settled: number;
+};
+
+export type ComplaintsPage = Paginated<ComplaintListItem> & {
+  stats: ComplaintStats;
+};
+
+export async function ComplaintsLoader({ request }: LoaderFunctionArgs): Promise<ComplaintsPage> {
   const params = new URL(request.url).searchParams;
   const page = Number(params.get("page")) || 1;
   const q = params.get("q")?.trim() ?? "";
@@ -40,21 +52,45 @@ export async function ComplaintsLoader({ request }: LoaderFunctionArgs) {
   const type = params.get("type") ?? "";
   const priority = params.get("priority") ?? "";
   const risk = params.get("risk") ?? "all";
+  const open = risk === "open";
   const overdue = risk === "overdue";
   const dueSoon = risk === "dueSoon";
 
-  return api
-    .post("/complaints/list", {
-      searchParams: {
-        page,
-        pageSize: 20,
-        ...(q ? { q } : {}),
-        ...(status && status !== "all" ? { status } : {}),
-        ...(type && type !== "all" ? { type } : {}),
-        ...(priority && priority !== "all" ? { priority } : {}),
-        ...(overdue ? { overdue: "true" } : {}),
-        ...(dueSoon ? { dueSoon: "true" } : {}),
-      },
-    })
-    .json<Paginated<ComplaintListItem>>();
+  const [result, overview] = await Promise.all([
+    api
+      .post("/complaints/list", {
+        searchParams: {
+          page,
+          pageSize: 20,
+          ...(q ? { q } : {}),
+          ...(status && status !== "all" ? { status } : {}),
+          ...(type && type !== "all" ? { type } : {}),
+          ...(priority && priority !== "all" ? { priority } : {}),
+          ...(open ? { open: "true" } : {}),
+          ...(overdue ? { overdue: "true" } : {}),
+          ...(dueSoon ? { dueSoon: "true" } : {}),
+        },
+      })
+      .json<Paginated<ComplaintListItem>>(),
+    api.get("/analytics/overview").json<{
+      totals: {
+        complaints: number;
+        open: number;
+        overdue: number;
+        atRisk: number;
+        settled: number;
+      };
+    }>(),
+  ]);
+
+  return {
+    ...result,
+    stats: {
+      total: overview.totals.complaints,
+      open: overview.totals.open,
+      overdue: overview.totals.overdue,
+      dueSoon: overview.totals.atRisk,
+      settled: overview.totals.settled,
+    },
+  };
 }

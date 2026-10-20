@@ -25,7 +25,9 @@ function prettyDate(date: Date): string {
  */
 export async function runReminderScan(): Promise<number> {
   const now = new Date();
-  const soon = new Date(now.getTime() + DAY);
+  const settings = await prisma.barangaySettings.findUnique({ where: { id: 1 } });
+  const windowDays = settings?.riskWindowDays ?? 3;
+  const soon = new Date(now.getTime() + windowDays * DAY);
 
   const cases = await prisma.complaint.findMany({
     where: {
@@ -51,7 +53,7 @@ export async function runReminderScan(): Promise<number> {
 
   for (const complaint of cases) {
     if (!complaint.dueAt) continue;
-    if (complaintRisk(complaint.dueAt, complaint.status) !== "overdue") continue;
+    if (complaintRisk(complaint.dueAt, complaint.status, windowDays) !== "overdue") continue;
 
     const overdueDays = Math.floor((now.getTime() - complaint.dueAt.getTime()) / DAY);
     const next = escalatedPriority(complaint.priority, overdueDays);
@@ -74,7 +76,7 @@ export async function runReminderScan(): Promise<number> {
     const dueAt = complaint.dueAt;
     if (!dueAt) return [];
 
-    const risk = complaintRisk(dueAt, complaint.status);
+    const risk = complaintRisk(dueAt, complaint.status, windowDays);
     if (risk !== "overdue" && risk !== "due_soon") return [];
 
     const overdue = risk === "overdue";

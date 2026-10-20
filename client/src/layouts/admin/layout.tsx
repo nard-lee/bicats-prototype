@@ -43,7 +43,7 @@ import ModeToggle from "@/components/mode-toggle";
 import NotificationsBell from "@/features/admin/notifications/bell";
 import { LogoutButton } from "./logout";
 import type { AppRouteHandle } from "@/types/react-router";
-import type { CurrentUser } from "@/hooks/use-auth";
+import type { AdminLoaderData } from "./loader";
 
 type NavLink = {
   to: string;
@@ -64,13 +64,13 @@ const mainLinks: NavLink[] = [
 const adminLinks: NavLink[] = [
   { to: "/admin/accounts", label: "adminAccounts", icon: UserCog, roles: ADMIN_ROLES },
   { to: "/admin/audit", label: "adminAudit", icon: ScrollText, roles: ADMIN_ROLES },
-  { to: "/admin/settings", label: "adminSettings", icon: Settings, roles: ADMIN_ROLES },
+      { to: "/admin/settings", label: "adminSettings", icon: Settings },
 ];
 
 export default function AdminLayout() {
   const { t } = useT();
   const { pathname } = useLocation();
-  const user = useRouteLoaderData("admin") as CurrentUser | null;
+  const { user, settings } = useRouteLoaderData("admin") as AdminLoaderData;
 
   const role = (user?.role ?? "staff") as Role;
   const isAdmin = role === "admin";
@@ -111,7 +111,7 @@ export default function AdminLayout() {
     .filter((b): b is { label: string; path: string } => b !== null);
 
   return (
-    <SidebarProvider>
+    <SidebarProvider className="h-svh overflow-hidden">
       <TopLoader />
       <Sidebar collapsible="icon">
         <SidebarHeader className="px-4 py-4 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-2">
@@ -119,10 +119,14 @@ export default function AdminLayout() {
             to="/admin"
             className="hidden size-8 items-center justify-center rounded-md group-data-[collapsible=icon]:flex"
           >
-            <img src="/seal.png" alt="Barangay seal" className="size-8 rounded-full" />
+            <img
+              src={settings?.logoUrl || "/seal.png"}
+              alt="Barangay seal"
+              className="size-8 rounded-full object-contain"
+            />
           </Link>
           <Link to="/admin" className="text-lg font-semibold leading-tight group-data-[collapsible=icon]:hidden">
-            Barangay Kabayanihan
+            {settings?.barangayName || "Barangay Kabayanihan"}
           </Link>
           <p className="text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
             {t("adminPanel")}
@@ -175,7 +179,7 @@ export default function AdminLayout() {
         </SidebarFooter>
       </Sidebar>
 
-      <SidebarInset className="h-screen flex flex-col">
+      <SidebarInset className="flex h-svh min-h-0 flex-col overflow-hidden">
         <header className="sticky top-0 z-30 flex h-12 items-center justify-between border-b bg-background px-4">
           <div className="flex min-w-0 flex-1 items-center gap-2">
             <SidebarTrigger />
@@ -215,7 +219,7 @@ export default function AdminLayout() {
           </div>
         </header>
         
-        <main className="flex-1 overflow-auto p-6">
+        <main className="min-h-0 flex-1 overflow-auto p-6">
           <Outlet />
         </main>
       </SidebarInset>

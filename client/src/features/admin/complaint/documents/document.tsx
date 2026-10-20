@@ -19,6 +19,13 @@ function Letterhead({ settings }: { settings: BarangaySettings }) {
   const { t } = useT();
   return (
     <header className="border-b-2 border-black pb-3 text-center">
+      {settings.logoUrl && (
+        <img
+          src={settings.logoUrl}
+          alt=""
+          className="mx-auto mb-2 h-16 object-contain"
+        />
+      )}
       <p className="text-xs tracking-wide uppercase">{t("republic")}</p>
       <p className="text-sm font-semibold tracking-wide uppercase">
         {settings.province ? `${settings.province} · ` : ""}
@@ -32,9 +39,24 @@ function Letterhead({ settings }: { settings: BarangaySettings }) {
   );
 }
 
-function SignLine({ label, name }: { label: string; name?: string }) {
+function SignLine({
+  label,
+  name,
+  signatureUrl,
+}: {
+  label: string;
+  name?: string;
+  signatureUrl?: string;
+}) {
   return (
     <div className="pt-10 text-center">
+      {signatureUrl && (
+        <img
+          src={signatureUrl}
+          alt=""
+          className="mx-auto mb-1 h-12 object-contain"
+        />
+      )}
       {name && <p className="text-sm font-bold uppercase">{name}</p>}
       <p className="mx-auto mt-1 w-64 border-t border-black pt-1 text-xs uppercase">
         {label}
@@ -145,7 +167,11 @@ export default function ComplaintDocument() {
             {issuedLine}
 
             <div className="mt-12 max-w-xs">
-              <SignLine label={t("lblPunongBarangay")} name={settings.punongBarangay} />
+              <SignLine
+                label={settings.punongTitle || t("lblPunongBarangay")}
+                name={settings.punongBarangay}
+                signatureUrl={settings.punongSignatureUrl}
+              />
             </div>
           </div>
         )}
@@ -191,8 +217,16 @@ export default function ComplaintDocument() {
             {issuedLine}
 
             <div className="mt-12 flex flex-wrap justify-between gap-10">
-              <SignLine label={t("lblPunongBarangay")} name={settings.punongBarangay} />
-              <SignLine label={t("lblLuponChairman")} name={settings.luponChairman} />
+              <SignLine
+                label={settings.punongTitle || t("lblPunongBarangay")}
+                name={settings.punongBarangay}
+                signatureUrl={settings.punongSignatureUrl}
+              />
+              <SignLine
+                label={settings.luponTitle || t("lblLuponChairman")}
+                name={settings.luponChairman}
+                signatureUrl={settings.luponSignatureUrl}
+              />
             </div>
           </div>
         )}
@@ -246,7 +280,11 @@ export default function ComplaintDocument() {
             </div>
 
             <div className="mt-10 max-w-xs">
-              <SignLine label={t("lblAttestedBy")} name={settings.punongBarangay} />
+              <SignLine
+                label={t("lblAttestedBy")}
+                name={settings.punongBarangay}
+                signatureUrl={settings.punongSignatureUrl}
+              />
             </div>
           </div>
         )}
@@ -280,8 +318,16 @@ export default function ComplaintDocument() {
             {issuedLine}
 
             <div className="mt-12 flex flex-wrap justify-between gap-10">
-              <SignLine label={t("lblPunongBarangay")} name={settings.punongBarangay} />
-              <SignLine label={t("lblLuponChairman")} name={settings.luponChairman} />
+              <SignLine
+                label={settings.punongTitle || t("lblPunongBarangay")}
+                name={settings.punongBarangay}
+                signatureUrl={settings.punongSignatureUrl}
+              />
+              <SignLine
+                label={settings.luponTitle || t("lblLuponChairman")}
+                name={settings.luponChairman}
+                signatureUrl={settings.luponSignatureUrl}
+              />
             </div>
           </div>
         )}

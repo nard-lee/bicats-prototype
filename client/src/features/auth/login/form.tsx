@@ -14,6 +14,7 @@ import AuthCard from "../AuthCard";
 import type { ActionResult } from "./action";
 import { useT } from "@/lib/I18n";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import type { RootLoaderData } from "@/layouts/root/loader";
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
@@ -21,7 +22,7 @@ function FieldError({ message }: { message?: string }) {
 }
 
 export default function Login() {
-  const user = useRouteLoaderData("root");
+  const { user } = useRouteLoaderData("root") as RootLoaderData;
   const { t } = useT();
   const actionData = useActionData() as ActionResult | undefined;
   const submitting = useNavigation().state === "submitting";

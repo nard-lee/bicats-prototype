@@ -299,13 +299,13 @@ export default function HearingsPage() {
                     <TableCell>
                       <Link
                         to={`/admin/complaints/${hearing.complaintId}`}
-                        className="font-medium transition-colors hover:text-primary"
+                        className="text-lg font-semibold tracking-wide transition-colors hover:text-primary"
                       >
                         {hearing.reference}
                       </Link>
                     </TableCell>
                     <TableCell className="max-w-[16rem] truncate text-muted-foreground">
-                      {hearing.complainantName} vs {hearing.respondentName}
+                      {hearing.complainantName} and {hearing.respondentName}
                     </TableCell>
                     <TableCell>
                       <Badge className={cn("border", KIND_STYLE[hearing.kind])}>

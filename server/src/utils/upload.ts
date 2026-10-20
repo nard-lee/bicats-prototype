@@ -77,3 +77,55 @@ export function uploadEvidence(req: Request, res: Response, next: NextFunction):
     next();
   });
 }
+
+// ---- Small images (logo, signatures) ----
+const IMAGE_EXTENSIONS: Record<string, string> = {
+  "image/jpeg": ".jpg",
+  "image/png": ".png",
+  "image/webp": ".webp",
+};
+
+export const MAX_IMAGE_SIZE = 2 * 1024 * 1024; // 2 MB
+export const MAX_IMAGE_SIZE_MB = MAX_IMAGE_SIZE / (1024 * 1024);
+
+const imageUpload = multer({
+  storage: multer.diskStorage({
+    destination: UPLOAD_DIR,
+    filename: (_req, file, cb) =>
+      cb(null, randomUUID() + (IMAGE_EXTENSIONS[file.mimetype] ?? ".img")),
+  }),
+  limits: { fileSize: MAX_IMAGE_SIZE, files: 1 },
+  fileFilter: (_req, file, cb) => {
+    if (IMAGE_EXTENSIONS[file.mimetype]) {
+      cb(null, true);
+      return;
+    }
+    cb(new ApiError(400, "Unsupported image type. Allowed: JPG, PNG, WEBP."));
+  },
+});
+
+export function uploadImage(req: Request, res: Response, next: NextFunction): void {
+  imageUpload.single("file")(req, res, (err: unknown) => {
+    if (err) {
+      void removeUploadedFiles(req.file ? [req.file] : undefined);
+      if (err instanceof ApiError) {
+        next(err);
+        return;
+      }
+      if (err instanceof multer.MulterError) {
+        next(
+          new ApiError(
+            400,
+            err.code === "LIMIT_FILE_SIZE"
+              ? `The image must be ${MAX_IMAGE_SIZE_MB} MB or smaller.`
+              : "Image upload failed. Please try again.",
+          ),
+        );
+        return;
+      }
+      next(new ApiError(400, "Image upload failed. Please try again."));
+      return;
+    }
+    next();
+  });
+}

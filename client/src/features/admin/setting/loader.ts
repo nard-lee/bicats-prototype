@@ -1,5 +1,4 @@
 import { api } from "@/lib/api";
-import { AdminOnlyLoader } from "@/layouts/admin/loader";
 
 export type BarangaySettings = {
   id: number;
@@ -12,10 +11,41 @@ export type BarangaySettings = {
   officeHours: string;
   punongBarangay: string;
   luponChairman: string;
+  logoUrl: string;
+  punongSignatureUrl: string;
+  luponSignatureUrl: string;
+  punongTitle: string;
+  luponTitle: string;
+  hotline: string;
+  tanodNumber: string;
+  deadlineReceived: number;
+  deadlineSummoned: number;
+  deadlineConciliation: number;
+  riskWindowDays: number;
+  notifyStatusSms: boolean;
+  notifyStatusEmail: boolean;
+  notifyMediationSms: boolean;
+  notifyMediationEmail: boolean;
+  notifyCancelledSms: boolean;
+  notifyCancelledEmail: boolean;
   updatedAt: string;
 };
 
-export async function SettingsLoader() {
-  await AdminOnlyLoader();
-  return api.get("settings").json<BarangaySettings>();
+export type SettingsChannels = {
+  sms: boolean;
+  email: boolean;
+};
+
+export type SettingsLoaderData = {
+  settings: BarangaySettings;
+  channels: SettingsChannels;
+};
+
+export async function SettingsLoader(): Promise<SettingsLoaderData> {
+  const [settings, channels] = await Promise.all([
+    api.get("settings").json<BarangaySettings>(),
+    api.get("settings/channels").json<SettingsChannels>(),
+  ]);
+
+  return { settings, channels };
 }

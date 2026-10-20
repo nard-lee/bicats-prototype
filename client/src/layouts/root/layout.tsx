@@ -4,7 +4,7 @@ import TopLoader from "@/components/top-loader";
 import LanguageToggle from "@/components/language-toggle";
 import ModeToggle from "@/components/mode-toggle";
 import { useT, type Key } from "@/lib/I18n";
-import type { getCurrentUser } from "@/hooks/use-auth";
+import type { RootLoaderData } from "./loader";
 
 const links: { to: string; label: Key; end?: boolean }[] = [
   { to: "/", label: "navHome", end: true },
@@ -12,11 +12,9 @@ const links: { to: string; label: Key; end?: boolean }[] = [
   { to: "/track-complaint", label: "navTrack" },
 ];
 
-type User = Awaited<ReturnType<typeof getCurrentUser>>;
-
 export default function RootLayout() {
   const { t } = useT();
-  const user = useRouteLoaderData("root") as User;
+  const { user, settings } = useRouteLoaderData("root") as RootLoaderData;
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -24,13 +22,19 @@ export default function RootLayout() {
       <header className="sticky top-0 z-50 border-b bg-background">
         <div className="mx-auto flex max-w-6xl items-center gap-4 px-6 py-4">
           <div className="flex size-24 items-center justify-center rounded-full border font-semibold">
-            <img className="h-full w-full" src="/seal.png" alt="Barangay seal" />
+            <img
+              className="h-full w-full object-contain"
+              src={settings?.logoUrl || "/seal.png"}
+              alt="Barangay seal"
+            />
           </div>
           <div className="leading-tight">
             <p className="text-xs text-muted-foreground">{t("republic")}</p>
-            <p className="text-xs text-muted-foreground">{t("city")}</p>
+            <p className="text-xs text-muted-foreground">
+              {settings?.city || t("city")}
+            </p>
             <Link to="/" className="text-lg font-semibold">
-              Barangay Kabayanihan
+              {settings?.barangayName || "Barangay Kabayanihan"}
             </Link>
           </div>
 
@@ -73,32 +77,35 @@ export default function RootLayout() {
       <footer className="border-t">
         <div className="mx-auto grid max-w-6xl gap-8 px-6 py-10 md:grid-cols-3">
           <div>
-            <p className="font-semibold">Barangay Kabayanihan</p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Barangay Hall, Purok 3, M. L. Quezon St., Santa Rosa, Laguna
+            <p className="font-semibold">
+              {settings?.barangayName || "Barangay Kabayanihan"}
+            </p>
+            <p className="mt-2 text-sm whitespace-pre-line text-muted-foreground">
+              {settings?.address || t("city")}
             </p>
           </div>
           <div>
             <p className="font-semibold">{t("contact")}</p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Hotline (049) 502-1188
-              <br />
-              Tanod 0917 845 2210
-              <br />
-              sanisidro.complaints@santarosa.gov.ph
+            <p className="mt-2 text-sm whitespace-pre-line text-muted-foreground">
+              {[
+                settings?.hotline,
+                settings?.tanodNumber ? `Tanod ${settings.tanodNumber}` : "",
+                settings?.email,
+              ]
+                .filter(Boolean)
+                .join("\n") || "—"}
             </p>
           </div>
           <div>
             <p className="font-semibold">{t("officeHours")}</p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {t("monFri")}
-              <br />
-              {t("luponHearings")}
+            <p className="mt-2 text-sm whitespace-pre-line text-muted-foreground">
+              {settings?.officeHours || t("monFri")}
             </p>
           </div>
         </div>
         <div className="border-t py-4 text-center text-xs text-muted-foreground">
-          © {new Date().getFullYear()} Barangay Kabayanihan. {t("tagline")}
+          © {new Date().getFullYear()}{" "}
+          {settings?.barangayName || "Barangay Kabayanihan"}. {t("tagline")}
         </div>
       </footer>
     </div>

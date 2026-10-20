@@ -31,7 +31,7 @@ import ReopenCaseModal from "./reopen";
 import PrioritySelect from "./priority-select";
 import { PRIORITY_STYLE } from "../priority";
 import { DOCUMENT_TYPES } from "../documents/loader";
-import type { CurrentUser } from "@/hooks/use-auth";
+import type { AdminLoaderData } from "@/layouts/admin/loader";
 
 function Info({ label, value }: { label: string; value: ReactNode }) {
   return (
@@ -48,7 +48,7 @@ export default function ComplaintView() {
   const { t, lang } = useT();
   const complaint = useLoaderData() as ComplaintDetail;
   const revalidator = useRevalidator();
-  const user = useRouteLoaderData("admin") as CurrentUser | null;
+  const { user } = useRouteLoaderData("admin") as AdminLoaderData;
   const canWrite = user?.role !== "secretary";
 
   const formatDateTime = (iso: string) =>
@@ -89,7 +89,7 @@ export default function ComplaintView() {
   return (
     <div className="-mx-6 -my-6">
       {/* Sticky actions */}
-      <div className="sticky -top-6 z-20 flex flex-wrap items-center justify-between gap-4 border-b bg-background px-6 py-3">
+      <div className="sticky -top-6 z-20 flex flex-wrap items-center justify-between gap-4 bg-background px-6 py-3">
         <Button
           asChild
           variant="ghost"
@@ -127,12 +127,12 @@ export default function ComplaintView() {
         </div>
       </div>
 
-      <div className="space-y-6 p-6">
+      <div className="space-y-10 p-6 pt-10">
       {/* Title */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-2xl font-semibold">{t("complaintDetails")}</h1>
+            <h1 className="text-2xl font-semibold">{complaint.reference}</h1>
             <Badge>{t(`st_${complaint.status}` as Key)}</Badge>
             <Badge className={cn("border", PRIORITY_STYLE[complaint.priority])}>
               {t(`pr_${complaint.priority}` as Key)}
@@ -140,8 +140,7 @@ export default function ComplaintView() {
           </div>
 
           <p className="text-sm text-muted-foreground">
-            {complaint.reference} · {t(complaint.complaintType as Key)} ·{" "}
-            {formatDateTime(complaint.createdAt)}
+            {t(complaint.complaintType as Key)} · {formatDateTime(complaint.createdAt)}
           </p>
         </div>
 
@@ -172,7 +171,15 @@ export default function ComplaintView() {
         </div>
       </div>
 
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
+      <div
+        className={cn(
+          "mx-auto grid w-full grid-cols-1 items-start gap-6",
+          history.length > 0
+            ? "max-w-6xl lg:grid-cols-[minmax(0,1fr)_360px]"
+            : "max-w-5xl",
+        )}
+      >
+      <div className="flex flex-col gap-6">
       {/* Documents */}
       <Card>
         <CardHeader>
@@ -298,6 +305,7 @@ export default function ComplaintView() {
           </CardContent>
         </Card>
       )}
+      </div>
 
       {/* Status History Timeline */}
       {history.length > 0 && (

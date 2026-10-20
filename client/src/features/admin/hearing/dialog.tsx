@@ -130,9 +130,18 @@ export default function HearingDialog({ mode, complaints, onClose, onSaved }: Pr
         <DialogHeader>
           <DialogTitle>{editing ? "Edit Mediation" : "Schedule Mediation"}</DialogTitle>
           <DialogDescription>
-            {editing
-              ? `${editing.reference} · ${editing.complainantName} vs ${editing.respondentName}`
-              : "Set a mediation, conciliation, or arbitration session for a case."}
+            {editing ? (
+              <span className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                <span className="text-base font-semibold tracking-wide text-foreground">
+                  {editing.reference}
+                </span>
+                <span>
+                  · {editing.complainantName} and {editing.respondentName}
+                </span>
+              </span>
+            ) : (
+              "Set a mediation, conciliation, or arbitration session for a case."
+            )}
           </DialogDescription>
         </DialogHeader>
 

@@ -1,1053 +1,1111 @@
-# BICATS — Software Design Document
+# SOFTWARE DESIGN DESCRIPTOR DOCUMENT
 
-**Barangay Incident & Complaint Action Tracking System**
+## for
 
-| Field | Value |
+## BICATS
+### Barangay Incident & Complaint Action Tracking System
+
+Version 1.5
+
+Prepared by:
+
+- DELOS REYES, PATRICIA ANNE – 20231145@s.ubaguio.edu
+- SANTIAGO, MIGUEL RAMON – 20220877@s.ubaguio.edu
+- VILLANUEVA, KRISTINE JOY – 20219034@s.ubaguio.edu
+- MABINI, ANDREA CLAIRE – 20225510@s.ubaguio.edu
+- DOMINGO, RAFAEL LUIS – 20217762@s.ubaguio.edu
+- OCAMPO, SOFIA MARIE – 20230021@s.ubaguio.edu
+
+University of Baguio
+
+10/19/2026
+
+> **Document format.** Every page of the printed document carries the running header **BICATS 1.5** and the footer **School of Information Technology — Software Engineering 2 | Page N of M**. This Markdown source mirrors that structure; page breaks, headers, and page numbers are applied when exported to Word/PDF.
+
+---
+
+## Document Sign-off
+
+| DEVELOPERS | REVIEWERS |
 | --- | --- |
-| Document type | Software Design Document (SDD) |
-| System | BICATS — Barangay Incident & Complaint Action Tracking System |
-| Version | 1.1 |
-| Status | Living document (matches commit `074e488` + SMS/email) |
-| Audience | Developers, QA, maintainers, thesis adviser/panel |
-| Related | `README` (if present), `server/prisma/schema.prisma`, `client/src/router/routes.tsx` |
+| DELOS REYES, PATRICIA ANNE<br>Project Lead | DR. ELENA V. MANALO<br>Adviser |
+| SANTIAGO, MIGUEL RAMON<br>Lead Programmer | ENGR. RODOLFO A. BAUTISTA<br>Database Reviewer |
+| VILLANUEVA, KRISTINE JOY<br>Developer / IS Researcher | HON. ERNESTO P. DALISAY<br>Business Owner (Punong Barangay) |
+| MABINI, ANDREA CLAIRE<br>Developer / IS Researcher | |
+| DOMINGO, RAFAEL LUIS<br>Developer / IS Researcher | |
+| OCAMPO, SOFIA MARIE<br>Developer / IS Researcher | |
+
+---
+
+## Version History
+
+| Version # | Implemented By | Revision Date | Approved By | Approval Date | Reason |
+| --- | --- | --- | --- | --- | --- |
+| 1.0 | Delos Reyes, Santiago | 10/18/2026 | | | Initial version — barangay complaint system, Katarungang Pambarangay status flow and deadlines |
+| 1.1 | Villanueva, Mabini | 10/18/2026 | | | KP case documents, deadline-risk scoring, in-app reminders, evidence upload hardening, admin case UI polish, analytics theming |
+| 1.2 | Domingo, Ocampo | 10/19/2026 | | | Audit logs, realtime notifications, role-based access, mediation scheduling, profile page, dark mode |
+| 1.3 | Delos Reyes, Santiago | 10/19/2026 | | | Barangay settings, audit and analytics CSV export, custom date/time picker, new-complaint alerts |
+| 1.4 | Santiago, Ocampo | 10/19/2026 | | | Resident SMS (UniSMS) and email (Brevo) notifications |
+| 1.5 | Santiago, Ocampo | 10/20/2026 | | | Configurable branding, KP deadlines and notification channels; read-only settings for staff; sequential case references |
 
 ---
 
 ## Table of Contents
 
-1. [Introduction](#1-introduction)
-2. [System Overview](#2-system-overview)
-3. [Architecture Design](#3-architecture-design)
-4. [Data Design](#4-data-design)
-5. [Interface Design — HTTP API](#5-interface-design--http-api)
-6. [Component Design — Server](#6-component-design--server)
-7. [Component Design — Client](#7-component-design--client)
-8. [Business Rules & Domain Logic](#8-business-rules--domain-logic)
-9. [Notifications & Realtime](#9-notifications--realtime)
-10. [Security Design](#10-security-design)
-11. [Cross-Cutting Concerns](#11-cross-cutting-concerns)
-12. [Non-Functional Requirements](#12-non-functional-requirements)
-13. [Configuration & Environments](#13-configuration--environments)
-14. [Testing & Quality](#14-testing--quality)
-15. [Deployment & Operations](#15-deployment--operations)
-16. [Known Limitations & Future Work](#16-known-limitations--future-work)
-17. [Appendices](#17-appendices)
+1. **INTRODUCTION** — 1.1 Purpose · 1.2 Scope · 1.3 Definitions and Acronyms · 1.4 References
+2. **METHODOLOGY**
+3. **DECOMPOSITION DESCRIPTION** — 3.1 Architecture (System · Logical · Physical) · 3.2 Functional Description (High-level Context Diagram · Data Flow Diagram)
+4. **DATA DESIGN** — 4.1 Data Description · 4.2 Data Dictionary
+5. **HUMAN INTERFACE DESIGN** — 5.1 Overview of User Interface · 5.1.a Screen Images
+6. **APPENDICES** — 6.1 SRS · 6.2 RTM · 6.3 Test Cases · 6.4 Testimonials
 
 ---
 
-## 1. Introduction
+## List of Figures
 
-### 1.1 Purpose
-
-BICATS digitizes the barangay complaint-and-dispute process, in particular the *Katarungang Pambarangay* (KP) mediation workflow. It lets residents file complaints and track their status online, and gives barangay staff a back-office to triage, schedule mediation, publish notices, and audit activity.
-
-### 1.2 Scope
-
-**In scope**
-
-- Public (unauthenticated) complaint filing with evidence upload.
-- Public case tracking by reference number + registered contact number.
-- Staff authentication (JWT access token + rotating refresh token).
-- Role-based back-office: complaints register, case detail/timeline, KP status workflow, priority triage, mediation scheduling, notice board, analytics, audit log, staff account management, barangay settings.
-- Automated KP deadline reminders and priority escalation.
-- In-app notifications with live (SSE) delivery.
-- Resident notifications by SMS (UniSMS PH) and email (Brevo) when a case changes status or a mediation is scheduled, moved, or cancelled.
-- Printable KP documents (Summons, Notice, Amicable Settlement, Certificate to File Action).
-- Bilingual UI (English / Filipino) and light/dark theme.
-
-**Out of scope (current version)**
-
-- Public resident accounts / self-service portal.
-- Document template editor and e-signatures.
-- Native mobile apps.
-- Multi-barangay tenancy (single barangay instance).
-
-### 1.3 Definitions & Acronyms
-
-| Term | Meaning |
+| Figure | Title |
 | --- | --- |
-| KP | *Katarungang Pambarangay* — the Philippine barangay justice system |
-| Lupon | *Lupong Tagapamayapa* — the barangay peacekeeping/mediation panel |
-| Pangkat | The mediation panel convened for a specific case |
-| Punong Barangay | Barangay captain (chief executive) |
-| CFA | Certificate to File Action — issued when mediation fails |
-| Purok | A sub-area/zone within a barangay |
-| CSRF | Cross-Site Request Forgery |
-| RBAC | Role-Based Access Control |
-| SSE | Server-Sent Events |
-| SDD | Software Design Document |
+| Figure 1. | System Architecture |
+| Figure 2. | Logical Architecture |
+| Figure 3. | Physical Architecture |
+| Figure 4. | High-Level Context Diagram |
+| Figure 5. | Complaint Filing — Data Flow Diagram |
+| Figure 6. | Case Tracking — Data Flow Diagram |
+| Figure 7. | Case Management & Status Workflow — Data Flow Diagram |
+| Figure 8. | Mediation Scheduling — Data Flow Diagram |
+| Figure 9. | Notice Board — Data Flow Diagram |
+| Figure 10. | Analytics & Reporting — Data Flow Diagram |
+| Figure 11. | Authentication & Audit — Data Flow Diagram |
+| Figure 12. | Entity Relationship Diagram (ERD) |
 
 ---
 
-## 2. System Overview
+# 1 INTRODUCTION
 
-### 2.1 Context Diagram
+## 1.1 PURPOSE
+
+The purpose of this document is to serve as a comprehensive guide for the development of the **Barangay Incident & Complaint Action Tracking System (BICATS)**. It contains the high-level and functional decomposition, data flow diagrams, user interface designs, database schema, and technical implementation guidelines for the system. This blueprint is intended for a diverse audience: including but not limited to the development team comprised of the project manager, database designer, UI/UX designer, and QA. The developers are responsible for designing, building, and maintaining the system; project managers are tasked with overseeing progress and ensuring requirements are met; and evaluators or reviewers assess system usability, accuracy, and alignment with barangay operations. By translating the Software Requirements Specification (SRS) into a structured and actionable plan, this document ensures that all stakeholders have a clear understanding of the system's architecture and implementation strategy, facilitating a smooth and efficient development process.
+
+## 1.2 SCOPE
+
+BICATS is a comprehensive web-based complaint and dispute management application designed to replace the manual, paper-based processes of a barangay's *Lupong Tagapamayapa* for handling community complaints under the *Katarungang Pambarangay* (KP) framework. It lets residents file complaints and track their progress online, and gives barangay officials a secure back-office to triage cases, schedule mediation, publish notices, and audit all activity.
+
+**The system shall allow its users to:**
+
+- File a complaint online with supporting evidence (photos, PDF, or video) and optional contact details.
+- Track the status of a complaint using a reference number and the registered contact number.
+- Authenticate staff through secure role-based accounts (admin, staff, secretary, lupon).
+- Manage cases through the full KP status workflow (received → summoned → mediation → conciliation → settled / certified / dismissed).
+- Schedule and manage mediation, conciliation, and arbitration sessions.
+- Triage cases by priority with automatic escalation when a step exceeds its deadline.
+- Publish public advisories on a notice board.
+- Generate analytics, reports, and CSV exports of case and audit data.
+- Print official KP documents (Summons, Notice of Hearing, Amicable Settlement, Certificate to File Action).
+- Notify complainants automatically by SMS and email when a case changes status or a session is scheduled.
+- Configure the barangay profile, logo and signatures, signatory titles, public hotlines, KP deadline lengths and notification channels, with read-only access for non-admin staff.
+
+**System Benefits:**
+
+- Eliminates paper-based inefficiencies and lost records.
+- Provides 24/7 online complaint filing and status tracking.
+- Improves accountability through deadline tracking and automatic reminders.
+- Enhances resident experience through digital convenience and proactive notifications.
+- Enables data-driven decisions through dashboards and analytics.
+- Centralizes the barangay's complaint records for transparency and auditability.
+
+**System Limitations:**
+
+- The current version does not support resident self-service accounts; public users may only file and track complaints. (Planned for a future release.)
+- SMS and email delivery depends on third-party providers (UniSMS PH and Brevo); a provider outage drops that message, as there is no retry queue in this release.
+- Email delivery requires a verified sender account with the provider.
+- Document templates are fixed; there is no in-app template editor or e-signature support.
+- The system supports a single barangay instance; multi-barangay tenancy is not yet available.
+- The live notification stream uses an in-memory registry, so multi-instance deployments require shared pub/sub or sticky sessions.
+- A dedicated mobile application is not yet available in this release; however, development of both Android and iOS versions is planned for future updates.
+
+## 1.3 DEFINITIONS AND ACRONYMS
+
+### Definitions
+
+a. **Architecture** — The structural design of the system, showing its components, layers, and their interaction.
+
+b. **Dashboard** — A graphical interface that displays summary statistics, system functions, and quick access to key features.
+
+c. **Complaint Management** — The module that allows residents to file complaints and lets staff record, view, assign, and update them through the KP workflow.
+
+d. **Katarungang Pambarangay (KP)** — The barangay-level justice system under the Local Government Code that requires mediation and conciliation of disputes before court action.
+
+e. **Mediation / Conciliation / Arbitration** — The three KP settlement proceedings. In the user interface, a scheduled session is labelled "Mediation"; an arbitration session appears as "Arbitration".
+
+f. **Case Status Workflow** — The ordered lifecycle of a complaint: received, summoned, mediation, conciliation, settled, certified, dismissed.
+
+g. **Deadline (Due Date)** — The latest date by which the barangay must take the next KP step; a case past its deadline is flagged "overdue".
+
+h. **Priority** — A triage marker (low, normal, high, urgent) that rises automatically when a case lapses its deadline.
+
+i. **Evidence** — Files uploaded with a complaint (images, PDF, or video) that are stored and linked to the complaint record.
+
+j. **Notice Board** — A publicly visible list of advisories published by the barangay.
+
+k. **Notification** — An automatic message to residents (SMS/email) or to staff (in-app) regarding confirmations, reminders, deadlines, or case updates.
+
+l. **Audit Log** — An immutable trail recording who performed which action, when, and from where.
+
+m. **Role-Based Access Control (RBAC)** — A security model that grants capabilities according to a user's role.
+
+n. **Barangay Settings** — The editable barangay profile (name, city, province, officials, contact details) used on letters and printable documents.
+
+o. **Reference Number** — A unique case identifier in the form `BK-<year>-<sequence>` (e.g. `BK-2026-000001`) shown to residents for tracking.
+
+p. **Dashboard Analytics** — Reports showing complaint volumes, status distribution, trends, and hotspot puroks.
+
+### Acronyms
+
+a. **BICATS** — Barangay Incident & Complaint Action Tracking System
+
+b. **KP** — Katarungang Pambarangay
+
+c. **SRS** — Software Requirements Specification
+
+d. **SDD** — Software Design Document
+
+e. **FDD** — Feature-Driven Development
+
+f. **MVC** — Model–View–Controller
+
+g. **SPA** — Single Page Application
+
+h. **API** — Application Programming Interface
+
+i. **REST** — Representational State Transfer
+
+j. **CRUD** — Create, Read, Update, Delete
+
+k. **RBAC** — Role-Based Access Control
+
+l. **JWT** — JSON Web Token
+
+m. **SSE** — Server-Sent Events
+
+n. **CSRF** — Cross-Site Request Forgery
+
+o. **ORM** — Object-Relational Mapping
+
+p. **DBMS** — Database Management System
+
+q. **ERD** — Entity Relationship Diagram
+
+r. **UI** — User Interface
+
+s. **UX** — User Experience
+
+t. **QA** — Quality Assurance
+
+u. **CSV** — Comma-Separated Values
+
+v. **PII** — Personally Identifiable Information
+
+w. **WCAG** — Web Content Accessibility Guidelines
+
+## 1.4 REFERENCES
+
+Barangay Justice Program. (n.d.). *Katarungang Pambarangay handbook*. Department of the Interior and Local Government.
+
+Congress of the Philippines. (1991). *Local Government Code of 1991 (Republic Act No. 7160)* — Book III, Title I, Chapter 7: Katarungang Pambarangay. Republic of the Philippines.
+
+Department of Information and Communications Technology. (2012). *Data Privacy Act of 2012 (Republic Act No. 10173)*. Republic of the Philippines. https://www.privacy.gov.ph/data-privacy-act/
+
+Congress of the Philippines. (2000). *Electronic Commerce Act of 2000 (Republic Act No. 8792)*. Republic of the Philippines. https://ecommerce.dti.gov.ph/
+
+Fielding, R., Gettys, J., Mogul, J., Frystyk, H., Masinter, L., Leach, P., & Berners-Lee, T. (1999). *RFC 2616: Hypertext Transfer Protocol — HTTP/1.1*. Internet Engineering Task Force. https://datatracker.ietf.org/doc/html/rfc2616
+
+Rescorla, E. (2000). *RFC 2818: HTTP over TLS*. Internet Engineering Task Force. https://datatracker.ietf.org/doc/html/rfc2818
+
+PostgreSQL Global Development Group. (2024). *PostgreSQL 16 documentation*. https://www.postgresql.org/docs/16/index.html
+
+Open Worldwide Application Security Project. (2024). *OWASP Application Security Verification Standard (ASVS)*. https://owasp.org/www-project-application-security-verification-standard/
+
+World Wide Web Consortium. (2018). *Web Content Accessibility Guidelines (WCAG) 2.1*. https://www.w3.org/TR/WCAG21/
+
+Google. (n.d.). *Material design guidelines*. (Retrieved 2026). https://m3.material.io/
+
+---
+
+# 2 METHODOLOGY
+
+The development of BICATS adopts the **Feature-Driven Development (FDD)** methodology. FDD is chosen because the system requires iterative delivery, clear progress tracking, and alignment with barangay processes such as complaint intake, KP case handling, mediation scheduling, and reporting.
+
+## Team Characteristics Alignment
+
+a. **Small Team Size:** FDD works effectively with our six-member development team.
+
+- The BICATS development team consists of one Project Lead, one Lead Programmer, and four Developers/IS Researchers. The Project Lead oversees the project timeline, ensures that requirements are met, and coordinates with the business owner, while the Lead Programmer is responsible for the system's core architecture and technical decisions. The Developers/IS Researchers design and implement features, maintain documentation, and conduct testing. This structure allows the team to work in parallel on development and documentation tasks, ensuring alignment between technical implementation and system requirements.
+
+b. **Academic Timeline:** FDD supports semester-based development cycles with clear milestones (based on the SRS Gantt chart).
+
+- **Phase 1 (Weeks 1–4): Domain Modeling & Planning** — Requirements analysis completion, system architecture design, feature prioritization using the MoSCoW method.
+- **Phase 2 (Weeks 5–8): Must-Have Features Development** — Authentication and roles, public complaint filing, case tracking, complaints register.
+- **Phase 3 (Weeks 9–12): Core System Integration** — KP status workflow and deadlines, mediation scheduling, analytics, printable documents, automated reminders.
+- **Phase 4 (Weeks 13–16): Enhancement & Deployment** — Should-Have features (notifications, audit log, settings, exports), final testing and documentation, deployment and handover.
+
+## System Characteristics Alignment
+
+a. **Well-Defined Domain:** Barangay complaint handling and KP procedures have clear, statutory processes.
+
+b. **Feature-Rich Application:** Multiple distinct features (filing, tracking, workflow, scheduling, reporting, notifications) benefit from a feature-focused approach.
+
+c. **Incremental Delivery:** Stakeholders can see working features early in development.
+
+d. **Manageable Complexity:** Each feature can be developed and tested independently.
+
+## FDD Process Activities
+
+a. **Develop Overall Model**
+
+- Domain modeling workshops with the barangay (business owner).
+- System architecture definition.
+- Technology stack selection (React + TypeScript, Express, PostgreSQL, Prisma).
+
+b. **Build Features List (based on the MoSCoW method from the SRS)**
+
+- **Version 1.0 — MUST HAVE:**
+
+  - Staff authentication and role-based access control
+  - Public complaint filing with evidence upload
+  - Public case tracking by reference and contact number
+  - Complaints register and case detail with timeline
+  - Katarungang Pambarangay status workflow with deadlines
+  - Mediation scheduling
+
+- **Version 2.0 — SHOULD HAVE:**
+
+  - Analytics and reporting with CSV export
+  - Automated deadline reminders and priority escalation
+  - Audit log
+  - Notice board
+  - Printable KP documents
+  - Resident SMS/email notifications
+  - Barangay settings
+
+- **Version 3.0 — COULD HAVE:**
+
+  - Notifications inbox page with filters and bulk actions
+  - Mediation calendar month view with drag-to-reschedule
+  - Public resident accounts and self-service portal
+  - Dedicated mobile applications
+  - Multi-barangay tenancy
+
+c. **Plan by Feature**
+
+- Feature prioritization based on resident and barangay value.
+- Resource allocation per team member.
+- Development sequence planning.
+- Testing and integration strategies.
+
+d. **Design by Feature**
+
+- Feature-specific database design.
+- User interface mockups and wireframes.
+- API endpoint specifications.
+- Security and validation requirements.
+
+e. **Build by Feature**
+
+- Individual feature development.
+- Unit testing and code review.
+- Feature integration and testing.
+- Stakeholder demonstration and feedback.
+
+## Development Practices Adapted for Academic Environment
+
+a. **Weekly Progress Reviews:** Regular team meetings to track feature completion.
+b. **Peer Programming:** Collaborative coding sessions for knowledge sharing.
+c. **Documentation Focus:** Emphasis on technical documentation for academic evaluation.
+d. **Version Control:** Git workflow with feature branches for each major functionality.
+e. **Stakeholder Engagement:** Regular demos to the barangay for feedback.
+
+## Quality Assurance Approach
+
+a. **Iterative Feature Testing:** Each feature undergoes multiple test–debug–retest cycles until acceptance criteria are met.
+b. **Peer Review Cycles:** Code review by team members with iterative revisions until code-quality standards are achieved.
+c. **User Acceptance Iterations:** Multiple demo–feedback–revision cycles with barangay validation of each completed feature.
+d. **Continuous Improvement:** Each testing phase involves iterative cycles of testing, feedback incorporation, and refinement until quality standards are met.
+
+---
+
+# 3 DECOMPOSITION DESCRIPTION
+
+## 3.1 ARCHITECTURE
+
+### 3.1.A SYSTEM ARCHITECTURE
+
+BICATS follows a **client–server, three-tier architecture** that combines an MVC-style logical separation with a modern single-page application (SPA) front end.
+
+**Figure 1. System Architecture**
 
 ```
-                      +-----------------------------------+
-                      |             BICATS                |
-   Resident  ------>  |  public web app (React SPA)       |
-   (guest)            |  file complaint • track case      |
-                      +----------------+------------------+
-                                       |
-                                       | HTTPS / JSON (+multipart for filing)
-                                       v
-   Staff    ------>  +-----------------------------------+  ----->  PostgreSQL
-   (admin/            |  REST API (Express 5)             |  <-----  (Prisma)
-    staff/            |  auth • complaints • hearings •   |
-    secretary/        |  notices • analytics • audit •    |
-    lupon)            |  notifications (SSE) • settings   |
-                      +--------+---------------+----------+
-                               |               |
-                        SMS (UniSMS)     email (Brevo)
-                               v               v
-                      +----------------+  +----------------+
-                      |  complainant   |  |  complainant   |
-                      |  mobile number |  |  email address |
-                      +----------------+  +----------------+
-                               |
++---------------------------------------------------------------+
+|                          CLIENT TIER                          |
+|   React 19 SPA (Vite) - TypeScript - Tailwind CSS - Radix UI  |
+|   Public: File complaint, Track case, Notice board            |
+|   Staff : Login, Dashboard, Register, Case detail, Mediation, |
+|           Analytics, Audit, Settings, Profile                 |
++------------------------------+--------------------------------+
+                               |  HTTPS / JSON (multipart for filing)
+                               |  + CSRF token header
                                v
-                      +------------------+
-                      |  Local uploads/  |
-                      |  (evidence files)|
-                      +------------------+
++---------------------------------------------------------------+
+|                        APPLICATION TIER                       |
+|   Express 5 REST API (Node.js + TypeScript)                   |
+|   Controllers  ->  Services  ->  Prisma ORM                   |
+|   Cross-cutting: requireAuth (RBAC), CSRF, rate limiting,     |
+|   validation (Zod), audit logging, SSE notifications,         |
+|   reminder job (scheduler)                                    |
++------------------+--------------------------+-----------------+
+                   |                          |
+                   v                          v
++---------------------------+   +-------------------------------+
+|         DATA TIER         |   |     EXTERNAL SERVICES         |
+|   PostgreSQL (Prisma)      |   |  UniSMS PH  - SMS delivery    |
+|   uploaded evidence files  |   |  Brevo      - email delivery  |
++---------------------------+   +-------------------------------+
 ```
 
-### 2.2 Primary User Journeys
+The client tier renders the user interface and captures input. The application tier exposes a REST API, enforces access control, runs business logic (KP deadlines, escalation, mediation mirroring), persists data, and dispatches notifications. The data tier stores records and evidence files. External services provide outbound SMS and email for residents.
 
-1. **File a complaint (resident)** — open `/file-complaint`, fill the form, attach evidence (≤5 files, ≤10 MB each), agree to consent, receive a reference number like `BK-2026-K7M4Q9`.
-2. **Track a complaint (resident)** — open `/track-complaint`, enter reference + mobile number; see current status and the public timeline.
-3. **Triage (staff)** — open the complaints register, filter by status/priority/overdue, open a case, move it through KP statuses, set priority, schedule mediation.
-4. **Remediate overdue cases** — the reminder job escalates priority and notifies staff; the overview dashboard surfaces overdue/at-risk cases.
-5. **Publish notices (secretary/staff)** — create/update/delete notice-board posts.
-6. **Print KP documents (staff)** — generate Summons/Notice/Settlement/CFA with the barangay letterhead from settings.
-7. **Administer (admin)** — manage staff accounts, review the audit log, export data, edit barangay settings.
+### 3.1.B LOGICAL ARCHITECTURE
 
-### 2.3 Design Goals
+The logical architecture separates the system into three layers that map to the MVC pattern:
 
-- **Accurate KP workflow support** with automatic deadline computation and escalation.
-- **Traceability** — every privileged action is written to an immutable audit log.
-- **Safety by default** — no public registration, strict RBAC, CSRF protection, hardened uploads.
-- **Offline-friendly UI conventions** — optimistic React Router loaders/actions, no heavy global state.
-- **Prototype-appropriate simplicity** — a two-app monorepo with a single relational database.
+- **Presentation Layer (View)** — The React SPA: complaint form, tracking page, staff dashboard, complaints register, case detail, mediation calendar, analytics, and administrative screens. It is responsible for rendering data and capturing user input.
+- **Application Layer (Controller)** — The Express routes and controllers. They receive requests, validate input with Zod schemas, enforce `requireAuth` role checks, and coordinate with services. Controllers remain thin; business rules live in services.
+- **Data Layer (Model)** — The service functions and the Prisma ORM. Services encapsulate domain logic (deadline computation, priority escalation, status transitions, mediation-date mirroring, notification fan-out), while Prisma maps objects to PostgreSQL tables.
+
+This separation keeps presentation, control, and data management clearly divided, making the system more organized, maintainable, and scalable.
+
+**Figure 2. Logical Architecture**
+
+```
+  +---------------------------- Presentation (View) ---------------------------+
+  |  React SPA pages & feature modules  -  API client (ky)  -  SSE client      |
+  +-------------------------------------+--------------------------------------+
+                                        | REST / JSON
+  +-------------------------------------v--------------------------------------+
+  |                        Application Layer (Controller)                       |
+  |  Routes  ->  requireAuth (RBAC)  ->  Zod validation  ->  Controllers        |
+  +-------------------------------------+--------------------------------------+
+                                        | service calls
+  +-------------------------------------v--------------------------------------+
+  |                            Data Layer (Model)                              |
+  |  Services (domain rules, notifications)  ->  Prisma ORM  ->  PostgreSQL     |
+  +---------------------------------------------------------------------------+
+```
+
+### 3.1.C PHYSICAL ARCHITECTURE
+
+The physical architecture is a **three-tier client–server deployment**:
+
+- **Client tier** — End-user devices (desktop or mobile browsers) running the SPA, accessed over HTTPS.
+- **Application tier** — The Node.js/Express API server. In development it runs under `tsx watch`; in production it runs as a compiled Node process. It hosts the business logic, the reminder scheduler, and the in-memory SSE notification registry.
+- **Data tier** — The PostgreSQL database (accessed through the Prisma pg adapter) and the local `uploads/` directory that stores evidence files.
+
+Interaction between tiers occurs through HTTP requests and responses (with multipart form data for complaint filing and a CSRF token header for state-changing requests). The application tier additionally reaches out to the UniSMS PH and Brevo APIs over HTTPS to deliver resident notifications.
+
+**Figure 3. Physical Architecture**
+
+```
+  [ Browser ] --HTTPS--> [ Express API :3000 ] --SQL--> [ PostgreSQL :9147 ]
+                                 |      |
+                                 |      +--> [ uploads/ evidence files ]
+                                 |
+                                 +--HTTPS--> [ UniSMS PH ]  (SMS)
+                                 +--HTTPS--> [ Brevo    ]  (email)
+```
+
+## 3.2 FUNCTIONAL DESCRIPTION
+
+### 3.2.A HIGH-LEVEL CONTEXT DIAGRAM
+
+**Figure 4. BICATS High-Level Context Diagram**
+
+```
+        +----------------+                        +-----------------------+
+        |   Resident     |                        |   Barangay Officials  |
+        |   (public)     |                        |  admin/staff/secretary|
+        +-------+--------+                        |        /lupon         |
+                |                                 +-----------+-----------+
+    file complaint |                                           | manage cases
+    track status   |                                           | schedule mediation
+    view notices   |                                           | publish notices
+                +--v-------------------------------------------v--+
+                |                    BICATS                        |
+                |  public web app  +  REST API  +  PostgreSQL      |
+                |  reminders  +  analytics  +  printable documents |
+                +--+-------------------------------------------+--+
+                   |                                           |
+        SMS / email |                                           | notices &
+        notifications                                           | documents
+                   v                                           v
+        +------------------------+                  +----------------------+
+        | complainant's phone /  |                  | Public notice board  |
+        | email inbox            |                  | & printed KP letters |
+        +------------------------+                  +----------------------+
+```
+
+The system exchanges data with four external parties: residents (who file and track complaints and read notices), barangay officials (who operate the back office), the SMS/email providers (which deliver resident notifications), and the public notice board / printed documents (outputs of the system).
+
+### 3.2.B DATA FLOW DIAGRAM
+
+#### 01 Data Flow Diagrams (Low-level Context Diagrams)
+
+**a. Complaint Filing**
+
+**Figure 5. Complaint Filing — Data Flow Diagram**
+
+```
+ Resident                    BICATS API                  PostgreSQL / Storage
+    |  submit complaint +           |                              |
+    |  evidence (multipart) ------> |  validate (Zod)              |
+    |                               |  rate-limit check            |
+    |                               |  generate BK-<year>-<seq>   |
+    |                               |  process evidence upload ---->| store files in uploads/
+    |                               |  create complaint ----------->| INSERT Complaint
+    |                               |  create initial StatusUpdate->| INSERT StatusUpdate
+    |                               |  notify staff ------------->  | INSERT Notification (+SSE)
+    |  <--- reference number -------|                              |
+    |                               |  (fire-and-forget) SMS/email |
+```
+
+**b. Case Tracking**
+
+**Figure 6. Case Tracking — Data Flow Diagram**
+
+```
+ Resident                BICATS API                     PostgreSQL
+    |  reference + contact      |                            |
+    |  number ----------------> |  normalize contact         |
+    |                           |  lookup ------------------>| SELECT Complaint
+    |                           |  if match: build public view|
+    |  <--- status, timeline,   |  (contact masked)          |
+    |        hearing date ------|                            |
+```
+
+**c. Case Management & Status Workflow**
+
+**Figure 7. Case Management & Status Workflow — Data Flow Diagram**
+
+```
+ Staff              BICATS API                          PostgreSQL
+   |  update status/priority |                               |
+   |  (authenticated) ------>| requireAuth (role check)      |
+   |                         | validate + compute deadline   |
+   |                         | record status/priority ------->| UPDATE Complaint
+   |                         | mirror mediation to Hearing -->| INSERT/UPDATE Hearing
+   |                         | write audit entry ------------>| INSERT AuditLog
+   |                         | notify internal + complainant->| INSERT Notification
+   |  <--- updated case -----|                               | (+ SMS/email)
+```
+
+**d. Mediation Scheduling**
+
+**Figure 8. Mediation Scheduling — Data Flow Diagram**
+
+```
+ Staff              BICATS API                          PostgreSQL / Providers
+   |  create/reschedule/     |                               |
+   |  cancel session ------->| requireAuth (HEARING_ROLES)   |
+   |                         | validate schedule             |
+   |                         | create/update Hearing ------->| INSERT/UPDATE Hearing
+   |                         | write audit entry ----------->| INSERT AuditLog
+   |                         | notify complainant (SMS/email)| -> UniSMS / Brevo
+   |  <--- confirmation -----|                               |
+```
+
+**e. Notice Board**
+
+**Figure 9. Notice Board — Data Flow Diagram**
+
+```
+ Secretary/Admin        BICATS API                    PostgreSQL
+      |  create/update/delete  |                          |
+      |  notice -------------->| requireAuth (NOTICE_ROLES)|
+      |                        | validate + persist ----->| INSERT/UPDATE/DELETE Notice
+      |                        | write audit entry ------>| INSERT AuditLog
+ Public |  view published ------->| (public GET) ---------->| SELECT published notices
+```
+
+**f. Analytics & Reporting**
+
+**Figure 10. Analytics & Reporting — Data Flow Diagram**
+
+```
+ Staff              BICATS API                       PostgreSQL
+   |  open analytics /       |                            |
+   |  apply date filters --->| requireAuth (CASE_VIEW)    |
+   |                         | aggregate (counts, trends, |
+   |                         | hotspots via SQL/Prisma)-->| SELECT aggregates
+   |  <--- KPIs + charts ----|                            |
+   |  export CSV ----------->| build CSV from filtered ---|
+   |  <--- .csv file --------|
+```
+
+**g. Authentication & Audit**
+
+**Figure 11. Authentication & Audit — Data Flow Diagram**
+
+```
+ Staff             BICATS API                       PostgreSQL
+   |  login --------------->| verify password (argon2)   |
+   |                        | issue JWT + refresh cookie |
+   |  <--- session ---------| ------------------------->| INSERT/ROTATE RefreshToken
+   |                        | write audit entry -------->| INSERT AuditLog (auth.login)
+   |  subsequent requests ->| requireAuth: verify JWT +  |
+   |                        | reload user (role, active) |
+```
 
 ---
 
-## 3. Architecture Design
+# 4 DATA DESIGN
 
-### 3.1 Style
+## 4.1 DATA DESCRIPTION
 
-A **client/server (two-tier application) architecture**:
+### ERD of the System
 
-- A React single-page application (SPA) served statically and talking to the API over JSON.
-- A stateless-ish Express REST API with a PostgreSQL system of record.
-- Long-lived state kept in HttpOnly cookies (session) and the database (data).
+**Figure 12. Entity Relationship Diagram (ERD)**
 
 ```
-+--------------------------------------------------------------+
-| Browser (client/)                                            |
-|   React 19 + React Router 8 + Tailwind v4 + shadcn/Radix     |
-|   ky HTTP client -> /api/*  (dev: Vite proxy -> :3000)       |
-+-----------------------------+--------------------------------+
-                              |
-+-----------------------------v--------------------------------+
-| API (server/)  Express 5                                     |
-|   middleware: helmet, cors, compression, json, cookies,      |
-|               CSRF, rate limiters, requireAuth(RBAC)         |
-|   modules: auth user complaint hearing notice analytics       |
-|            notification audit setting  (+ reminder job)      |
-|   data access: Prisma 7 (pg adapter)                         |
-+-----------------------------+--------------------------------+
-                              |
-                       +------v------+
-                       | PostgreSQL  |
-                       +-------------+
+  +----------------+          +---------------------+
+  |      User      |1        *|    RefreshToken     |
+  |----------------|----------|---------------------|
+  | id (PK)        |          | id (PK)             |
+  | fullName       |          | token (UQ)          |
+  | position       |          | userId (FK)         |
+  | email (UQ)     |          | expiresAt           |
+  | phone (UQ)     |          | createdAt           |
+  | username (UQ)  |          | revokedAt           |
+  | passwordHash   |          +---------------------+
+  | role           |
+  | isActive       |
+  | createdAt      |
+  | updatedAt      |
+  +--+---+---+---+---+---+---------------------------+
+     |   |   |   |   |   | 1
+     |   |   |   |   |   +---------------------+        +---------------------+
+     |   |   |   |   |                       |1      *|       Evidence      |
+     |   |   |   |   |                +------v---------|---------------------|
+     |   |   |   |   |                |   Complaint    | id (PK)             |
+     |   |   |   |   |                |----------------| complaintId (FK)    |
+     |   |   |   |   |                | id (PK)        | originalName        |
+     |   |   |   |   |                | reference (UQ) | storedName (UQ)     |
+     |   |   |   |   |                | complainant... | mimeType            |
+     |   |   |   |   |                | respondent...  | size                |
+     |   |   |   |   |                | complaintType  | createdAt           |
+     |   |   |   |   |                | incidentAt     +---------------------+
+     |   |   |   |   |                | narrative      |
+     |   |   |   |   |                | status         |       +---------------------+
+     |   |   |   |   |                | priority       |1     *|    StatusUpdate     |
+     |   |   |   |   |                | dueAt          +--------|---------------------|
+     |   |   |   |   |                | consentAt      |        | id (PK)             |
+     |   |   |   |   |                | viewedAt       |        | complaintId (FK)    |
+     |   |   |   |   |                | createdAt/upd  |        | status              |
+     |   |   |   |   |                +--+---+---+-----+        | publicNote          |
+     |   |   |   |   |                   |   |   | 1            | internalNote        |
+     |   |   |   |   |                   |   |   +------------> | hearingAt           |
+     |   |   |   |   |                   |   |                  | createdById (FK)    |
+     |   |   |   |   |                   |   |                  | createdAt           |
+     |   |   |   |   |                   |   |                  +----------+----------+
+     |   |   |   |   |                   |   | 1                         * |
+     |   |   |   |   |                   |   +------------+  +-----------+----------+
+     |   |   |   |   |                   |                |  |      Hearing         |
+     |   |   |   |   |                   |                |  |--------------------- |
+     |   |   |   |   |                   |                |  | id (PK)              |
+     |   |   |   |   |                   |                |  | complaintId (FK)     |
+     |   |   |   |   |                   |                |  | scheduledAt          |
+     |   |   |   |   |                   |                |  | kind (med/conc/hear) |
+     |   |   |   |   |                   |                |  | status               |
+     |   |   |   |   |                   |                |  | location / notes     |
+     |   |   |   |   |                   |                |  | outcome              |
+     |   |   |   |   |                   |                |  | createdById (FK)     |
+     |   |   |   |   |                   |                |  | createdAt/updatedAt  |
+     |   |   |   |   |                   |                |  +----------+-----------+
+     |   |   |   |   |                   |                |            *|
+     |   |   |   |   |                   |                +-------------+
+     |   |   |   |   |                   |1
+     |   |   |   |   |            +------v-------------+
+     |   |   |   |   |            |   Notification      |
+     |   |   |   |   |            |---------------------|
+     |   |   |   |   |            | id (PK)             |
+     |   |   |   |   |            | userId (FK)         |
+     |   |   |   |   |            | type                |
+     |   |   |   |   |            | title / body        |
+     |   |   |   |   |            | complaintId (FK)    |
+     |   |   |   |   |            | reference           |
+     |   |   |   |   |            | dedupeKey (UQ)      |
+     |   |   |   |   |            | readAt / createdAt  |
+     |   |   |   |   |            +---------------------+
+     |   |   |   |   |1
+     |   |   |   |   +-------------------> Notice (id, title, body, isPublished,
+     |   |   |   |                          createdById FK, createdAt)
+     |   |   |   |1
+     |   |   |   +-----------------------> AuditLog (id, actorId FK, actorName,
+     |   |   |                              actorRole, action, entityType, entityId,
+     |   |   |                              summary, meta, ip, createdAt)
+     |   |   |1
+     |   |   +---------------------------> (User relations: statusUpdates, notices,
+     |   |                                  notifications, hearings, auditLogs)
+     |   |1
+     |   +-------------------------------> RefreshToken
+     |
+     +-----------------------------------> (BarangaySettings is a standalone singleton)
+
+  +------------------------------+
+  |       BarangaySettings       |  (single row, id = 1)
+  |------------------------------|
+  | id (PK)                      |
+  | barangayName / city          |
+  | province / address           |
+  | contactNumber / email        |
+  | hotline / tanodNumber        |
+  | officeHours                  |
+  | logoUrl / *SignatureUrl      |
+  | punongBarangay/luponChairman |
+  | punongTitle / luponTitle     |
+  | deadline* / riskWindowDays   |
+  | notify*Sms / notify*Email    |
+  | updatedAt                    |
+  +------------------------------+
+
+  +------------------------------+
+  |       ReferenceCounter       |  (one row per year)
+  |------------------------------|
+  | year (PK)                    |
+  | lastValue                    |
+  | createdAt                    |
+  +------------------------------+
 ```
 
-### 3.2 Tech Stack
+### Discussion
 
-| Layer | Technology | Version (package.json) |
-| --- | --- | --- |
-| Frontend framework | React | 19.2 |
-| Routing | React Router | 8.4 |
-| Build tool | Vite | 8.3 |
-| Styling | Tailwind CSS + tw-animate-css | 4.3 |
-| UI primitives | shadcn + radix-ui (unified pkg) | 4.22 / 1.8 |
-| Icons | lucide-react | 1.55 |
-| Charts | recharts | 3.10 |
-| Toasts | sonner | 2.0 |
-| Theme | next-themes | 0.4 |
-| HTTP client | ky | 2.2 |
-| Language | TypeScript (client) | ~6.0 |
-| Linter | oxlint | 1.81 |
-| Backend framework | Express | 5.3 |
-| Language | TypeScript (server) | 7.0 |
-| ORM | Prisma | 7.10 |
-| DB driver | node-postgres via `@prisma/adapter-pg` | 8.23 |
-| Validation | Zod | 4.6 |
-| Auth | jsonwebtoken + argon2 | 9.0 / 0.45 |
-| CSRF | csrf-csrf | 4.0 |
-| Uploads | multer | 2.4 |
-| Logging | pino + pino-http | 10.4 |
-| Hardening | helmet, cors, compression, express-rate-limit | — |
-| Runtime | Node.js (ESM), tsx (dev) | — |
-| Package manager | pnpm | ≥11.3 |
+This ERD represents the BICATS system and connects directly to the functions described in the SRS.
 
-### 3.3 Repository Layout
+- **User Table** — Stores all staff account information: full name, position, email, phone, username, password hash, and role (admin, staff, secretary, or lupon). It supports authentication and role-based access control. There is no public registration.
+- **RefreshToken Table** — Stores hashed refresh tokens linked to a user, enabling secure session renewal and revocation.
+- **Complaint Table** — The core record. It holds complainant details, respondent details, incident information, the KP status, triage priority, and the next-step deadline (`dueAt`). It links to evidence, timeline entries, notifications, and hearings (Hearing is the internal name for a mediation/conciliation/arbitration session).
+- **Evidence Table** — Stores metadata for uploaded files linked to a complaint; the binary files live in the `uploads/` directory.
+- **StatusUpdate Table** — The case timeline. Each status change records a public note, an optional internal note, and an optional mediation date (`hearingAt`) that is mirrored to a Hearing record.
+- **Hearing Table** — Scheduled mediation, conciliation, or arbitration sessions, including date, kind, status, location, notes, and outcome.
+- **Notice Table** — Public advisories with a published flag for the home-page notice board.
+- **Notification Table** — In-app notifications for staff (reminders, overdue alerts, escalations, new-complaint alerts), deduplicated by `dedupeKey`.
+- **AuditLog Table** — An immutable trail of who did what, when, and from which IP, with actor name/role snapshots that survive account changes.
+- **BarangaySettings Table** — A singleton row (id = 1) holding the barangay profile, branding assets, signatory names and printed titles, public hotlines, configurable KP deadline lengths and the per-event SMS/email notification toggles used across the system.
+- **ReferenceCounter Table** — One row per calendar year holding the last sequence number issued, used to generate sequential case references (`BK-2026-000001`).
 
-```
-bicatsfullstack/
-├── client/                     # React SPA (own package.json / node_modules)
-│   ├── src/
-│   │   ├── components/         # ui/ (shadcn primitives) + shared widgets
-│   │   ├── features/           # feature folders: admin/*, auth, complaint, guest, errors
-│   │   ├── hooks/              # use-auth, use-mobile
-│   │   ├── layouts/            # root/ and admin/ layouts + loaders + errors
-│   │   ├── lib/                # api, csrf, datetime, I18n, roles, utils
-│   │   ├── router/             # routes.tsx (createBrowserRouter)
-│   │   └── types/              # ambient type augmentations
-│   └── vite.config.ts
-└── server/                     # Express API (own package.json / node_modules)
-    ├── prisma/
-    │   ├── schema.prisma       # data model
-    │   └── *-seeder.ts         # complaint / user / audit seeders
-    └── src/
-        ├── modules/<name>/     # {name}.{routes,controller,service,schema}.ts
-        ├── middlewares/        # auth.middleware, ratelimit.middleware
-        ├── jobs/               # reminder.job.ts
-        ├── utils/              # env, jwt, csrf, upload, roles, errors, validator
-        ├── generated/prisma/   # Prisma client output (gitignored)
-        ├── db.ts               # PrismaClient singleton
-        └── index.ts            # app wiring + startup
-```
+## 4.2 DATA DICTIONARY
 
-### 3.4 Layered Server Design
+### Table 1. Data Dictionary — USER TABLE
 
-Each module follows a strict 4-file pattern:
+| Field Name | Description | Data Type | Field Type | Key | Example Value |
+| --- | --- | --- | --- | --- | --- |
+| id | Unique identifier of the staff account | INT | Required | PK | 1 |
+| fullName | Complete name of the staff member | VARCHAR(120) | Required | None | "Maria L. Santos" |
+| position | Official position / designation | VARCHAR(120) | Required | None | "Barangay Secretary" |
+| email | Email address used for login | VARCHAR(150) | Required | Unique | maria@barangay.gov.ph |
+| phone | Mobile number | VARCHAR(20) | Required | Unique | 09171234567 |
+| username | Login username | VARCHAR(50) | Required | Unique | maria.santos |
+| passwordHash | Argon2 password hash | TEXT | Required | None | $argon2id$v=19$... |
+| role | Access role | ENUM('admin','staff','secretary','lupon') | Required | None | admin |
+| isActive | Whether the account can log in | BOOLEAN | Required | None | true |
+| createdAt | Creation timestamp | TIMESTAMP | Required | None | 2026-10-18 09:00:00 |
+| updatedAt | Last update timestamp | TIMESTAMP | Required | None | 2026-10-19 13:19:25 |
 
-```
-Routes  ->  Controller  ->  Service  ->  Prisma / DB
-  |            |              |
-  | validate & dispatch        | business rules, transactions
-  auth/RBAC guards,            |
-  rate limits, upload          +-- emits audit + notifications
-```
+### Table 2. Data Dictionary — REFRESH TOKEN TABLE
 
-- **Routes** — declare HTTP verbs/paths, attach middleware (`requireAuth(...roles)`, limiters, `uploadEvidence`).
-- **Controller** — parse/validate input with Zod, call the service, shape the HTTP response, map errors to status codes.
-- **Service** — domain logic and multi-table transactions; the only layer that touches Prisma.
-- **Schema** — Zod schemas + TypeScript types shared by the module.
+| Field Name | Description | Data Type | Field Type | Key | Example Value |
+| --- | --- | --- | --- | --- | --- |
+| id | Unique identifier | INT | Required | PK | 12 |
+| token | Unique refresh token value | VARCHAR(255) | Required | Unique | 8f3a...c9e |
+| userId | Owner of the token (FK to User) | INT | Required | FK | 1 |
+| expiresAt | Expiration date/time | TIMESTAMP | Required | None | 2026-11-18 09:00:00 |
+| createdAt | Issued date/time | TIMESTAMP | Required | None | 2026-10-19 09:00:00 |
+| revokedAt | Revocation date/time (null if active) | TIMESTAMP | Optional | None | NULL |
 
-### 3.5 Request Lifecycle (server)
+### Table 3. Data Dictionary — COMPLAINT TABLE
 
-```
-HTTP request
-  -> pino-http (request log, redacts cookies/authorization)
-  -> helmet (security headers)
-  -> compression
-  -> cors (credentials, CORS_ORIGIN)
-  -> express.json (100kb limit)
-  -> cookie-parser
-  -> ensureCsrfSession (issues csrf_sid cookie)
-  -> GET /api/csrf-token (safe, exempt)
-  -> doubleCsrfProtection (non-GET require X-CSRF-Token)
-  -> module router  ->  requireAuth(...roles)  ->  controller
-  -> (unmatched /api/* -> JSON 404)
-  -> central error handler (CustomError | ZodError | <500 status | 500)
-```
+| Field Name | Description | Data Type | Field Type | Key | Example Value |
+| --- | --- | --- | --- | --- | --- |
+| id | Unique identifier of the complaint | INT | Required | PK | 356 |
+| reference | Human-readable case reference | VARCHAR(20) | Required | Unique | BK-2026-000001 |
+| complainantName | Name of the complainant | VARCHAR(120) | Required | None | "Juan D. Dela Cruz" |
+| complainantAge | Age of the complainant | INT | Required | None | 34 |
+| complainantPurok | Purok/zone of the complainant (hotspot analytics) | VARCHAR(80) | Required | None | "Purok 3" |
+| complainantContact | Contact number as entered | VARCHAR(20) | Required | None | 09941841972 |
+| contactNormalized | Digits-only contact used for tracking lookup | VARCHAR(20) | Required | Index | 09941841972 |
+| complainantEmail | Optional email for status notifications | VARCHAR(150) | Optional | None | juan@email.com |
+| complainantAddress | Home address of the complainant | VARCHAR(200) | Required | None | "12 Purok 3, Baguio" |
+| respondentName | Name of the respondent | VARCHAR(120) | Required | None | "Pedro R. Reyes" |
+| respondentAddress | Address of the respondent | VARCHAR(200) | Optional | None | "14 Purok 3, Baguio" |
+| relationship | Relationship between parties | VARCHAR(80) | Optional | None | "Neighbor" |
+| complaintType | Category of the complaint | VARCHAR(80) | Required | Index | "Noise disturbance" |
+| incidentAt | Date/time of the incident | TIMESTAMP | Required | Index | 2026-10-15 22:30:00 |
+| incidentPlace | Location of the incident | VARCHAR(200) | Required | None | "Purok 3 basketball court" |
+| narrative | Free-text account of the complaint | TEXT | Required | None | "Loud videoke every night..." |
+| status | KP status | ENUM('received','summoned','mediation','conciliation','settled','certified','dismissed') | Required | Index | received |
+| priority | Triage priority | ENUM('low','normal','high','urgent') | Required | Index | normal |
+| dueAt | Deadline for the next KP step (null if terminal) | TIMESTAMP | Optional | Index | 2026-10-18 09:00:00 |
+| consentAt | Data-privacy consent timestamp | TIMESTAMP | Required | None | 2026-10-15 10:00:00 |
+| viewedAt | First staff-open timestamp (null = unopened) | TIMESTAMP | Optional | Index | 2026-10-15 11:20:00 |
+| createdAt | Creation timestamp | TIMESTAMP | Required | Index | 2026-10-15 10:00:00 |
+| updatedAt | Last update timestamp | TIMESTAMP | Required | None | 2026-10-19 13:19:25 |
 
-### 3.6 Client Request Lifecycle
+### Table 4. Data Dictionary — EVIDENCE TABLE
 
-```
-Route navigation
-  -> loader/action runs (React Router)
-      -> api (ky)  adding X-CSRF-Token on every call
-  -> on 401 (not auth endpoints): call /api/auth/refresh once, then retry
-  -> component renders with loader data; actions revalidate loaders
-  -> errors caught by route errorElement (RootError / AdminError)
-```
+| Field Name | Description | Data Type | Field Type | Key | Example Value |
+| --- | --- | --- | --- | --- | --- |
+| id | Unique identifier | INT | Required | PK | 900 |
+| complaintId | Owning complaint (FK to Complaint) | INT | Required | FK | 356 |
+| originalName | Uploaded file name | VARCHAR(200) | Required | None | loud_noise.jpg |
+| storedName | Unique stored file name | VARCHAR(255) | Required | Unique | 1712-ea4f.jpg |
+| mimeType | File content type | VARCHAR(100) | Required | None | image/jpeg |
+| size | File size in bytes | INT | Required | None | 348211 |
+| createdAt | Upload timestamp | TIMESTAMP | Required | None | 2026-10-15 10:00:05 |
+
+### Table 5. Data Dictionary — STATUS UPDATE TABLE
+
+| Field Name | Description | Data Type | Field Type | Key | Example Value |
+| --- | --- | --- | --- | --- | --- |
+| id | Unique identifier | INT | Required | PK | 1280 |
+| complaintId | Related complaint (FK to Complaint) | INT | Required | FK | 356 |
+| status | Status recorded at this step | ENUM(...) | Required | None | summoned |
+| publicNote | Note shown to the resident | TEXT | Optional | None | "Summons issued to respondent." |
+| internalNote | Note visible only to staff | TEXT | Optional | None | "Respondent to be served by Brgy. Tanod." |
+| hearingAt | Mediation date carried by this update | TIMESTAMP | Optional | Index | 2026-10-22 20:07:00 |
+| createdById | Staff who made the change (FK to User) | INT | Optional | FK | 1 |
+| createdAt | Timestamp of the change | TIMESTAMP | Required | None | 2026-10-19 09:45:00 |
+
+### Table 6. Data Dictionary — HEARING TABLE (mediation / conciliation / arbitration)
+
+| Field Name | Description | Data Type | Field Type | Key | Example Value |
+| --- | --- | --- | --- | --- | --- |
+| id | Unique identifier | INT | Required | PK | 210 |
+| complaintId | Related complaint (FK to Complaint) | INT | Required | FK | 356 |
+| scheduledAt | Date/time of the session | TIMESTAMP | Required | Index | 2026-10-22 20:07:00 |
+| kind | Session type | ENUM('mediation','conciliation','hearing') | Required | None | mediation |
+| status | Session state | ENUM('scheduled','completed','cancelled','no_show') | Required | Index | scheduled |
+| location | Venue | VARCHAR(200) | Optional | None | "Barangay Hall" |
+| notes | Internal notes | TEXT | Optional | None | "Both parties notified." |
+| outcome | Result of the session | TEXT | Optional | None | "Settled amicably." |
+| createdById | Staff who scheduled it (FK to User) | INT | Optional | FK | 1 |
+| createdAt | Creation timestamp | TIMESTAMP | Required | None | 2026-10-19 09:45:00 |
+| updatedAt | Last update timestamp | TIMESTAMP | Required | None | 2026-10-19 09:45:00 |
+
+### Table 7. Data Dictionary — NOTICE TABLE
+
+| Field Name | Description | Data Type | Field Type | Key | Example Value |
+| --- | --- | --- | --- | --- | --- |
+| id | Unique identifier | INT | Required | PK | 44 |
+| title | Notice headline | VARCHAR(200) | Required | None | "Barangay Assembly" |
+| body | Notice content | TEXT | Required | None | "Assembly on Oct 25, 9 AM..." |
+| isPublished | Whether it shows publicly | BOOLEAN | Required | Index | true |
+| createdById | Author (FK to User) | INT | Optional | FK | 3 |
+| createdAt | Creation timestamp | TIMESTAMP | Required | Index | 2026-10-18 08:00:00 |
+
+### Table 8. Data Dictionary — NOTIFICATION TABLE
+
+| Field Name | Description | Data Type | Field Type | Key | Example Value |
+| --- | --- | --- | --- | --- | --- |
+| id | Unique identifier | INT | Required | PK | 5012 |
+| userId | Recipient staff (FK to User) | INT | Required | FK | 1 |
+| type | Notification category | ENUM('reminder','overdue','escalation','new_complaint','info') | Required | None | reminder |
+| title | Short headline | VARCHAR(200) | Required | None | "Case due tomorrow" |
+| body | Notification text | TEXT | Required | None | "BK-2026-000001 is due by Oct 22." |
+| complaintId | Related complaint (FK to Complaint) | INT | Optional | FK | 356 |
+| reference | Case reference (denormalized) | VARCHAR(20) | Optional | None | BK-2026-000001 |
+| dedupeKey | Idempotency key (one per event/recipient) | VARCHAR(200) | Optional | Unique | reminder:356:2026-10-21:1 |
+| readAt | Read timestamp (null = unread) | TIMESTAMP | Optional | Index | NULL |
+| createdAt | Creation timestamp | TIMESTAMP | Required | Index | 2026-10-19 08:00:00 |
+
+### Table 9. Data Dictionary — AUDIT LOG TABLE
+
+| Field Name | Description | Data Type | Field Type | Key | Example Value |
+| --- | --- | --- | --- | --- | --- |
+| id | Unique identifier | INT | Required | PK | 8801 |
+| actorId | Acting user (FK to User) | INT | Optional | FK | 1 |
+| actorName | Actor name snapshot | VARCHAR(120) | Optional | None | "James Bond" |
+| actorRole | Actor role snapshot | VARCHAR(30) | Optional | None | admin |
+| action | Action code | VARCHAR(80) | Required | Index | complaint.status.update |
+| entityType | Target entity type | ENUM('complaint','user','hearing','notice','setting','auth') | Required | Index | complaint |
+| entityId | Target entity id | INT | Optional | None | 356 |
+| summary | Human-readable summary | VARCHAR(255) | Required | None | "Status changed to summoned" |
+| meta | Additional structured data | JSON | Optional | None | {"from":"received","to":"summoned"} |
+| ip | Source IP address | VARCHAR(45) | Optional | None | 2001:4451:53d:8a00::1 |
+| createdAt | Timestamp of the action | TIMESTAMP | Required | Index | 2026-10-19 09:45:00 |
+
+### Table 10. Data Dictionary — BARANGAY SETTINGS TABLE
+
+| Field Name | Description | Data Type | Field Type | Key | Example Value |
+| --- | --- | --- | --- | --- | --- |
+| id | Singleton identifier (always 1) | INT | Required | PK | 1 |
+| barangayName | Barangay name | VARCHAR(120) | Required | None | "Barangay Kabayanihan" |
+| city | City / municipality | VARCHAR(120) | Required | None | "City of Baguio" |
+| province | Province | VARCHAR(120) | Required | None | "Benguet" |
+| address | Street address | VARCHAR(200) | Required | None | "Barangay Hall, Purok 1" |
+| contactNumber | Office contact number | VARCHAR(30) | Required | None | 074-442-0000 |
+| email | Office email | VARCHAR(150) | Required | None | barangay@email.gov.ph |
+| officeHours | Office hours | VARCHAR(120) | Required | None | "Monday–Friday, 8:00 AM – 5:00 PM" |
+| punongBarangay | Punong Barangay (signatory) | VARCHAR(120) | Required | None | "Hon. Mario D. Santos" |
+| luponChairman | Lupon Chairman (signatory) | VARCHAR(120) | Required | None | "Mr. Pedro A. Reyes" |
+| logoUrl | Uploaded barangay logo path (empty = default seal) | VARCHAR(255) | Optional | None | /uploads/logo.png |
+| punongSignatureUrl | Uploaded Punong Barangay signature image | VARCHAR(255) | Optional | None | /uploads/punong-signature.png |
+| luponSignatureUrl | Uploaded Lupon Chairman signature image | VARCHAR(255) | Optional | None | /uploads/lupon-signature.png |
+| punongTitle | Title printed below the Punong Barangay's name | VARCHAR(120) | Required | None | "Punong Barangay" |
+| luponTitle | Title printed below the Lupon Chairman's name | VARCHAR(120) | Required | None | "Lupong Tagapamayapa Chairman" |
+| hotline | Public barangay hotline | VARCHAR(30) | Optional | None | 0917 000 0000 |
+| tanodNumber | Barangay tanod / duty desk number | VARCHAR(30) | Optional | None | 0918 111 2222 |
+| deadlineReceived | Days allowed to issue the summons after filing | INT | Required | None | 3 |
+| deadlineSummoned | Days allowed between summons and mediation | INT | Required | None | 15 |
+| deadlineConciliation | Days allowed for conciliation | INT | Required | None | 15 |
+| riskWindowDays | Days before a deadline when a case is flagged "due soon" | INT | Required | None | 3 |
+| notifyStatusSms | Send status-change SMS to complainants | BOOLEAN | Required | None | true |
+| notifyStatusEmail | Send status-change email to complainants | BOOLEAN | Required | None | true |
+| notifyMediationSms | Send mediation-schedule SMS to complainants | BOOLEAN | Required | None | true |
+| notifyMediationEmail | Send mediation-schedule email to complainants | BOOLEAN | Required | None | true |
+| notifyCancelledSms | Send case-cancellation SMS to complainants | BOOLEAN | Required | None | true |
+| notifyCancelledEmail | Send case-cancellation email to complainants | BOOLEAN | Required | None | true |
+| updatedAt | Last update timestamp | TIMESTAMP | Required | None | 2026-10-19 10:00:00 |
+
+### Table 11. Data Dictionary — REFERENCE COUNTER TABLE
+
+| Field Name | Description | Data Type | Field Type | Key | Example Value |
+| --- | --- | --- | --- | --- | --- |
+| year | Calendar year of the counter | INT | Required | PK | 2026 |
+| lastValue | Last sequence number issued that year | INT | Required | None | 358 |
+| createdAt | Counter creation timestamp | TIMESTAMP | Required | None | 2026-01-01 00:00:00 |
 
 ---
 
-## 4. Data Design
+# 5 HUMAN INTERFACE DESIGN
 
-### 4.1 Entity-Relationship Overview
+## 5.1 OVERVIEW OF USER INTERFACE
 
-```
-User 1---* RefreshToken
-User 1---* StatusUpdate   (createdBy)
-User 1---* Notice         (createdBy)
-User 1---* Notification
-User 1---* Hearing        (createdBy)
-User 1---* AuditLog       (actor)
+BICATS presents a clean, responsive interface with two experiences: a **public** experience for residents (file a complaint, track a case, read notices) and a **staff** experience behind authentication (dashboard, registers, scheduling, analytics, administration). The interface is bilingual (English/Filipino) and supports light and dark themes. The sidebar collapses to icon mode, and the top bar holds the language toggle, theme toggle, notification bell, and the signed-in user's name.
 
-Complaint 1---* Evidence
-Complaint 1---* StatusUpdate
-Complaint 1---* Hearing
-Complaint 1---* Notification
+### 5.1.a SCREEN IMAGES
 
-BarangaySettings (singleton, id = 1)
-```
+> Insert the captured screen image above each numbered list below (as in the source template, one screen per figure).
 
-### 4.2 Table Definitions
+#### a. File a Complaint
 
-#### User (staff account)
+*Screen Objects and Actions:*
 
-| Column | Type | Notes |
-| --- | --- | --- |
-| id | Int PK | autoincrement |
-| fullName | String | |
-| position | String | e.g. "Punong Barangay" |
-| email | String UQ | login identifier |
-| phone | String UQ | login identifier, unique |
-| username | String UQ | login identifier, unique |
-| passwordHash | String | argon2 hash |
-| role | String | `admin` \| `staff` \| `secretary` \| `lupon` (default `staff`) |
-| isActive | Boolean | default true (soft disable) |
-| createdAt / updatedAt | DateTime | |
+- a.1. **Complainant Name** — text input
+- a.2. **Age** — numeric input
+- a.3. **Purok / Zone** — text input
+- a.4. **Contact Number** — text input
+- a.5. **Email Address** — text input (optional; enables email updates)
+- a.6. **Home Address** — text input
+- a.7. **Respondent Name** — text input
+- a.8. **Respondent Address** — text input
+- a.9. **Relationship** — text input
+- a.10. **Complaint Type** — dropdown selection
+- a.11. **Date & Time of Incident** — date/time picker
+- a.12. **Place of Incident** — text input
+- a.13. **Narrative** — multiline text input
+- a.14. **Attach Evidence** — file upload (JPG, PNG, PDF, MP4; max 5 files, 10 MB each)
+- a.15. **Data-Privacy Consent** — checkbox
+- a.16. **Submit Complaint** — button click; on success shows the generated reference number
+- a.17. **Cancel / Reset** — button click
 
-Indexes: `(role, isActive)`, `(createdAt)`.
+#### b. Track a Complaint
 
-#### RefreshToken
+- b.1. **Reference Number** — text input
+- b.2. **Registered Contact Number** — text input
+- b.3. **Track Button** — button click; retrieves the public case view
+- b.4. **Status Badge** — read-only indicator of the current KP status
+- b.5. **Timeline** — read-only list of public status updates
+- b.6. **Next Mediation Date** — read-only display (when scheduled)
+- b.7. **Privacy Note** — static text explaining masked contact information
 
-| Column | Type | Notes |
-| --- | --- | --- |
-| id | Int PK | |
-| token | String UQ | 40 random bytes hex |
-| userId | Int FK→User | `onDelete: Cascade` |
-| expiresAt | DateTime | `now + REFRESH_TOKEN_EXPIRES_IN` days |
-| createdAt | DateTime | |
-| revokedAt | DateTime? | reserved (rotation deletes + recreates) |
+#### c. Staff Login
 
-#### Complaint
+- c.1. **Email / Username** — text input
+- c.2. **Password** — password input
+- c.3. **Sign In Button** — button click
+- c.4. **Show / Hide Password** — toggle
+- c.5. **Error Message** — static text on invalid credentials
 
-| Column | Type | Notes |
-| --- | --- | --- |
-| id | Int PK | |
-| reference | String UQ | `BK-<year>-<6 base32 chars>` |
-| complainantName | String | |
-| complainantAge | Int | 1–120 |
-| complainantPurok | String | grouped for hotspot analytics |
-| complainantContact | String | as entered |
-| contactNormalized | String | digits-only, used for tracking lookup |
-| complainantEmail | String? | optional; used for email updates |
-| complainantAddress | String | |
-| respondentName | String | |
-| respondentAddress | String? | |
-| relationship | String? | relationship of parties |
-| complaintType | String | category |
-| incidentAt | DateTime | must not be in the future |
-| incidentPlace | String | |
-| narrative | String | 10–5000 chars |
-| status | String | KP status (default `received`) |
-| priority | String | `low`\|`normal`\|`high`\|`urgent` (default `normal`) |
-| dueAt | DateTime? | next KP step deadline; null when terminal |
-| consentAt | DateTime | data-privacy consent timestamp |
-| viewedAt | DateTime? | first staff open; null = unopened |
-| createdAt / updatedAt | DateTime | |
+#### d. Dashboard
 
-Indexes: `(contactNormalized)`, `(status, createdAt)`, `(status, dueAt)`, `(priority, createdAt)`, `(viewedAt, updatedAt)`, `(createdAt)`, `(incidentAt)`, `(complaintType, createdAt)`.
+- d.1. **Navigation Panel** — sidebar menu for navigating system modules
+- d.2. **Summary Cards** — counts of open, due-soon, overdue, and unopened cases
+- d.3. **Recent Complaints Table** — newest cases with reference, type, status, priority
+- d.4. **Notifications Bell** — dropdown of live staff notifications
+- d.5. **Quick Actions** — shortcuts to file/register/analytics
+- d.6. **Logout** — button click to end the session securely
 
-#### Evidence
+#### e. Complaints Register
 
-| Column | Type | Notes |
-| --- | --- | --- |
-| id | Int PK | |
-| complaintId | Int FK→Complaint | Cascade |
-| originalName | String | user's filename (display only) |
-| storedName | String UQ | server-generated `<uuid>.<ext>` |
-| mimeType | String | jpg/png/pdf/mp4 |
-| size | Int | bytes |
-| createdAt | DateTime | |
+- e.1. **Search Field** — text input (reference or complainant)
+- e.2. **Status Filter** — dropdown selection
+- e.3. **Priority Filter** — dropdown selection
+- e.4. **Type Filter** — dropdown selection
+- e.5. **Date Range Filter** — date pickers
+- e.6. **Clear Filters** — button click to reset
+- e.7. **Complaints Table** — rows with reference, complainant, type, status, priority, deadline, risk
+- e.8. **Bulk Selection & Bulk Status** — checkboxes + action to update several cases
+- e.9. **View Details** — row action to open the case detail
 
-Index: `(complaintId, createdAt)`.
+#### f. Case Detail
 
-#### StatusUpdate (timeline entry)
+- f.1. **Case Header** — reference, status badge, priority badge, risk indicator
+- f.2. **Complainant / Respondent Panels** — read-only party details
+- f.3. **Incident Panel** — type, date/time, place, narrative
+- f.4. **Evidence Gallery** — thumbnails/links to uploaded files
+- f.5. **Update Status** — status dropdown, public note, internal note, mediation date
+- f.6. **Priority Selector** — dropdown
+- f.7. **Timeline** — chronological status updates with actor and timestamp
+- f.8. **Documents Button** — opens the printable KP documents
+- f.9. **Reopen Case** — action for terminal cases
 
-| Column | Type | Notes |
-| --- | --- | --- |
-| id | Int PK | |
-| complaintId | Int FK→Complaint | Cascade |
-| status | String | status at this point |
-| publicNote | String? | shown to the resident when tracking |
-| internalNote | String? | staff-only |
-| hearingAt | DateTime? | date noted with the status change |
-| createdById | Int? FK→User | `onDelete: SetNull`; null = System |
-| createdAt | DateTime | |
+#### g. Mediation Scheduling
 
-Indexes: `(complaintId, createdAt)`, `(createdById)`, `(hearingAt)`.
+- g.1. **Schedule Form** — date/time picker, kind (Mediation/Conciliation/Arbitration), location, notes
+- g.2. **Save Session** — button click
+- g.3. **Reschedule / Cancel** — actions on an existing session
+- g.4. **Upcoming Sessions List** — pending sessions with case reference and date
+- g.5. **Calendar View** — month view of scheduled sessions
 
-#### Hearing (mediation session; UI label "Mediation")
+#### h. Analytics & Reports
 
-| Column | Type | Notes |
-| --- | --- | --- |
-| id | Int PK | |
-| complaintId | Int FK→Complaint | Cascade |
-| scheduledAt | DateTime | |
-| kind | String | `mediation` \| `conciliation` \| `hearing` (UI "Arbitration") |
-| status | String | `scheduled` \| `completed` \| `cancelled` \| `no_show` |
-| location | String? | |
-| notes | String? | |
-| outcome | String? | |
-| createdById | Int? FK→User | SetNull |
-| createdAt / updatedAt | DateTime | |
+- h.1. **Date Range** — date pickers
+- h.2. **Type / Status / Purok Filters** — dropdowns
+- h.3. **Apply / Clear Filters** — button clicks
+- h.4. **KPI Cards** — totals, resolved, overdue, average resolution time
+- h.5. **Trend Chart** — line/bar chart of complaints over time
+- h.6. **Status Distribution Chart** — pie chart of statuses
+- h.7. **Hotspot / Complaint Type Chart** — bar chart of cases by purok and type
+- h.8. **Export CSV** — button click to download the report
+- h.9. **Print** — button click to print the report (chrome hidden via print styles)
 
-Indexes: `(scheduledAt)`, `(complaintId, scheduledAt)`, `(status, scheduledAt)`.
+#### i. Notice Board
 
-#### Notice (notice board)
+- i.1. **Notice List** — published advisories (public view)
+- i.2. **New Notice** — title and body inputs (staff)
+- i.3. **Publish Toggle** — checkbox to show/hide a notice
+- i.4. **Edit / Delete** — actions on a notice
 
-| Column | Type | Notes |
-| --- | --- | --- |
-| id | Int PK | |
-| title | String | |
-| body | String | |
-| isPublished | Boolean | default true |
-| createdById | Int? FK→User | SetNull |
-| createdAt | DateTime | |
+#### j. Audit Log
 
-Indexes: `(isPublished, createdAt)`, `(createdById)`.
+- j.1. **Search Field** — text input (action, actor, entity)
+- j.2. **Action Filter** — dropdown selection
+- j.3. **Entity Type Filter** — dropdown selection
+- j.4. **Actor Filter** — dropdown selection
+- j.5. **Date Range** — date pickers
+- j.6. **Audit Table** — when, actor, role, action, entity, IP, summary
+- j.7. **Export CSV** — button click to download the audit trail
 
-#### Notification
+#### k. Staff Accounts
 
-| Column | Type | Notes |
-| --- | --- | --- |
-| id | Int PK | |
-| userId | Int FK→User | Cascade |
-| type | String | `reminder`\|`overdue`\|`escalation`\|`new_complaint`\|`info` |
-| title / body | String | |
-| complaintId | Int? FK→Complaint | SetNull |
-| reference | String? | denormalized case reference |
-| dedupeKey | String? UQ | idempotency key |
-| readAt | DateTime? | null = unread |
-| createdAt | DateTime | |
+- k.1. **Search Field** — text input
+- k.2. **Role / Status Filters** — dropdowns
+- k.3. **Accounts Table** — name, email, role, status
+- k.4. **Create Account** — opens form (name, position, email, phone, username, password, role)
+- k.5. **Edit Account** — update details/role
+- k.6. **Activate / Deactivate** — action toggle
 
-Indexes: `(userId, readAt, createdAt)`, `(createdAt)`.
+#### l. Barangay Settings
 
-#### AuditLog (immutable trail)
+- l.1. **Barangay Name / City / Province** — text inputs
+- l.2. **Address / Contact Number / Email / Office Hours** — text inputs
+- l.3. **Public Hotline / Tanod Number** — text inputs shown on the public site
+- l.4. **Punong Barangay / Lupon Chairman** — name and printed-title inputs (document signatories)
+- l.5. **Logo Upload** — image upload (PNG, JPG or WebP; max 2 MB)
+- l.6. **Signature Uploads** — Punong Barangay and Lupon Chairman signature images
+- l.7. **KP Deadlines** — number inputs for received, summoned and conciliation deadlines plus the "due soon" window
+- l.8. **Notification Matrix** — SMS/email toggles for status changes, mediation schedules and cancellations
+- l.9. **Message Channel Status** — read-only indicators of whether SMS and email providers are configured
+- l.10. **Live Letterhead Preview** — read-only preview of the document header and signature blocks
+- l.11. **Save / Reset Changes** — buttons with unsaved-change indicator and last-updated timestamp (admin only)
+- l.12. **Read-only Notice** — non-admin staff can view settings but the fields and save actions are disabled
 
-| Column | Type | Notes |
-| --- | --- | --- |
-| id | Int PK | |
-| actorId | Int? FK→User | SetNull |
-| actorName / actorRole | String? | snapshots survive rename/delete |
-| action | String | e.g. `complaint.status.update` |
-| entityType | String | `complaint`\|`hearing`\|`notice`\|`user`\|`auth`\|`setting` |
-| entityId | Int? | |
-| summary | String | human-readable |
-| meta | Json? | structured before/after context |
-| ip | String? | request IP |
-| createdAt | DateTime | |
+#### m. My Profile
 
-Indexes: `(createdAt)`, `(entityType, createdAt)`, `(action, createdAt)`, `(actorId, createdAt)`.
-
-#### BarangaySettings (singleton)
-
-| Column | Type | Default |
-| --- | --- | --- |
-| id | Int PK | fixed `1` |
-| barangayName | String | "Barangay Kabayanihan" |
-| city | String | "City of Baguio" |
-| province | String | "Benguet" |
-| address | String | "" |
-| contactNumber | String | "" |
-| email | String | "" |
-| officeHours | String | "Monday–Friday, 8:00 AM – 5:00 PM" |
-| punongBarangay | String | "Hon. Mario D. Santos" |
-| luponChairman | String | "Mr. Pedro A. Reyes" |
-| updatedAt | DateTime | @updatedAt |
-
-### 4.3 Referential Integrity & Deletion Policy
-
-- Child rows tied to a `Complaint` (`Evidence`, `StatusUpdate`, `Hearing`, `Notification`) cascade on complaint deletion.
-- User references use `SetNull` so history/audit survives account deletion, with name/role snapshots preserved on `AuditLog`.
+- m.1. **Profile Details** — name, position, email, phone, username
+- m.2. **Update Profile** — action button
+- m.3. **Current Password** — password input
+- m.4. **New Password / Confirm** — password inputs
+- m.5. **Change Password** — action button
 
 ---
 
-## 5. Interface Design — HTTP API
+# 6 APPENDICES
 
-Base URL: `/api`. All request/response bodies are JSON unless noted. Non-`GET` requests from the browser must include the `X-CSRF-Token` header (see §10).
+## 6.1 SRS
 
-**Legend:** 🔓 public · 🔐 any authenticated staff · role-restricted noted per row.
+The Software Requirements Specification (SRS) is submitted as a separate document and is summarized here. The functional requirements that BICATS satisfies are:
 
-### 5.1 Auth — `/api/auth`
+- **FR-1** Public complaint filing with evidence upload and consent capture.
+- **FR-2** Public case tracking by reference number and registered contact number.
+- **FR-3** Staff authentication with rotating refresh tokens and role-based access.
+- **FR-4** Staff account management (create, edit, activate/deactivate) by an administrator.
+- **FR-5** Complaints register with search and filters.
+- **FR-6** Case detail with timeline and evidence.
+- **FR-7** Katarungang Pambarangay status workflow with deadlines.
+- **FR-8** Priority triage with automatic escalation.
+- **FR-9** Mediation / conciliation / arbitration scheduling.
+- **FR-10** Notice board management and public display.
+- **FR-11** Analytics and reporting with CSV export.
+- **FR-12** Audit logging of all significant actions.
+- **FR-13** Automated deadline reminders and in-app notifications.
+- **FR-14** Barangay settings (branding, signatories, contacts, deadlines, notification channels) and printable KP documents.
+- **FR-15** Resident SMS and email notifications.
+- **FR-16** Bilingual (English/Filipino) UI and light/dark theme.
 
-| Method | Path | Access | Purpose |
+## 6.2 RTM
+
+Requirements Traceability Matrix (functional requirement → design/implementation artifact).
+
+| Req | Feature | Server Module | Client Screen | Data Tables |
+| --- | --- | --- | --- | --- |
+| FR-1 | Complaint filing | `complaint` | File a Complaint | Complaint, Evidence, StatusUpdate, ReferenceCounter |
+| FR-2 | Case tracking | `complaint` | Track a Complaint | Complaint, StatusUpdate |
+| FR-3 | Authentication | `auth` | Staff Login | User, RefreshToken, AuditLog |
+| FR-4 | Staff accounts | `user` | Staff Accounts | User, AuditLog |
+| FR-5 | Register | `complaint` | Complaints Register | Complaint |
+| FR-6 | Case detail | `complaint` | Case Detail | Complaint, Evidence, StatusUpdate |
+| FR-7 | KP workflow | `complaint` | Case Detail | Complaint, StatusUpdate |
+| FR-8 | Priority escalation | `complaint`, `jobs/reminder` | Complaints Register | Complaint, Notification |
+| FR-9 | Mediation scheduling | `hearing` | Mediation Scheduling | Hearing, AuditLog |
+| FR-10 | Notice board | `notice` | Notice Board | Notice |
+| FR-11 | Analytics | `analytics` | Analytics & Reports | Complaint |
+| FR-12 | Audit log | `audit` | Audit Log | AuditLog |
+| FR-13 | Reminders | `jobs/reminder`, `notification` | Notifications Bell | Notification |
+| FR-14 | Settings & documents | `setting`, `complaint` | Barangay Settings | BarangaySettings, AuditLog |
+| FR-15 | SMS & email | `sms`, `email`, `notify` | — (automated) | — |
+| FR-16 | i18n & theme | — (client) | All screens | — |
+
+## 6.3 TEST CASES
+
+Representative test cases (to be maintained alongside the QA plan).
+
+| ID | Description | Steps | Expected Result |
 | --- | --- | --- | --- |
-| GET | `/me` | 🔐 | Return the current user's identity/role |
-| POST | `/log-in` | 🔓 (rate-limited) | Authenticate by email/username/phone + password |
-| POST | `/log-out` | 🔓 (rate-limited) | Revoke the refresh token and clear cookies |
-| POST | `/refresh` | 🔓 (rate-limited) | Rotate refresh token, issue new access token |
+| TC-01 | File a valid complaint | Complete the form with valid data, attach one image, consent, submit | Case is created; a unique sequential `BK-<year>-<sequence>` reference is returned |
+| TC-02 | File with missing required field | Submit the form with the narrative blank | Validation error is shown; no case is created |
+| TC-03 | Track with correct credentials | Enter reference + registered contact | Public case view is returned; contact is masked |
+| TC-04 | Track with wrong contact | Enter reference + wrong contact | "Not found" response; no data leaked |
+| TC-05 | Role restriction | Log in as `secretary`, attempt to update a case status | Request is forbidden (403) |
+| TC-06 | Status workflow & deadline | Move a case received → summoned | `dueAt` updates using the configured "summoned" deadline (default +15 days); timeline entry and audit row are written |
+| TC-07 | Priority escalation | Age a case past its `dueAt`, run the reminder scan | Priority escalates (never downgrades); escalation notification is created |
+| TC-08 | Mediation scheduling | Schedule a mediation session | Hearing is created; complainant is notified by SMS and email |
+| TC-09 | CSV export | Apply filters, click Export CSV | A `.csv` file with the filtered rows is downloaded |
+| TC-10 | Reminder idempotency | Run the reminder scan twice for the same day | Exactly one notification per case/day/user |
+| TC-11 | Audit completeness | Perform a status update | An AuditLog row records actor, action, entity, and IP |
+| TC-12 | Session security | Use an expired/invalid token | Access is denied; the client refreshes or forces login |
 
-`POST /log-in` body: `{ identifier, password }` → sets `access_token` + `refresh_token` cookies, returns `{ user: { id, fullName, role } }`.
+## 6.4 TESTIMONIALS
 
-### 5.2 Users — `/api/users`
-
-| Method | Path | Access | Purpose |
-| --- | --- | --- | --- |
-| GET | `/` | admin | List staff accounts |
-| POST | `/create` | admin | Create a staff account |
-| PATCH | `/me` | 🔐 | Update own profile / change password |
-| PATCH | `/:id` | admin | Update/deactivate a staff account |
-
-### 5.3 Complaints — `/api/complaints`
-
-| Method | Path | Access | Purpose |
-| --- | --- | --- | --- |
-| POST | `/file-complaint` | 🔓 (rate-limited, multipart) | File a complaint with evidence |
-| POST | `/track` | 🔓 (rate-limited) | Look up a case by reference + contact |
-| POST | `/list` | case viewers | Paginated, filtered register |
-| POST | `/bulk-status` | case writers | Bulk status change |
-| GET | `/:id` | case viewers | Full case detail + timeline |
-| POST | `/:id/view` | case viewers | Stamp first-view; clear notifications |
-| PATCH | `/:id/status` | case writers | Advance KP status (+ optional mediation date) |
-| PATCH | `/:id/priority` | case writers | Set priority |
-| POST | `/:id/reopen` | case writers | Reopen a terminal case |
-
-Filters for `/list`: `q` (reference/complainant/respondent), `status`, `type`, `priority`, `overdue`, `dueSoon`, plus `page`/`limit`.
-
-`POST /file-complaint` is `multipart/form-data` (field `evidence`, up to 5 files). `POST /track` body: `{ reference, phone }`.
-
-### 5.4 Hearings / Mediation — `/api/hearings`
-
-| Method | Path | Access | Purpose |
-| --- | --- | --- | --- |
-| GET | `/` | hearing managers | List mediations (filters/range) |
-| GET | `/complaints` | hearing managers | Complaint options for the picker |
-| POST | `/` | hearing managers | Schedule a session |
-| PATCH | `/:id` | hearing managers | Reschedule/complete/cancel |
-| DELETE | `/:id` | hearing managers | Cancel a session |
-
-### 5.5 Notices — `/api/notices`
-
-| Method | Path | Access | Purpose |
-| --- | --- | --- | --- |
-| GET | `/list` | 🔓 | Published notices (public board) |
-| GET | `/admin/list` | notice publishers | All notices incl. unpublished |
-| POST | `/create` | notice publishers | Create a notice |
-| PATCH | `/:id` | notice publishers | Edit a notice |
-| DELETE | `/:id` | notice publishers | Delete a notice |
-
-### 5.6 Analytics — `/api/analytics`
-
-| Method | Path | Access | Purpose |
-| --- | --- | --- | --- |
-| GET | `/report` | staff | Charts: complaint types, hotspots, monthly trends, status distribution |
-| GET | `/overview` | staff | Dashboard KPIs, recent complaints, upcoming mediations, attention list |
-
-### 5.7 Notifications — `/api/notifications`
-
-| Method | Path | Access | Purpose |
-| --- | --- | --- | --- |
-| GET | `/` | 🔐 | Latest notifications + unread count |
-| GET | `/stream` | 🔐 | Server-Sent Events stream (live bell) |
-| POST | `/read-all` | 🔐 | Mark all of the user's notifications read |
-| PATCH | `/:id/read` | 🔐 | Mark one notification read |
-
-### 5.8 Audit — `/api/audit`
-
-| Method | Path | Access | Purpose |
-| --- | --- | --- | --- |
-| GET | `/` | admin | Paginated audit feed (`entityType`, `q`, `page`, `limit` ≤ 100) |
-| GET | `/export` | admin | All matching rows (≤ 5000) for CSV export |
-
-### 5.9 Settings — `/api/settings`
-
-| Method | Path | Access | Purpose |
-| --- | --- | --- | --- |
-| GET | `/` | 🔓 | Barangay profile/letterhead (public so printable docs/board can read it) |
-| PATCH | `/` | admin | Update settings (audited as `setting.update`) |
-
-### 5.10 CSRF — `/api/csrf-token`
-
-| Method | Path | Access | Purpose |
-| --- | --- | --- | --- |
-| GET | `/api/csrf-token` | 🔓 | Issue a CSRF token for the current session |
-
-### 5.11 Error Responses
-
-| Status | Shape | Cause |
-| --- | --- | --- |
-| 400 | `{ message, fields? }` | Validation (`ZodError`) or `CustomError` field errors |
-| 401 | `{ message }` | Missing/expired/invalid token, inactive account |
-| 403 | `{ message }` | Authenticated but lacking the required role |
-| 404 | `{ error }` | Unknown `/api/*` route |
-| 429 | `{ message }` | Rate limit exceeded |
-| 500 | `{ message: "Something went wrong" }` | Unexpected server error |
+> To be completed after user acceptance testing with the barangay. Suggested structure: quote, name, role (e.g., Punong Barangay, Barangay Secretary, resident), and date of the interview.
 
 ---
 
-## 6. Component Design — Server
-
-### 6.1 Module Inventory
-
-| Module | Responsibility | Key rules |
-| --- | --- | --- |
-| `auth` | Login/logout/refresh, `me` | argon2 verify; rotate refresh token; set cookies |
-| `user` | Staff account CRUD + self profile | Unique email/phone/username; hashes password |
-| `complaint` | File, track, list, detail, status/priority, reopen | KP deadlines, mediation mirroring, audit |
-| `hearing` | Mediation scheduling/calendar | `kind`/`status` enums; conflict-free by design (no overlap check) |
-| `notice` | Notice-board CRUD | Public read of published only |
-| `analytics` | Aggregations for reports/overview | Raw SQL for month grouping |
-| `notification` | Inbox + SSE + creation helpers | Dedupe via `dedupeKey`; `createForUsers` |
-| `sms` | UniSMS PH client + message templates | Optional (blank key disables); PH number normalization; fire-and-forget |
-| `email` | Brevo client + message templates | Optional (blank key/sender disables); plain-text + HTML; fire-and-forget |
-| `notify` | Complainant fan-out dispatcher | Sends on whichever channels the complainant left; isolated failures |
-| `audit` | Query + export the trail | Admin-only; `auditFromRequest` helper |
-| `setting` | Barangay profile/letterhead | Singleton upsert id=1 |
-| `jobs/reminder` | Scheduled scan | Escalation + daily reminders |
-
-### 6.2 Cross-Cutting Server Utilities
-
-| File | Purpose |
-| --- | --- |
-| `utils/env.config.ts` | Load/validate required env vars; fail fast |
-| `utils/jwt.ts` | Sign/verify access token; generate refresh token |
-| `utils/csrf.ts` | `ensureCsrfSession`, `generateCsrfToken`, `doubleCsrfProtection` |
-| `utils/upload.ts` | Multer config, allowed types, friendly errors, cleanup |
-| `utils/roles.ts` | Single source of truth for roles + role groups |
-| `utils/custom.validator.ts` | `validateRequest(schema, data)` → parsed or `CustomError` |
-| `utils/custom.exception.ts` / `utils/api.error.ts` | Typed errors with status + fields |
-| `middlewares/auth.middleware.ts` | `requireAuth(...roles)` — verifies JWT + re-checks DB |
-| `middlewares/ratelimit.middleware.ts` | Auth/filing/tracking limiters |
-| `db.ts` | Prisma client singleton (pg adapter) |
-
-### 6.3 `requireAuth` Behavior
-
-1. Read `access_token` cookie; 401 if absent.
-2. Verify JWT; 401 on invalid/expired.
-3. Re-fetch `{ id, fullName, role, isActive }` from the DB — role changes and deactivations take effect immediately.
-4. Reject inactive/absent users (401).
-5. Attach `req.user = { userId, role, fullName }`.
-6. If `allowedRoles` were supplied and the role isn't in them → 403.
-
-### 6.4 Audit Logging
-
-The `auditFromRequest(req)` helper builds an entry from the current request (actor, IP, action, entity, summary, meta). Emitted actions include:
-
-`auth.login`, `user.create`, `user.update`, `complaint.status.update`, `complaint.priority.update`, `complaint.bulk_status`, `complaint.reopen`, `hearing.create`, `hearing.update`, `hearing.cancel`, `notice.create`, `notice.update`, `notice.delete`, `setting.update`.
-
----
-
-## 7. Component Design — Client
-
-### 7.1 Routing (`client/src/router/routes.tsx`)
-
-```
-/                         RootLayout (+ RootLoader)
-├── (index)               Home (guest welcome, + HomeLoader)
-├── login                 Login + loginAction
-├── file-complaint        FileComplaint + fileComplaintAction
-├── track-complaint       Track + trackAction
-└── *                     NotFound
-
-/admin                    AdminLayout (+ AdminLoader, AdminError)
-├── (index)               Overview (+ OverviewLoader)
-├── analytics             AdminReport (inline loader -> /analytics/report)
-├── create                CreateUser (+ AdminOnlyLoader)
-├── accounts              StaffAccounts (+ UsersLoader, usersAction)
-├── profile               Profile (+ ProfileLoader, profileAction)
-├── audit                 AuditLog (+ AuditLoader)
-├── settings              BarangaySettingsPage (+ SettingsLoader, settingsAction)
-├── complaints            ComplaintsList (+ ComplaintsLoader)
-├── hearings              HearingsPage (+ HearingsLoader)
-├── complaints/:id        ComplaintView (+ ComplaintDetailLoader)
-├── notices               NoticesList (+ NoticesLoader, noticesAction)
-├── notices/create        CreateNotice (+ createNoticeAction)
-└── *                     NotFound
-
-/admin/complaints/:id/documents/:doc    ComplaintDocument (+ loader) — no app chrome (printable)
-```
-
-The admin layout wraps all `/admin` children with a collapsible sidebar and a header (name → profile, notifications bell, theme toggle, language toggle). Route-level `handle.crumb` drives breadcrumbs.
-
-### 7.2 Feature Folder Convention
-
-Each feature is a folder under `features/` holding some of:
-
-- `loader.ts` — fetch data for the route (React Router loader) and export result types.
-- `action.ts` — handle form submissions/mutations.
-- `table.tsx` / `form.tsx` / `<view>.tsx` — presentation.
-- Supporting components (`dialog.tsx`, `complaint-picker.tsx`, `priority-select.tsx`, etc.).
-
-Loaders/actions are separated from components to satisfy the `react(only-export-components)` lint rule (constants and helpers must live outside component modules).
-
-### 7.3 Guards & Auth State
-
-- `AdminLoader` and `AdminOnlyLoader` (`layouts/admin/loader.ts`) gate the panel; `AdminOnlyLoader` restricts to admins.
-- `hooks/use-auth.ts` caches the current user for the session and drives role-aware navigation.
-- `lib/roles.ts` mirrors the server `utils/roles.ts` role groups and must be kept in sync.
-
-### 7.4 Shared UI & Conventions
-
-- `components/ui/*` — shadcn-generated primitives from the unified `radix-ui` package.
-- `components/ui/date-time-picker.tsx` + `components/ui/popover.tsx` — a custom themed date/time picker; `lib/datetime.ts` holds pure date helpers and a module-level `NOW` (kept out of components to satisfy `react(purity)`).
-- Shared table styling: full-bleed containers (`-mx-6 … border-y`), hover rows, bold first cell — used by complaints, accounts, and audit tables.
-- `data-pagination.tsx`, `top-loader.tsx`, `mode-toggle.tsx`, `language-toggle.tsx`.
-
-### 7.5 Internationalization & Theming
-
-- `lib/I18n.tsx` provides `useT()` and a `Key` type derived from the English dictionary; English is the default, Filipino (`tl`) is bundled, and a saved `localStorage` preference wins.
-- Dark mode via `next-themes` with a `ThemeProvider` mounted in `main.tsx`.
-
-### 7.6 Printable KP Documents
-
-`features/admin/complaint/documents/{loader.ts,document.tsx}` render Summons, Notice of Mediation, Amicable Settlement, and Certificate to File Action. The loader fetches the complaint **and** `/api/settings`; the letterhead and signatories (Punong Barangay, Lupon Chairman) are sourced from settings rather than hardcoded.
-
-### 7.7 CSV Export & Print
-
-- Audit and Analytics pages fetch server data and build CSV client-side (labels resolved via `ACTION_LABEL`/`entityLabel` maps).
-- Print uses `window.print()` with an `@media print` block in `index.css` that hides the sidebar/header and a `print-hide` utility class for buttons.
-
----
-
-## 8. Business Rules & Domain Logic
-
-### 8.1 KP Status Workflow
-
-Statuses (ordered): `received → summoned → mediation → conciliation → settled | certified | dismissed`.
-
-- `settled`, `certified`, `dismissed` are **terminal** (no deadline; no escalation).
-- `received`, `summoned`, `mediation`, `conciliation` are **open**.
-
-### 8.2 Deadline Computation
-
-On filing and on every status change, `computeNextDueAt(status)` sets `dueAt`:
-
-| Status | Days to next step |
-| --- | --- |
-| `received` | 3 (summon the respondent) |
-| `summoned` | 15 (hold mediation) |
-| `conciliation` | 15 (conclude Pangkat conciliation) |
-| `mediation` | none configured (null) |
-| terminal | null |
-
-### 8.3 Risk Classification
-
-`complaintRisk(dueAt, status)` → `overdue` (past), `due_soon` (within `RISK_WINDOW_DAYS = 3`), `on_track`, or `none` (terminal / no deadline).
-
-### 8.4 Priority & Auto-Escalation
-
-Priorities ordered `low < normal < high < urgent`.
-
-- Staff set priority manually on a case.
-- The reminder scan auto-escalates **overdue** cases: `< 7 days late → high`, `≥ 7 days late → urgent`. Escalation **never downgrades** a case already at or above the target.
-
-### 8.5 Mediation-Date Mirroring
-
-When a status change includes a mediation date, `updateStatus` runs inside a transaction that also mirrors the date into the `Hearing` table:
-
-- `kind` = `conciliation` when the status is `conciliation`, else `mediation`.
-- If a future `scheduled` session exists, it is **rescheduled**; otherwise a new one is created (no duplicate sessions on repeated edits).
-- `getById` returns `nextHearingAt` / `nextHearingKind` for display.
-
-### 8.6 Reference Numbers
-
-`BK-<currentYear>-<6 chars>` where chars come from an unambiguous base32 alphabet (`ABCDEFGHJKLMNPQRSTUVWXYZ23456789`, no `I`/`O`/`0`/`1`).
-
-### 8.7 Tracking Privacy
-
-Tracking requires the **reference number and the registered contact number** (normalized to digits). References cannot be enumerated. The public timeline exposes only `status`, `publicNote`, `hearingAt`, `createdAt` — never internal notes.
-
-### 8.8 Complaints Register Filters
-
-- `q` — fuzzy match on reference / complainant / respondent.
-- `status`, `type`, `priority` — exact filters.
-- `overdue` — `dueAt < now` and not terminal.
-- `dueSoon` — `dueAt` within the next 3 days and not terminal.
-- Newest-filed first (`createdAt DESC, id DESC`).
-
-### 8.9 Evidence Upload Constraints
-
-Allowlisted MIME types → fixed extensions (never trust the client filename): `image/jpeg→.jpg`, `image/png→.png`, `application/pdf→.pdf`, `video/mp4→.mp4`. Max 5 files, ≤10 MB each. Files written to `uploads/` with a UUID name; already-written files are removed if the request later fails.
-
----
-
-## 9. Notifications & Realtime
-
-### 9.1 Notification Sources
-
-| Type | Trigger | Audience |
-| --- | --- | --- |
-| `new_complaint` | Complaint filed | All active internal users |
-| `reminder` | KP step due within 1 day | All active internal users |
-| `overdue` | KP step past deadline | All active internal users |
-| `escalation` | Priority auto-escalated | All active internal users |
-| `info` | Reserved/generic | — |
-
-### 9.2 Idempotency
-
-Every generated notification carries a `dedupeKey` (e.g. `reminder:<caseId>:<day>:<userId>`, `escalation:<caseId>:<priority>:<userId>`, `new_complaint:<caseId>:<userId>`). `createMany({ skipDuplicates: true })` guarantees one row per recipient per event.
-
-### 9.3 Realtime Delivery (SSE)
-
-- `GET /api/notifications/stream` opens a Server-Sent Events connection, per-user channel `user:<id>`.
-- `notification.events.ts` keeps an in-memory registry and `emitNotification(userId)` nudges the affected client.
-- The client's `bell.tsx` subscribes via `EventSource` and refetches the inbox on signal; unread badges are colored by type (e.g. `new_complaint` → blue).
-
-### 9.4 Read Semantics
-
-- `PATCH /:id/read` and `POST /read-all` set `readAt`.
-- Opening a case (`POST /:id/view`) also marks that user's notifications for the case read.
-
-### 9.5 External Channels (SMS & Email)
-
-Outbound resident notifications are **not** stored in the database; they fire in real time when a staff action changes a case. `notify/complainant.notifier.ts` fetches the complainant once (reference, contact, email) and fans out to the channels that are available.
-
-| Channel | Provider | Message builder | Enabled when |
-| --- | --- | --- | --- |
-| SMS | UniSMS PH (`POST /api/sms`, Basic auth) | `sms/sms.messages.ts` | `UNISMS_SECRET_KEY` is set |
-| Email | Brevo (`POST /v3/smtp/email`, `api-key` header) | `email/email.messages.ts` | `BREVO_API_KEY` **and** `BREVO_SENDER_EMAIL` are set |
-
-Trigger points:
-
-| Event | Handler | Message |
-| --- | --- | --- |
-| Case status changed | `complaint.controller.updateStatus` | "Complaint `<ref>` is now `<status>`" (+ mediation date if one was set) |
-| Mediation scheduled | `hearing.controller.create` | "Your `<kind>` is scheduled on `<when>`" |
-| Mediation rescheduled | `hearing.controller.update` (when `scheduledAt` changes) | "Your `<kind>` is rescheduled…" |
-| Mediation cancelled | `hearing.controller.cancel` | "Your `<kind>` has been cancelled" |
-
-Design notes:
-
-- All sends are **fire-and-forget** (`void notifier.…`): the HTTP response is never blocked by SMS/email, and a provider failure is logged, never thrown.
-- Each channel is skipped when it isn't configured or the complainant gave no address for it; `Promise.allSettled` isolates one channel's failure from the other.
-- Secrets are only read from env and are never logged.
-- SMS content is capped at 670 characters; messages avoid PII beyond the case reference.
-- Email templates provide a plain-text body and a simple HTML body.
-- The public filing form captures an optional email; only complainants who gave one receive email.
-
-### 9.6 Reminder Job
-
-`startReminderJob()` runs at startup (+5s) and every 30 minutes (`.unref()` so it doesn't block shutdown). `runReminderScan()`:
-
-1. Selects open cases with `dueAt ≤ now + 1 day`.
-2. Auto-escalates overdue low/medium cases and records escalation alerts.
-3. Creates one reminder/overdue notification per active staff member per case per day (deduped).
-
----
-
-## 10. Security Design
-
-| Control | Design |
-| --- | --- |
-| Authentication | JWT access token (short-lived, HttpOnly cookie) + rotating refresh token (DB-backed, HttpOnly cookie) |
-| Password storage | argon2 hash (`argon2.verify` on login) |
-| Session hardening | Cookie `secure` + `SameSite=None` in production, `lax` in dev |
-| RBAC | `requireAuth(...roles)` on every protected route; role groups in `utils/roles.ts` |
-| Live revocation | DB re-check of role/`isActive` on each authenticated request |
-| CSRF | `csrf-csrf` double-submit: `ensureCsrfSession` + `GET /api/csrf-token` + `doubleCsrfProtection`; browser sends `X-CSRF-Token`; `GET` exempt |
-| Rate limiting | Dedicated limiters on login/refresh/logout, filing, and tracking |
-| Input validation | Zod schemas at the controller boundary |
-| Uploads | MIME allowlist, fixed extensions, UUID filenames, size/count caps, cleanup on failure |
-| Headers | `helmet` defaults; `trust proxy` in production |
-| Logging hygiene | pino redacts `cookie`, `authorization`, `set-cookie` |
-| Least privilege | Public endpoints limited to filing, tracking, published notices, settings read, CSRF token |
-| Account lifecycle | `isActive` soft-disable; user references use `SetNull` so history survives |
-| Auditability | Privileged actions written to `AuditLog` with actor snapshots + IP |
-
-### 10.1 Role → Capability Matrix
-
-| Capability | admin | staff | secretary | lupon |
-| --- | :-: | :-: | :-: | :-: |
-| Sign in to the panel | ✅ | ✅ | ✅ | ✅ |
-| View the complaints register/detail | ✅ | ✅ | ✅ | ✅ |
-| Change status/priority, reopen, bulk-update | ✅ | ✅ | — | ✅ |
-| Schedule/manage mediations | ✅ | ✅ | — | ✅ |
-| Publish/edit notices | ✅ | ✅ | ✅ | — |
-| Analytics reports/overview | ✅ | ✅ | ✅ | ✅ |
-| Manage staff accounts, audit trail, settings | ✅ | — | — | — |
-
-> Role groups: `INTERNAL_ROLES` = all four; `CASE_VIEW_ROLES` = all four; `CASE_WRITE_ROLES` = admin/staff/lupon; `HEARING_ROLES` = admin/staff/lupon; `NOTICE_ROLES` = admin/staff/secretary; `ADMIN_ROLES` = admin.
-
----
-
-## 11. Cross-Cutting Concerns
-
-### 11.1 Error Handling
-
-- Controllers translate domain/validation errors into `400` with field maps.
-- `ApiError`/`CustomError` carry HTTP status; the central handler in `index.ts` maps `CustomError`/`ZodError`/status-bearing errors and falls back to `500`.
-- The client surfaces route errors through `RootError`/`AdminError` and field errors inline; toasts (`sonner`) report action failures.
-
-### 11.2 Validation
-
-Zod at every boundary. Notable gotcha (documented): `.optional().transform(v => v || null)` also runs on `undefined`, so PATCH handlers that must distinguish "absent" from "null" use `.nullable().optional()`.
-
-### 11.3 Logging
-
-`pino` (pretty in dev, JSON in prod) with `pino-http` per-request logging and sensitive-header redaction.
-
-### 11.4 Internationalization
-
-Shared `useT()` with English default and Filipino translations; all user-facing strings come from the dictionary.
-
-### 11.5 TypeScript Strictness
-
-- Server: `noUncheckedIndexedAccess` + `exactOptionalPropertyTypes` (encourages conditional spreads).
-- Client: `noUnusedLocals` / `noUnusedParameters`.
-- Linting via oxlint, including React purity rules that shape helper placement.
-
----
-
-## 12. Non-Functional Requirements
-
-| Attribute | Target / Approach |
-| --- | --- |
-| Performance | Indexed list queries; pagination (page size ≤ 100); parallel `Promise.all` aggregation in overview |
-| Scalability | Stateless API instances; SSE registry is in-memory (single-instance assumption — see §16) |
-| Reliability | DB transactions for multi-write operations; idempotent notifications via `dedupeKey` |
-| Security | See §10 |
-| Usability | Bilingual, light/dark, responsive sidebar, route breadcrumbs, inline validation |
-| Maintainability | Module-per-feature; strict 4-file server pattern; loader/action separation; shared type maps |
-| Portability | Node.js + PostgreSQL; no vendor lock-in beyond Prisma/pg |
-| Observability | Structured request logs; audit trail; DB health check at startup |
-
----
-
-## 13. Configuration & Environments
-
-### 13.1 Server Environment Variables (`server/.env`)
-
-| Variable | Required | Notes |
-| --- | --- | --- |
-| `PORT` | ✅ | API port (default referenced as 3000) |
-| `NODE_ENV` | ✅ | `development` \| `production` |
-| `CSRF_SECRET` | ✅ | CSRF signing secret |
-| `JWT_SECRET` | ✅ | Access-token signing secret |
-| `JWT_EXPIRES_IN` | ✅ | Access-token lifetime (seconds) |
-| `DATABASE_URL` | ✅ | PostgreSQL connection string |
-| `CORS_ORIGIN` | ✅ | Allowed origin (credentials enabled) |
-| `REFRESH_TOKEN_EXPIRES_IN` | ➖ | Refresh lifetime in days (default 30) |
-| `PUBLIC_API_URL` | ➖ | Base URL used to build evidence links (default `http://localhost:3000`) |
-| `UNISMS_SECRET_KEY` | ➖ | UniSMS PH secret key; blank disables SMS |
-| `UNISMS_SENDER_ID` | ➖ | Registered UniSMS sender ID (default `Unisoft`) |
-| `UNISMS_API_URL` | ➖ | UniSMS endpoint (default `https://unismsapi.com/api/sms`) |
-| `BREVO_API_KEY` | ➖ | Brevo API key; blank disables email |
-| `BREVO_SENDER_EMAIL` | ➖ | Verified Brevo sender address; required for email to be enabled |
-| `BREVO_SENDER_NAME` | ➖ | Sender display name (default `BICATS`) |
-| `BREVO_API_URL` | ➖ | Brevo endpoint (default `https://api.brevo.com/v3/smtp/email`) |
-
-Startup fails fast if a required variable is missing. SMS/email are optional: with a blank key the related channel is silently disabled and the app runs normally.
-
-### 13.2 Development Topology
-
-- Server: `pnpm dev` (tsx watch) on `:3000`.
-- Client: `pnpm dev` (Vite) proxying `/api` → `http://localhost:3000`.
-- Database: PostgreSQL (example: `postgresql://postgres:***@localhost:9147/bicats`).
-
-### 13.3 npm Scripts
-
-**Server:** `dev`, `typecheck`, `db:push`, `db:generate`, `db:migrate`, `db:studio`, `db:seed`, `db:seed:users`, `db:seed:audit`, `db:seed:all`.
-
-**Client:** `dev`, `build` (`tsc -b && vite build`), `lint`, `preview`.
-
-### 13.4 Seed Data (demo)
-
-Seeded accounts (password `password123`): `james@gmail.com` (admin, "James Bond" / Punong Barangay), `jack@gmail.com` (staff), `maria@gmail.com` (secretary), `pedro@gmail.com` (lupon). Seeders populate sample complaints, mediations, and audit entries. `pnpm db:seed` resets demo data.
-
----
-
-## 14. Testing & Quality
-
-The project currently relies on static checks and manual verification rather than an automated test suite:
-
-- **Server:** `pnpm typecheck` (`tsc --noEmit`) — clean.
-- **Client:** `tsc -b --force` and `pnpm lint` (oxlint) — baseline 0 errors / 18 warnings; `pnpm build` succeeds.
-- **Manual/API verification:** endpoint smoke tests via HTTP (e.g., filing a complaint, PATCH settings + audit confirmation).
-
-**Recommended next steps:** add integration tests for the complaint workflow (filing → status → deadline → escalation), auth/refresh rotation, and RBAC boundaries; add unit tests for `computeNextDueAt`, `complaintRisk`, `escalatedPriority`, and phone normalization.
-
----
-
-## 15. Deployment & Operations
-
-### 15.1 Production Considerations
-
-- Build the client (`vite build`) and serve `dist/` via a static host/reverse proxy; proxy `/api` to the Node server.
-- Set `NODE_ENV=production` (enables `secure`/`SameSite=None` cookies and `trust proxy`), configure `CORS_ORIGIN` to the real origin, and terminate TLS at the proxy.
-- Run `prisma migrate deploy` (or `db push` for the prototype) against the production database.
-- Persist the `uploads/` directory on durable storage and back it up alongside the database.
-- Ensure the SSE endpoint is not buffered by the proxy (disable response buffering; long-lived connections need generous read timeouts).
-
-### 15.2 Operational Runbook (highlights)
-
-| Task | Command |
-| --- | --- |
-| Apply schema (prototype) | `pnpm db:push` |
-| Regenerate Prisma client | `pnpm db:generate` |
-| Seed demo data | `pnpm db:seed:all` |
-| Inspect data | `pnpm db:studio` |
-| Type check API | `pnpm typecheck` |
-
----
-
-## 16. Known Limitations & Future Work
-
-**Limitations**
-
-- SSE notification registry is in-memory → multi-instance deployments need a shared pub/sub (e.g., Redis) or sticky sessions.
-- No automated test suite yet.
-- Resident SMS/email are sent synchronously in the request (fire-and-forget); there is no outbox/retry queue, so a provider outage drops that message. Delivery status is not tracked.
-- Brevo sending requires a verified sender; until then emails can only go to the account owner.
-- `/api/settings` GET is public (needed for the public board/printables); it exposes non-sensitive barangay profile data only.
-- `Hearing` supports `location`/`outcome` fields that are not fully surfaced in the UI.
-- Some prototype values and data are demo-oriented; `BarangaySettings` defaults are placeholders.
-
-**Suggested roadmap**
-
-1. Automated integration/unit tests for the KP workflow and security boundaries.
-2. Outbox/retry queue for SMS/email with delivery-status tracking.
-3. Notifications inbox page (full list, filters, bulk actions) building on existing endpoints.
-4. Mediation calendar month view with drag-to-reschedule.
-5. Public notices bulletin for residents.
-6. Admin account actions: activate/deactivate and password reset in the accounts table.
-7. CSV export for the complaints register (parity with audit export).
-8. Redis-backed event bus and horizontally scalable deployment.
-
----
-
-## 17. Appendices
-
-### A. Complaint Status Enum
-
-`received`, `summoned`, `mediation`, `conciliation`, `settled`, `certified`, `dismissed`
-Terminal: `settled`, `certified`, `dismissed`.
-
-### B. Priority Enum
-
-`low`, `normal`, `high`, `urgent`.
-
-### C. Hearing Enums
-
-`kind`: `mediation`, `conciliation`, `hearing` (UI "Arbitration").
-`status`: `scheduled`, `completed`, `cancelled`, `no_show`.
-
-### D. Notification Types
-
-`reminder`, `overdue`, `escalation`, `new_complaint`, `info`.
-
-### E. Audit Actions
-
-`auth.login`, `user.create`, `user.update`, `complaint.status.update`, `complaint.priority.update`, `complaint.bulk_status`, `complaint.reopen`, `hearing.create`, `hearing.update`, `hearing.cancel`, `notice.create`, `notice.update`, `notice.delete`, `setting.update`.
-
-### F. Evidence Allowlist
-
-`image/jpeg → .jpg`, `image/png → .png`, `application/pdf → .pdf`, `video/mp4 → .mp4`. Max 5 files, 10 MB each.
-
-### G. Role Constants
-
-```
-INTERNAL_ROLES   = admin, staff, secretary, lupon
-CASE_VIEW_ROLES  = admin, staff, secretary, lupon
-CASE_WRITE_ROLES = admin, staff, lupon
-HEARING_ROLES    = admin, staff, lupon
-NOTICE_ROLES     = admin, staff, secretary
-ADMIN_ROLES      = admin
-```
-
-### H. Change Log
-
-| Version | Date | Summary |
-| --- | --- | --- |
-| 1.0 | 2026-10-19 | Initial SDD covering the system through commit `074e488` |
-| 1.1 | 2026-10-19 | Added resident SMS (UniSMS PH) and email (Brevo) notifications, optional complainant email, and the `sms`/`email`/`notify` modules (§9.5) |
+*School of Information Technology — Software Engineering 2*

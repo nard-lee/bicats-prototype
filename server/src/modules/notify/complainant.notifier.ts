@@ -11,6 +11,7 @@ import {
   mediationScheduledSms,
   statusUpdateSms,
 } from "../sms/sms.messages.js";
+import settingService from "../setting/setting.service.js";
 
 type Target = {
   reference: string;
@@ -32,10 +33,11 @@ async function dispatch(
   sms: string,
   email: { subject: string; text: string; html: string },
   event: string,
+  channels: { sms: boolean; email: boolean },
 ): Promise<void> {
   const tasks: Promise<boolean>[] = [];
 
-  if (smsService.isSmsEnabled() && target.contactNormalized) {
+  if (channels.sms && smsService.isSmsEnabled() && target.contactNormalized) {
     tasks.push(
       smsService.send({
         to: target.contactNormalized,
@@ -45,7 +47,7 @@ async function dispatch(
     );
   }
 
-  if (emailService.isEmailEnabled() && target.complainantEmail) {
+  if (channels.email && emailService.isEmailEnabled() && target.complainantEmail) {
     tasks.push(
       emailService.send({
         to: target.complainantEmail,
@@ -69,11 +71,21 @@ const complainantNotifier = {
   ): Promise<void> {
     if (!smsService.isSmsEnabled() && !emailService.isEmailEnabled()) return;
 
+    const settings = await settingService.get();
+    const channels = { sms: settings.notifyStatusSms, email: settings.notifyStatusEmail };
+    if (!channels.sms && !channels.email) return;
+
     const target = await findTarget(complaintId);
     if (!target) return;
 
     const message = { reference: target.reference, ...input };
-    await dispatch(target, statusUpdateSms(message), statusUpdateEmail(message), "status_update");
+    await dispatch(
+      target,
+      statusUpdateSms(message),
+      statusUpdateEmail(message),
+      "status_update",
+      channels,
+    );
   },
 
   // Notify the complainant that a mediation session was scheduled or moved.
@@ -82,6 +94,13 @@ const complainantNotifier = {
     input: { kind: string; scheduledAt: Date; location?: string | null; rescheduled?: boolean },
   ): Promise<void> {
     if (!smsService.isSmsEnabled() && !emailService.isEmailEnabled()) return;
+
+    const settings = await settingService.get();
+    const channels = {
+      sms: settings.notifyMediationSms,
+      email: settings.notifyMediationEmail,
+    };
+    if (!channels.sms && !channels.email) return;
 
     const target = await findTarget(complaintId);
     if (!target) return;
@@ -92,6 +111,7 @@ const complainantNotifier = {
       mediationScheduledSms(message),
       mediationScheduledEmail(message),
       "mediation_scheduled",
+      channels,
     );
   },
 
@@ -102,6 +122,13 @@ const complainantNotifier = {
   ): Promise<void> {
     if (!smsService.isSmsEnabled() && !emailService.isEmailEnabled()) return;
 
+    const settings = await settingService.get();
+    const channels = {
+      sms: settings.notifyCancelledSms,
+      email: settings.notifyCancelledEmail,
+    };
+    if (!channels.sms && !channels.email) return;
+
     const target = await findTarget(complaintId);
     if (!target) return;
 
@@ -111,6 +138,7 @@ const complainantNotifier = {
       mediationCancelledSms(message),
       mediationCancelledEmail(message),
       "mediation_cancelled",
+      channels,
     );
   },
 };

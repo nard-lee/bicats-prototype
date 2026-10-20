@@ -1,9 +1,8 @@
 
-import { randomInt } from "node:crypto";
 import { prisma } from "../../db.js";
 import { Prisma } from "../../generated/prisma/client.js";
 
-import { COMPLAINT_STATUSES, COMPLAINT_PRIORITIES, computeNextDueAt } from "./complaint.schema.js";
+import { COMPLAINT_STATUSES, COMPLAINT_PRIORITIES, computeNextDueAt, deadlineDaysFrom } from "./complaint.schema.js";
 import type {
     ComplaintDetail,
     ComplaintListFilters,
@@ -12,17 +11,23 @@ import type {
     CreateComplaintInput,
     Paginated,
 } from "./complaint.schema.js";
+import settingService from "../setting/setting.service.js";
 
-const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+// Atomically reserves the next number for the year and formats it as
+// BK-<year>-000001. The upsert runs inside the complaint transaction so two
+// concurrent filings can never share a sequence number.
+async function nextReference(tx: Prisma.TransactionClient, year: number): Promise<string> {
+    const rows = await tx.$queryRaw<{ lastValue: number }[]>`
+        INSERT INTO "ReferenceCounter" ("year", "lastValue")
+        VALUES (${year}, 1)
+        ON CONFLICT ("year")
+        DO UPDATE SET "lastValue" = "ReferenceCounter"."lastValue" + 1
+        RETURNING "lastValue"
+    `;
 
-function makeReference(): string {
-    let code = "";
+    const value = rows[0]?.lastValue ?? 1;
 
-    for (let i = 0; i < 6; i++) {
-        code += ALPHABET[randomInt(ALPHABET.length)];
-    }
-
-    return `BK-${new Date().getFullYear()}-${code}`;
+    return `BK-${year}-${String(value).padStart(6, "0")}`;
 }
 
 function normalizePhone(input: string): string {
@@ -46,50 +51,57 @@ function getEvidenceUrl(storedName: string): string {
 const complaintService = {
 
     async create(input: CreateComplaintInput, files: Express.Multer.File[]): Promise<{ id: number; reference: string }> {
-        return prisma.complaint.create({
-            data: {
-                reference: makeReference(),
+        const settings = await settingService.get();
+        const deadlineDays = deadlineDaysFrom(settings);
 
-                complainantName: input.complainantName,
-                complainantAge: Number(input.complainantAge),
-                complainantPurok: input.complainantPurok,
-                complainantContact: input.complainantContact,
-                contactNormalized: normalizePhone(input.complainantContact),
-                complainantEmail: input.complainantEmail,
-                complainantAddress: input.complainantAddress,
+        return prisma.$transaction(async (tx) => {
+            const reference = await nextReference(tx, new Date().getFullYear());
 
-                respondentName: input.respondentName,
-                respondentAddress: input.respondentAddress || null,
-                relationship: input.relationship || null,
+            return tx.complaint.create({
+                data: {
+                    reference,
 
-                complaintType: input.complaintType,
-                incidentAt: new Date(input.incidentAt),
-                incidentPlace: input.incidentPlace,
-                narrative: input.narrative,
+                    complainantName: input.complainantName,
+                    complainantAge: Number(input.complainantAge),
+                    complainantPurok: input.complainantPurok,
+                    complainantContact: input.complainantContact,
+                    contactNormalized: normalizePhone(input.complainantContact),
+                    complainantEmail: input.complainantEmail,
+                    complainantAddress: input.complainantAddress,
 
-                // KP clock starts at filing: summon the respondent within 3 days.
-                dueAt: computeNextDueAt("received"),
-                consentAt: new Date(),
+                    respondentName: input.respondentName,
+                    respondentAddress: input.respondentAddress || null,
+                    relationship: input.relationship || null,
 
-                evidence: {
-                    create: files.map((file) => ({
-                        originalName: file.originalname,
-                        storedName: file.filename,
-                        mimeType: file.mimetype,
-                        size: file.size,
-                    })),
-                },
+                    complaintType: input.complaintType,
+                    incidentAt: new Date(input.incidentAt),
+                    incidentPlace: input.incidentPlace,
+                    narrative: input.narrative,
 
-                updates: {
-                    create: {
-                        status: "received",
+                    // KP clock starts at filing: summon the respondent within the configured days.
+                    dueAt: computeNextDueAt("received", new Date(), deadlineDays),
+                    consentAt: new Date(),
+
+                    evidence: {
+                        create: files.map((file) => ({
+                            originalName: file.originalname,
+                            storedName: file.filename,
+                            mimeType: file.mimetype,
+                            size: file.size,
+                        })),
+                    },
+
+                    updates: {
+                        create: {
+                            status: "received",
+                        },
                     },
                 },
-            },
-            select: {
-                id: true,
-                reference: true,
-            },
+                select: {
+                    id: true,
+                    reference: true,
+                },
+            });
         });
     },
 
@@ -124,6 +136,12 @@ const complaintService = {
             (COMPLAINT_PRIORITIES as readonly string[]).includes(filters.priority)
         ) {
             conditions.push(Prisma.sql`"priority" = ${filters.priority}`);
+        }
+
+        if (filters.open) {
+            conditions.push(
+                Prisma.sql`"status" IN ('received', 'summoned', 'mediation', 'conciliation')`,
+            );
         }
 
         if (filters.overdue) {
@@ -302,7 +320,8 @@ const complaintService = {
 
     async updateStatus(id: number, status: string, publicNote?: string, internalNote?: string, hearingAt?: Date, userId?: number) {
         // Advance the KP clock whenever a case moves to a new step.
-        const dueAt = computeNextDueAt(status);
+        const settings = await settingService.get();
+        const dueAt = computeNextDueAt(status, new Date(), deadlineDaysFrom(settings));
 
         return prisma.$transaction(async (tx) => {
             await tx.complaint.update({
@@ -360,7 +379,8 @@ const complaintService = {
     },
 
     async bulkUpdateStatus(ids: number[], status: string, userId?: number): Promise<number> {
-        const dueAt = computeNextDueAt(status);
+        const settings = await settingService.get();
+        const dueAt = computeNextDueAt(status, new Date(), deadlineDaysFrom(settings));
 
         return prisma.$transaction(async (tx) => {
             const { count } = await tx.complaint.updateMany({
@@ -390,10 +410,13 @@ const complaintService = {
     },
 
     async reopenCase(id: number, reason: string, userId?: number) {
+        const settings = await settingService.get();
+        const dueAt = computeNextDueAt("received", new Date(), deadlineDaysFrom(settings));
+
         return prisma.$transaction(async (tx) => {
             await tx.complaint.update({
                 where: { id },
-                data: { status: "received", dueAt: computeNextDueAt("received") },
+                data: { status: "received", dueAt },
             });
 
             const historyData: any = {

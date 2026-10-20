@@ -140,7 +140,7 @@ export function ComplaintSearch({ defaultValue = "" }: { defaultValue?: string }
                   >
                     <span className="font-medium">{item.reference}</span>
                     <span className="line-clamp-1 text-xs text-muted-foreground">
-                      {item.complainantName} vs {item.respondentName}
+                      {item.complainantName} and {item.respondentName}
                     </span>
                   </button>
                 </li>

@@ -8,11 +8,21 @@ import {
   useRouteLoaderData,
   useSearchParams,
 } from "react-router";
-import { FileDown, RefreshCw } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ClipboardList,
+  FileDown,
+  FolderOpen,
+  RefreshCw,
+  Timer,
+  type LucideIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import DataPagination from "@/components/data-pagination";
 import { api } from "@/lib/api";
@@ -34,8 +44,8 @@ import {
 import { complaintTypeKeys, useT, type Key } from "@/lib/I18n";
 import { ComplaintSearch } from "./search";
 import { PRIORITIES, PRIORITY_STYLE } from "../priority";
-import type { ComplaintListItem, ComplaintStatus, Paginated } from "./loader";
-import type { CurrentUser } from "@/hooks/use-auth";
+import type { ComplaintListItem, ComplaintStatus, ComplaintsPage } from "./loader";
+import type { AdminLoaderData } from "@/layouts/admin/loader";
 
 const STATUSES: ComplaintStatus[] = [
   "received",
@@ -60,13 +70,13 @@ const CHECKBOX =
 
 export default function ComplaintsList() {
   const { t, lang } = useT();
-  const { items, total, page, pageSize, totalPages } = useLoaderData() as Paginated<ComplaintListItem>;
+  const { items, total, page, pageSize, totalPages, stats } = useLoaderData() as ComplaintsPage;
   const navigate = useNavigate();
   const revalidator = useRevalidator();
   const [params] = useSearchParams();
 
   // Secretaries keep the register but cannot change it.
-  const user = useRouteLoaderData("admin") as CurrentUser | null;
+  const { user } = useRouteLoaderData("admin") as AdminLoaderData;
   const canWrite = user?.role !== "secretary";
   const columnCount = canWrite ? 9 : 8;
 
@@ -76,7 +86,39 @@ export default function ComplaintsList() {
   const priority = params.get("priority") ?? "all";
   const risk = params.get("risk") ?? "all";
   const hasFilters =
-    q !== "" || status !== "all" || type !== "all" || priority !== "all" || risk !== "all";
+    q !== "" ||
+    status !== "all" ||
+    type !== "all" ||
+    priority !== "all" ||
+    risk !== "all";
+
+  const activeStat =
+    risk === "open"
+      ? "open"
+      : risk === "overdue"
+        ? "overdue"
+        : risk === "dueSoon"
+          ? "dueSoon"
+          : status === "settled"
+            ? "settled"
+            : status === "all"
+              ? "total"
+              : null;
+
+  const applyStat = (kind: "total" | "open" | "overdue" | "dueSoon" | "settled") => {
+    const next = new URLSearchParams(params);
+    next.delete("page");
+    next.delete("status");
+    next.delete("risk");
+
+    if (kind === "open") next.set("risk", "open");
+    else if (kind === "overdue") next.set("risk", "overdue");
+    else if (kind === "dueSoon") next.set("risk", "dueSoon");
+    else if (kind === "settled") next.set("status", "settled");
+
+    const qs = next.toString();
+    navigate(`/admin/complaints${qs ? `?${qs}` : ""}`);
+  };
 
   const [selected, setSelected] = useState<number[]>([]);
   const [bulkStatus, setBulkStatus] = useState<ComplaintStatus>("received");
@@ -168,11 +210,47 @@ export default function ComplaintsList() {
   return (
     <div className="flex h-full min-h-0 flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">{t("adminComplaints")}</h1>
-          <p className="text-sm text-muted-foreground">
-            {total} {hasFilters ? "matching complaint(s)" : "total"}
-          </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <Stat
+            icon={ClipboardList}
+            label="Total"
+            value={stats.total}
+            tone="bg-primary/10 text-primary"
+            active={activeStat === "total"}
+            onClick={() => applyStat("total")}
+          />
+          <Stat
+            icon={FolderOpen}
+            label="Open"
+            value={stats.open}
+            tone="bg-sky-500/10 text-sky-600 dark:text-sky-400"
+            active={activeStat === "open"}
+            onClick={() => applyStat("open")}
+          />
+          <Stat
+            icon={AlertTriangle}
+            label="Overdue"
+            value={stats.overdue}
+            tone="bg-rose-500/10 text-rose-600 dark:text-rose-400"
+            active={activeStat === "overdue"}
+            onClick={() => applyStat("overdue")}
+          />
+          <Stat
+            icon={Timer}
+            label="Due soon"
+            value={stats.dueSoon}
+            tone="bg-amber-500/10 text-amber-600 dark:text-amber-400"
+            active={activeStat === "dueSoon"}
+            onClick={() => applyStat("dueSoon")}
+          />
+          <Stat
+            icon={CheckCircle2}
+            label="Settled"
+            value={stats.settled}
+            tone="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+            active={activeStat === "settled"}
+            onClick={() => applyStat("settled")}
+          />
         </div>
         <ComplaintSearch defaultValue={q} />
       </div>
@@ -244,6 +322,7 @@ export default function ComplaintsList() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t("anyDue")}</SelectItem>
+            <SelectItem value="open">{t("openOnly")}</SelectItem>
             <SelectItem value="overdue">{t("overdueOnly")}</SelectItem>
             <SelectItem value="dueSoon">{t("dueSoonOnly")}</SelectItem>
           </SelectContent>
@@ -252,7 +331,7 @@ export default function ComplaintsList() {
         <Button type="submit">Filter</Button>
 
         {hasFilters && (
-          <Button asChild type="button" variant="ghost">
+          <Button asChild type="button" variant="outline">
             <Link to="/admin/complaints">Clear</Link>
           </Button>
         )}
@@ -402,5 +481,53 @@ export default function ComplaintsList() {
         </Table>
       </div>
     </div>
+  );
+}
+
+function Stat({
+  icon: Icon,
+  label,
+  value,
+  tone,
+  active,
+  onClick,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: number;
+  tone: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className="group/stat cursor-pointer rounded-xl text-left outline-none"
+    >
+      <Card
+        size="sm"
+        className={cn(
+          "transition-colors hover:bg-muted/50 group-focus-visible/stat:ring-1 group-focus-visible/stat:ring-ring",
+          active && "ring-1 ring-primary",
+        )}
+      >
+        <CardContent className="flex flex-row items-center gap-2">
+          <span
+            className={cn(
+              "flex size-8 shrink-0 items-center justify-center rounded-md",
+              tone,
+            )}
+          >
+            <Icon className="size-4" />
+          </span>
+          <span className="text-lg leading-none font-semibold tabular-nums">
+            {value}
+          </span>
+          <span className="text-xs text-muted-foreground">{label}</span>
+        </CardContent>
+      </Card>
+    </button>
   );
 }

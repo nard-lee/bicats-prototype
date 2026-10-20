@@ -36,7 +36,7 @@ export default function ComplaintPicker({ options, value, onChange }: Props) {
       >
         <span className={cn("truncate text-left", !selected && "text-muted-foreground")}>
           {selected
-            ? `${selected.reference} — ${selected.complainantName} vs ${selected.respondentName}`
+            ? `${selected.reference} — ${selected.complainantName} and ${selected.respondentName}`
             : "Select a case"}
         </span>
         <ChevronDown className="h-4 w-4 shrink-0 opacity-60" />
@@ -81,7 +81,7 @@ export default function ComplaintPicker({ options, value, onChange }: Props) {
                   >
                     <span className="font-medium">{o.reference}</span>
                     <span className="text-xs text-muted-foreground">
-                      {o.complainantName} vs {o.respondentName}
+                      {o.complainantName} and {o.respondentName}
                     </span>
                   </button>
                 ))

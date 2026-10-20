@@ -56,8 +56,10 @@ export const analyticsService = {
   },
 
   async getOverview() {
+    const settings = await prisma.barangaySettings.findUnique({ where: { id: 1 } });
+    const windowDays = settings?.riskWindowDays ?? 3;
     const now = new Date();
-    const soon = new Date(now.getTime() + 3 * DAY);
+    const soon = new Date(now.getTime() + windowDays * DAY);
 
     const [
       totalComplaints,
@@ -151,7 +153,7 @@ export const analyticsService = {
       respondentName: c.respondentName,
       status: c.status,
       dueAt: c.dueAt ? c.dueAt.toISOString() : null,
-      risk: complaintRisk(c.dueAt, c.status),
+      risk: complaintRisk(c.dueAt, c.status, windowDays),
     }));
 
     return {

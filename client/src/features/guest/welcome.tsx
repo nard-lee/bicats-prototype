@@ -1,8 +1,9 @@
-import { Link, useLoaderData } from "react-router";
+import { Link, useLoaderData, useRouteLoaderData } from "react-router";
 import { Clock, FileText, MapPin, Phone, Search, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { complaintTypeKeys, useT, type Key } from "@/lib/I18n";
+import type { RootLoaderData } from "@/layouts/root/loader";
 import type { PublicNoticesResponse } from "./loader";
 
 const stepKeys: { title: Key; text: Key }[] = [
@@ -15,25 +16,41 @@ const stepKeys: { title: Key; text: Key }[] = [
 export default function Home() {
   const { t, lang } = useT();
   const { items: notices } = useLoaderData() as PublicNoticesResponse;
+  const { settings } = useRouteLoaderData("root") as RootLoaderData;
 
   const date = (iso: string) =>
     new Date(iso).toLocaleDateString(lang === "tl" ? "fil-PH" : "en-PH", {
       dateStyle: "medium",
     });
 
-  // Address, phone and officials are the same in both languages
-  const info = [
-    {
-      icon: MapPin,
-      text: "Barangay Hall, Purok 3, M. L. Quezon St., Barangay Kabayanihan, Santa Rosa, Laguna",
-    },
-    { icon: Clock, text: t("hallHours") },
-    { icon: Phone, text: "Hotline (049) 502-1188 · Tanod 0917 845 2210" },
-    {
-      icon: Users,
-      text: "Hon. Ricardo M. Villanueva, Punong Barangay · Ms. Aurora L. Dimaculangan, Barangay Secretary",
-    },
-  ];
+  const address = [
+    settings?.address,
+    settings?.barangayName,
+    settings?.city,
+    settings?.province,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  const phones = [
+    settings?.hotline,
+    settings?.tanodNumber ? `Tanod ${settings.tanodNumber}` : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  const officials = [
+    [settings?.punongBarangay, settings?.punongTitle].filter(Boolean).join(", "),
+    [settings?.luponChairman, settings?.luponTitle].filter(Boolean).join(", "),
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  const info: { icon: typeof MapPin; text: string }[] = [];
+  if (address) info.push({ icon: MapPin, text: address });
+  info.push({ icon: Clock, text: settings?.officeHours || t("hallHours") });
+  if (phones) info.push({ icon: Phone, text: phones });
+  if (officials) info.push({ icon: Users, text: officials });
 
   return (
     <div>

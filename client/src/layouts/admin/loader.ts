@@ -1,12 +1,22 @@
 import { redirect } from "react-router";
-import { getCurrentUser } from "@/hooks/use-auth";
+import { getCurrentUser, type CurrentUser } from "@/hooks/use-auth";
 import { INTERNAL_ROLES } from "@/lib/roles";
+import { api } from "@/lib/api";
+import type { BarangaySettings } from "@/features/admin/setting/loader";
 
-export async function AdminLoader() {
+export type AdminLoaderData = {
+  user: CurrentUser;
+  settings: BarangaySettings;
+};
+
+export async function AdminLoader(): Promise<AdminLoaderData> {
   const user = await getCurrentUser();
   if (!user) throw redirect("/login");
   if (!(INTERNAL_ROLES as string[]).includes(user.role)) throw redirect("/");
-  return user;
+
+  const settings = await api.get("settings").json<BarangaySettings>();
+
+  return { user, settings };
 }
 
 export async function AdminOnlyLoader() {

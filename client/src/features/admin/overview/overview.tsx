@@ -179,7 +179,7 @@ export default function AdminOverview() {
                           {complaint.reference}
                         </p>
                         <p className="truncate text-xs text-muted-foreground">
-                          {complaint.complainantName} vs {complaint.respondentName}
+                          {complaint.complainantName} and {complaint.respondentName}
                         </p>
                       </div>
                       <div className="flex shrink-0 items-center gap-2">
@@ -260,7 +260,7 @@ export default function AdminOverview() {
                       <div className="min-w-0">
                         <p className="text-sm font-semibold">{item.reference}</p>
                         <p className="truncate text-xs text-muted-foreground">
-                          {item.complainantName} vs {item.respondentName}
+                          {item.complainantName} and {item.respondentName}
                         </p>
                         {item.dueAt && (
                           <p className="text-xs text-muted-foreground">
