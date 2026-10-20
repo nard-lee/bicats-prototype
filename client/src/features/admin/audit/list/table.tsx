@@ -91,9 +91,7 @@ export default function AuditLog() {
           r.actorName ?? "System",
           isRole(r.actorRole) ? t(ROLE_LABEL[r.actorRole]) : "",
           ACTION_LABEL[r.action] ?? r.action,
-          `${entityLabel[r.entityType] ?? r.entityType}${
-            r.entityId != null ? ` #${r.entityId}` : ""
-          }`,
+          r.target,
           r.summary,
           r.ip ?? "",
         ]
@@ -218,10 +216,13 @@ export default function AuditLog() {
                   </Badge>
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  {entityLabel[row.entityType] ?? row.entityType}
-                  {row.entityId != null && (
-                    <span className="tabular-nums"> #{row.entityId}</span>
-                  )}
+                  <span
+                    className={
+                      row.target.includes("(record deleted)") ? "italic" : undefined
+                    }
+                  >
+                    {row.target}
+                  </span>
                 </TableCell>
                 <TableCell className="max-w-[24rem]">{row.summary}</TableCell>
                 <TableCell className="text-xs text-muted-foreground tabular-nums">

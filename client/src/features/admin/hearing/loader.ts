@@ -30,6 +30,9 @@ export type ComplaintOption = {
 export type HearingsData = {
   month: string; // YYYY-MM
   hearings: HearingItem[];
+  overdue: HearingItem[];
+  upcoming: HearingItem[];
+  week: HearingItem[];
   complaints: ComplaintOption[];
 };
 
@@ -49,18 +52,30 @@ export async function HearingsLoader({ request }: LoaderFunctionArgs) {
   const from = new Date(year, month, 1, 0, 0, 0, 0);
   const to = new Date(year, month + 1, 1, 0, 0, 0, 0);
 
-  const [hearings, complaints] = await Promise.all([
+  const [hearings, scheduled, complaints] = await Promise.all([
     api
       .get("/hearings", {
         searchParams: { from: from.toISOString(), to: to.toISOString() },
       })
       .json<{ items: HearingItem[] }>(),
+    api
+      .get("/hearings", { searchParams: { status: "scheduled" } })
+      .json<{ items: HearingItem[] }>(),
     api.get("/hearings/complaints").json<{ items: ComplaintOption[] }>(),
   ]);
+
+  const now = new Date();
+  const weekEnd = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const overdue = scheduled.items.filter((item) => item.overdue);
+  const upcoming = scheduled.items.filter((item) => !item.overdue);
+  const week = upcoming.filter((item) => new Date(item.scheduledAt) <= weekEnd);
 
   return {
     month: `${year}-${String(month + 1).padStart(2, "0")}`,
     hearings: hearings.items,
+    overdue,
+    upcoming,
+    week,
     complaints: complaints.items,
   } satisfies HearingsData;
 }

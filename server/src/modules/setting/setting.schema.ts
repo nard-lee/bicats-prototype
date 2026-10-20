@@ -44,6 +44,7 @@ export const updateSettingsSchema = z.object({
 
   deadlineReceived: daysSchema,
   deadlineSummoned: daysSchema,
+  deadlineMediation: daysSchema,
   deadlineConciliation: daysSchema,
   riskWindowDays: daysSchema,
 

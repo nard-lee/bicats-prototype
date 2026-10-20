@@ -3,7 +3,53 @@ import type { Prisma } from "../../generated/prisma/client.js";
 import { INTERNAL_ROLES } from "../../utils/roles.js";
 import { emitNotification } from "./notification.events.js";
 
+const DAY = 24 * 60 * 60 * 1000;
+const RETENTION_DAYS = 90;
+const MAX_NOTIFICATIONS_PER_USER = 100;
+
 export const notificationService = {
+  // Keep the inbox bounded: drop notifications older than the retention
+  // window and anything beyond the newest 100 per user.
+  async prune(): Promise<void> {
+    const cutoff = new Date(Date.now() - RETENTION_DAYS * DAY);
+    await prisma.$executeRaw`
+      DELETE FROM "Notification"
+      WHERE "createdAt" < ${cutoff}
+         OR "id" IN (
+           SELECT "id" FROM (
+             SELECT
+               "id",
+               ROW_NUMBER() OVER (
+                 PARTITION BY "userId"
+                 ORDER BY "createdAt" DESC, "id" DESC
+               ) AS rn
+             FROM "Notification"
+           ) ranked
+           WHERE ranked.rn > ${MAX_NOTIFICATIONS_PER_USER}
+         )
+    `;
+  },
+
+  // Remove alerts matched by a dedupe prefix (e.g. all overdue alerts for a
+  // hearing) and refresh the affected users' bells.
+  async clearByDedupePrefix(prefix: string): Promise<number> {
+    const affected = await prisma.notification.findMany({
+      where: { dedupeKey: { startsWith: prefix } },
+      select: { userId: true },
+      distinct: ["userId"],
+    });
+
+    if (affected.length === 0) return 0;
+
+    const result = await prisma.notification.deleteMany({
+      where: { dedupeKey: { startsWith: prefix } },
+    });
+
+    for (const row of affected) emitNotification(row.userId);
+
+    return result.count;
+  },
+
   // Insert a batch of notifications and nudge every affected user's live
   // stream so their bell refreshes immediately.
   async createForUsers(rows: Prisma.NotificationCreateManyInput[]): Promise<number> {
@@ -17,6 +63,8 @@ export const notificationService = {
     for (const userId of new Set(rows.map((row) => row.userId))) {
       emitNotification(userId);
     }
+
+    await this.prune();
 
     return result.count;
   },

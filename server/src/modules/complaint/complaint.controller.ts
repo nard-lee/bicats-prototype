@@ -131,15 +131,15 @@ const complaintController = {
         const userId = req.user?.userId;
 
         try {
-            await complaintService.updateStatus(id, status, publicNote, internalNote, hearingAt ? new Date(hearingAt) : undefined, userId);
+            const updated = await complaintService.updateStatus(id, status, publicNote, internalNote, hearingAt ? new Date(hearingAt) : undefined, userId);
             res.json({ success: true });
 
             await auditFromRequest(req, {
                 action: "complaint.status.update",
                 entityType: "complaint",
                 entityId: id,
-                summary: `Status changed to "${status}" for case #${id}`,
-                meta: { status, hasPublicNote: !!publicNote, hasInternalNote: !!internalNote },
+                summary: `${updated.reference}: status changed from "${updated.previousStatus ?? "unknown"}" to "${status}"`,
+                meta: { status, previousStatus: updated.previousStatus, hasPublicNote: !!publicNote, hasInternalNote: !!internalNote },
             });
 
             // Text/email the complainant about the new step (and any mediation date).
@@ -191,9 +191,9 @@ const complaintController = {
 
         try {
             const { priority } = validateRequest(updatePrioritySchema, req.body);
-            const count = await complaintService.setPriority(id, priority);
+            const result = await complaintService.setPriority(id, priority);
 
-            if (count === 0) {
+            if (!result || result.count === 0) {
                 res.status(404).json({ error: "Complaint not found" });
                 return;
             }
@@ -204,8 +204,8 @@ const complaintController = {
                 action: "complaint.priority.update",
                 entityType: "complaint",
                 entityId: id,
-                summary: `Priority set to "${priority}" for case #${id}`,
-                meta: { priority },
+                summary: `${result.reference}: priority changed from "${result.previousPriority}" to "${priority}"`,
+                meta: { priority, previousPriority: result.previousPriority },
             });
         } catch (err: unknown) {
             if (err instanceof CustomError) {
@@ -230,14 +230,14 @@ const complaintController = {
         }
 
         try {
-            await complaintService.reopenCase(id, reason, userId);
+            const reopened = await complaintService.reopenCase(id, reason, userId);
             res.json({ success: true, message: "Case reopened successfully" });
 
             await auditFromRequest(req, {
                 action: "complaint.reopen",
                 entityType: "complaint",
                 entityId: id,
-                summary: `Reopened case #${id}`,
+                summary: `Reopened ${reopened.reference}: ${reason}`,
                 meta: { reason },
             });
         } catch (err) {

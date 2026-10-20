@@ -67,14 +67,15 @@ export const noticeController = {
 
   async remove(req: Request, res: Response): Promise<void> {
     const id = parseId(req.params.id);
-    await noticeService.remove(id);
+    const removed = await noticeService.remove(id);
     res.json({ success: true });
 
     await auditFromRequest(req, {
       action: "notice.delete",
       entityType: "notice",
       entityId: id,
-      summary: `Deleted notice #${id}`,
+      summary: `Deleted notice "${removed.title}"`,
+      meta: { title: removed.title },
     });
   },
 };

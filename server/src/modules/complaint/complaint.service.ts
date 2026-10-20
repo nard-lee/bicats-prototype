@@ -326,6 +326,11 @@ const complaintService = {
         const dueAt = computeNextDueAt(status, new Date(), deadlineDaysFrom(settings));
 
         return prisma.$transaction(async (tx) => {
+            const previous = await tx.complaint.findUnique({
+                where: { id },
+                select: { reference: true, status: true },
+            });
+
             await tx.complaint.update({
                 where: { id },
                 data: { status, dueAt },
@@ -367,7 +372,7 @@ const complaintService = {
                 }
             }
 
-            return tx.statusUpdate.create({
+            const entry = await tx.statusUpdate.create({
                 data: {
                     complaintId: id,
                     status,
@@ -377,6 +382,12 @@ const complaintService = {
                     createdById: userId ?? null,
                 },
             });
+
+            return {
+                reference: previous?.reference ?? `#${id}`,
+                previousStatus: previous?.status ?? null,
+                entry,
+            };
         });
     },
 
@@ -402,13 +413,24 @@ const complaintService = {
         });
     },
 
-    async setPriority(id: number, priority: string): Promise<number> {
+    async setPriority(id: number, priority: string) {
+        const existing = await prisma.complaint.findUnique({
+            where: { id },
+            select: { reference: true, priority: true },
+        });
+
+        if (!existing) return null;
+
         const { count } = await prisma.complaint.updateMany({
             where: { id },
             data: { priority },
         });
 
-        return count;
+        return {
+            count,
+            reference: existing.reference,
+            previousPriority: existing.priority,
+        };
     },
 
     async reopenCase(id: number, reason: string, userId?: number) {
@@ -416,9 +438,10 @@ const complaintService = {
         const dueAt = computeNextDueAt("received", new Date(), deadlineDaysFrom(settings));
 
         return prisma.$transaction(async (tx) => {
-            await tx.complaint.update({
+            const updated = await tx.complaint.update({
                 where: { id },
                 data: { status: "received", dueAt },
+                select: { reference: true },
             });
 
             const historyData: any = {
@@ -432,6 +455,8 @@ const complaintService = {
             await tx.statusUpdate.create({
                 data: historyData,
             });
+
+            return { reference: updated.reference };
         });
     }
 };

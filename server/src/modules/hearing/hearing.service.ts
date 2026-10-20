@@ -1,6 +1,7 @@
 import { prisma } from "../../db.js";
 import { Prisma } from "../../generated/prisma/client.js";
 import { CustomError } from "../../utils/custom.exception.js";
+import notificationService from "../notification/notification.service.js";
 
 import type {
   CreateHearingInput,
@@ -124,17 +125,17 @@ const hearingService = {
   async create(
     input: CreateHearingInput,
     userId?: number,
-  ): Promise<{ id: number }> {
+  ): Promise<{ id: number; reference: string }> {
     const complaint = await prisma.complaint.findUnique({
       where: { id: input.complaintId },
-      select: { id: true },
+      select: { id: true, reference: true },
     });
 
     if (!complaint) throw new CustomError("Complaint not found", undefined, 404);
 
     await assertNoConflict(input.scheduledAt);
 
-    return prisma.hearing.create({
+    const hearing = await prisma.hearing.create({
       data: {
         complaintId: input.complaintId,
         scheduledAt: input.scheduledAt,
@@ -145,15 +146,28 @@ const hearingService = {
       },
       select: { id: true },
     });
+
+    return { id: hearing.id, reference: complaint.reference };
   },
 
   async update(
     id: number,
     input: UpdateHearingInput,
-  ): Promise<{ complaintId: number; kind: string; rescheduled: boolean }> {
+  ): Promise<{
+    complaintId: number;
+    kind: string;
+    rescheduled: boolean;
+    reference: string;
+  }> {
     const existing = await prisma.hearing.findUnique({
       where: { id },
-      select: { id: true, status: true, complaintId: true, scheduledAt: true },
+      select: {
+        id: true,
+        status: true,
+        complaintId: true,
+        scheduledAt: true,
+        complaint: { select: { reference: true } },
+      },
     });
 
     if (!existing) throw new CustomError("Mediation not found", undefined, 404);
@@ -177,20 +191,37 @@ const hearingService = {
       select: { complaintId: true, kind: true },
     });
 
-    return {
-      ...updated,
-      rescheduled:
-        !!input.scheduledAt &&
-        input.scheduledAt.getTime() !== existing.scheduledAt.getTime(),
-    };
+    const rescheduled =
+      !!input.scheduledAt &&
+      input.scheduledAt.getTime() !== existing.scheduledAt.getTime();
+
+    if ((input.status && input.status !== "scheduled") || rescheduled) {
+      await notificationService.clearByDedupePrefix(`hearing_overdue:${id}:`);
+    }
+
+    return { ...updated, rescheduled, reference: existing.complaint.reference };
   },
 
-  async cancel(id: number): Promise<{ complaintId: number; kind: string }> {
-    return prisma.hearing.update({
+  async cancel(
+    id: number,
+  ): Promise<{ complaintId: number; kind: string; reference: string }> {
+    const updated = await prisma.hearing.update({
       where: { id },
       data: { status: "cancelled" },
-      select: { complaintId: true, kind: true },
+      select: {
+        complaintId: true,
+        kind: true,
+        complaint: { select: { reference: true } },
+      },
     });
+
+    await notificationService.clearByDedupePrefix(`hearing_overdue:${id}:`);
+
+    return {
+      complaintId: updated.complaintId,
+      kind: updated.kind,
+      reference: updated.complaint.reference,
+    };
   },
 };
 

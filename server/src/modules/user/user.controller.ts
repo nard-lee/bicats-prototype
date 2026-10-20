@@ -85,7 +85,7 @@ const userController = {
                 action: "user.update",
                 entityType: "user",
                 entityId: id,
-                summary: `Updated account #${id} (${updated.fullName})`,
+                summary: `Updated account "${updated.fullName}"`,
                 meta: { fields: Object.keys(body) },
             });
         } catch (err: unknown) {

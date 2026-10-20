@@ -13,6 +13,7 @@ export type AuditRow = {
   summary: string;
   ip: string | null;
   createdAt: string;
+  target: string;
 };
 
 export type Paginated<T> = {

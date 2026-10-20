@@ -33,6 +33,9 @@ function prettyDate(date: Date): string {
  */
 export async function runReminderScan(): Promise<number> {
   const now = new Date();
+
+  await notificationService.prune();
+
   const settings = await prisma.barangaySettings.findUnique({ where: { id: 1 } });
   const windowDays = settings?.riskWindowDays ?? 3;
   const soon = new Date(now.getTime() + windowDays * DAY);

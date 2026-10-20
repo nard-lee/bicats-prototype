@@ -53,8 +53,8 @@ const hearingController = {
         action: "hearing.create",
         entityType: "hearing",
         entityId: created.id,
-        summary: `Scheduled a ${KIND_LABEL[input.kind] ?? "mediation"} session for case #${input.complaintId}`,
-        meta: { complaintId: input.complaintId, kind: input.kind, scheduledAt: input.scheduledAt.toISOString() },
+        summary: `Scheduled a ${KIND_LABEL[input.kind] ?? "mediation"} session for ${created.reference}`,
+        meta: { complaintId: input.complaintId, reference: created.reference, kind: input.kind, scheduledAt: input.scheduledAt.toISOString() },
       });
 
       // Text/email the complainant that their session is booked.
@@ -85,8 +85,16 @@ const hearingController = {
         action: "hearing.update",
         entityType: "hearing",
         entityId: id,
-        summary: `Updated mediation session #${id}`,
-        ...(input.status ? { meta: { status: input.status } } : {}),
+        summary: updated.rescheduled
+          ? `Rescheduled mediation for ${updated.reference}`
+          : input.status
+            ? `Marked mediation for ${updated.reference} as ${input.status.replace("_", " ")}`
+            : `Updated mediation details for ${updated.reference}`,
+        meta: {
+          reference: updated.reference,
+          ...(input.status ? { status: input.status } : {}),
+          ...(input.scheduledAt ? { scheduledAt: input.scheduledAt.toISOString() } : {}),
+        },
       });
 
       // Text/email the complainant only when the session actually moved.
@@ -119,7 +127,8 @@ const hearingController = {
         action: "hearing.cancel",
         entityType: "hearing",
         entityId: id,
-        summary: `Cancelled mediation session #${id}`,
+        summary: `Cancelled mediation for ${cancelled.reference}`,
+        meta: { reference: cancelled.reference },
       });
 
       // Text/email the complainant their session is cancelled.

@@ -117,7 +117,8 @@ export default function StaffAccounts() {
               <TableHead>Name</TableHead>
               <TableHead>Username</TableHead>
               <TableHead>Position</TableHead>
-              <TableHead>Contact</TableHead>
+              <TableHead>{t("email")}</TableHead>
+              <TableHead>{t("phone")}</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Created</TableHead>
@@ -127,7 +128,7 @@ export default function StaffAccounts() {
           <TableBody>
             {items.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
+                <TableCell colSpan={9} className="py-10 text-center text-muted-foreground">
                   {hasFilters ? "No accounts match your filters." : "No accounts yet."}
                 </TableCell>
               </TableRow>
@@ -137,12 +138,8 @@ export default function StaffAccounts() {
                 <TableCell className="font-bold">{user.fullName}</TableCell>
                 <TableCell className="text-muted-foreground">@{user.username}</TableCell>
                 <TableCell>{user.position}</TableCell>
-                <TableCell>
-                  <div className="flex flex-col">
-                    <span>{user.email}</span>
-                    <span className="text-xs text-muted-foreground">{user.phone}</span>
-                  </div>
-                </TableCell>
+                <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                <TableCell className="text-muted-foreground">{user.phone}</TableCell>
                 <TableCell>
                   <Badge variant={user.role === "admin" ? "default" : "secondary"}>
                     {t(ROLE_LABEL[user.role])}

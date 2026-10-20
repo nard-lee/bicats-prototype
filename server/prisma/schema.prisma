@@ -263,6 +263,7 @@ model BarangaySettings {
   // KP deadlines (days) and the "due soon" warning window
   deadlineReceived     Int @default(3)
   deadlineSummoned     Int @default(15)
+  deadlineMediation    Int @default(15)
   deadlineConciliation Int @default(15)
   riskWindowDays       Int @default(3)
 

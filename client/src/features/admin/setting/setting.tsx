@@ -63,6 +63,7 @@ function toValues(settings: BarangaySettings): Values {
     tanodNumber: settings.tanodNumber,
     deadlineReceived: settings.deadlineReceived,
     deadlineSummoned: settings.deadlineSummoned,
+    deadlineMediation: settings.deadlineMediation,
     deadlineConciliation: settings.deadlineConciliation,
     riskWindowDays: settings.riskWindowDays,
     notifyStatusSms: settings.notifyStatusSms,
@@ -696,6 +697,26 @@ export default function BarangaySettingsPage() {
                     aria-invalid={!!fields.deadlineSummoned}
                   />
                   <FieldError message={fields.deadlineSummoned} />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="deadlineMediation">
+                    {t("deadlineMediationLabel")}
+                  </Label>
+                  <Input
+                    id="deadlineMediation"
+                    name="deadlineMediation"
+                    type="number"
+                    min={1}
+                    max={365}
+                    value={values.deadlineMediation}
+                    onChange={(e) =>
+                      update("deadlineMediation", Number(e.target.value))
+                    }
+                    className="h-11"
+                    aria-invalid={!!fields.deadlineMediation}
+                  />
+                  <FieldError message={fields.deadlineMediation} />
                 </div>
 
                 <div className="space-y-2">

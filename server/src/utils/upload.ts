@@ -1,13 +1,16 @@
 import fs from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
+import { fileURLToPath } from "node:url";
 import type { NextFunction, Request, Response } from "express";
 import multer from "multer";
 
 import { ApiError } from "@/utils/api.error.js";
-
-// Private folder, nothing serves it. Add "uploads" to .gitignore.
-const UPLOAD_DIR = path.resolve("uploads");
+// Local upload folder.
+const UPLOAD_DIR = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../../uploads",
+);
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
 export const MAX_FILES = 5;
@@ -26,10 +29,7 @@ const ALLOWED_TYPES = new Set(Object.keys(EXTENSIONS));
 export const ALLOWED_LABEL = "JPG, PNG, PDF, MP4";
 
 const upload = multer({
-  storage: multer.diskStorage({
-    destination: UPLOAD_DIR,
-    filename: (_req, file, cb) => cb(null, randomUUID() + EXTENSIONS[file.mimetype]),
-  }),
+  storage: multer.memoryStorage(),
   limits: { fileSize: MAX_FILE_SIZE, files: MAX_FILES },
   fileFilter: (_req, file, cb) => {
     if (ALLOWED_TYPES.has(file.mimetype)) {
@@ -58,26 +58,6 @@ function mapUploadError(err: unknown): ApiError {
   return new ApiError(400, "Upload failed. Please check your files and try again.");
 }
 
-// Remove files already written to disk when a request ultimately fails.
-export async function removeUploadedFiles(files?: Express.Multer.File[]): Promise<void> {
-  if (!files?.length) return;
-  await Promise.all(
-    files.map((file) => fs.promises.unlink(file.path).catch(() => undefined)),
-  );
-}
-
-// Parses the "evidence" field, rejecting bad types/sizes/counts with a 400.
-export function uploadEvidence(req: Request, res: Response, next: NextFunction): void {
-  upload.array("evidence", MAX_FILES)(req, res, (err: unknown) => {
-    if (err) {
-      void removeUploadedFiles(req.files as Express.Multer.File[] | undefined);
-      next(mapUploadError(err));
-      return;
-    }
-    next();
-  });
-}
-
 // ---- Small images (logo, signatures) ----
 const IMAGE_EXTENSIONS: Record<string, string> = {
   "image/jpeg": ".jpg",
@@ -89,11 +69,7 @@ export const MAX_IMAGE_SIZE = 2 * 1024 * 1024; // 2 MB
 export const MAX_IMAGE_SIZE_MB = MAX_IMAGE_SIZE / (1024 * 1024);
 
 const imageUpload = multer({
-  storage: multer.diskStorage({
-    destination: UPLOAD_DIR,
-    filename: (_req, file, cb) =>
-      cb(null, randomUUID() + (IMAGE_EXTENSIONS[file.mimetype] ?? ".img")),
-  }),
+  storage: multer.memoryStorage(),
   limits: { fileSize: MAX_IMAGE_SIZE, files: 1 },
   fileFilter: (_req, file, cb) => {
     if (IMAGE_EXTENSIONS[file.mimetype]) {
@@ -103,6 +79,57 @@ const imageUpload = multer({
     cb(new ApiError(400, "Unsupported image type. Allowed: JPG, PNG, WEBP."));
   },
 });
+
+async function persistFile(file: Express.Multer.File): Promise<void> {
+  const extension =
+    EXTENSIONS[file.mimetype] ?? IMAGE_EXTENSIONS[file.mimetype] ?? ".bin";
+  const storedName = randomUUID() + extension;
+
+  await fs.promises.writeFile(path.join(UPLOAD_DIR, storedName), file.buffer);
+  file.filename = storedName;
+  file.destination = UPLOAD_DIR;
+  file.path = path.join(UPLOAD_DIR, storedName);
+}
+
+async function persistFiles(files?: Express.Multer.File[]): Promise<void> {
+  if (!files?.length) return;
+  await Promise.all(files.map((file) => persistFile(file)));
+}
+
+// Remove files from their active storage when a request ultimately fails.
+export async function removeUploadedFiles(files?: Express.Multer.File[]): Promise<void> {
+  if (!files?.length) return;
+
+  await Promise.all(
+    files.map(async (file) => {
+      if (file.path) {
+        await fs.promises.unlink(file.path).catch(() => undefined);
+      }
+    }),
+  );
+}
+
+// Parses the "evidence" field, rejecting bad types/sizes/counts with a 400.
+export function uploadEvidence(req: Request, res: Response, next: NextFunction): void {
+  upload.array("evidence", MAX_FILES)(req, res, (err: unknown) => {
+    if (err) {
+      void removeUploadedFiles(req.files as Express.Multer.File[] | undefined);
+      next(mapUploadError(err));
+      return;
+    }
+
+    void persistFiles(req.files as Express.Multer.File[] | undefined)
+      .then(() => next())
+      .catch(async (persistError: unknown) => {
+        await removeUploadedFiles(req.files as Express.Multer.File[] | undefined);
+        next(
+          persistError instanceof ApiError
+            ? persistError
+            : new ApiError(500, "Could not store uploaded files."),
+        );
+      });
+  });
+}
 
 export function uploadImage(req: Request, res: Response, next: NextFunction): void {
   imageUpload.single("file")(req, res, (err: unknown) => {
@@ -126,6 +153,16 @@ export function uploadImage(req: Request, res: Response, next: NextFunction): vo
       next(new ApiError(400, "Image upload failed. Please try again."));
       return;
     }
-    next();
+
+    void persistFiles(req.file ? [req.file] : undefined)
+      .then(() => next())
+      .catch(async (persistError: unknown) => {
+        await removeUploadedFiles(req.file ? [req.file] : undefined);
+        next(
+          persistError instanceof ApiError
+            ? persistError
+            : new ApiError(500, "Could not store the uploaded image."),
+        );
+      });
   });
 }

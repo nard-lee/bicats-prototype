@@ -4,6 +4,7 @@
   "private": true,
   "description": "BICATS — Barangay complaint system (Vite client + Express/Prisma server)",
   "scripts": {
+    "build": "pnpm --dir client build && pnpm --dir server typecheck",
     "install:all": "pnpm --dir server install && pnpm --dir client install",
     "dev:server": "pnpm --dir server dev",
     "dev:client": "pnpm --dir client dev",

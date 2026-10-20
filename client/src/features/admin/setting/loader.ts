@@ -20,6 +20,7 @@ export type BarangaySettings = {
   tanodNumber: string;
   deadlineReceived: number;
   deadlineSummoned: number;
+  deadlineMediation: number;
   deadlineConciliation: number;
   riskWindowDays: number;
   notifyStatusSms: boolean;

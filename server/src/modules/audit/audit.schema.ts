@@ -24,6 +24,7 @@ export type AuditListRow = {
   meta: unknown;
   ip: string | null;
   createdAt: Date;
+  target: string;
 };
 
 export type AuditListResult = {

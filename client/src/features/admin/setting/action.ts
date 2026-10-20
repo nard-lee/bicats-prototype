@@ -32,6 +32,7 @@ const TEXT_FIELDS = [
 const NUMBER_FIELDS = [
   "deadlineReceived",
   "deadlineSummoned",
+  "deadlineMediation",
   "deadlineConciliation",
   "riskWindowDays",
 ] as const;

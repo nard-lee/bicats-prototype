@@ -30,3 +30,5 @@ Two terminals from the root:
 pnpm dev:server     # API on http://localhost:3000
 pnpm dev:client     # app on http://localhost:5173
 ```
+
+Build check: `pnpm build` (client build + server typecheck).

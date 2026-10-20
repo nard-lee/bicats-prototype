@@ -35,6 +35,127 @@ function buildWhere(query: { entityType?: string | undefined; q?: string | undef
   return where;
 }
 
+type AuditRecord = Omit<AuditListRow, "target">;
+
+const HEARING_KIND_LABEL: Record<string, string> = {
+  mediation: "Mediation",
+  conciliation: "Conciliation",
+  hearing: "Arbitration",
+};
+
+// Resolve internal IDs to the identifiers staff actually recognize. Deleted
+// records are called out instead of leaving a bare numeric ID.
+async function attachTargets(rows: AuditRecord[]): Promise<AuditListRow[]> {
+  const idsFor = (entityType: string) => [
+    ...new Set(
+      rows
+        .filter((row) => row.entityType === entityType && row.entityId !== null)
+        .map((row) => row.entityId as number),
+    ),
+  ];
+
+  const complaintIds = idsFor("complaint");
+  const hearingIds = idsFor("hearing");
+  const userIds = idsFor("user");
+  const noticeIds = idsFor("notice");
+
+  const [complaints, hearings, users, notices] = await Promise.all([
+    complaintIds.length
+      ? prisma.complaint.findMany({
+          where: { id: { in: complaintIds } },
+          select: { id: true, reference: true },
+        })
+      : Promise.resolve([] as { id: number; reference: string }[]),
+    hearingIds.length
+      ? prisma.hearing.findMany({
+          where: { id: { in: hearingIds } },
+          select: {
+            id: true,
+            kind: true,
+            complaint: { select: { reference: true } },
+          },
+        })
+      : Promise.resolve(
+          [] as { id: number; kind: string; complaint: { reference: string } }[],
+        ),
+    userIds.length
+      ? prisma.user.findMany({
+          where: { id: { in: userIds } },
+          select: { id: true, fullName: true },
+        })
+      : Promise.resolve([] as { id: number; fullName: string }[]),
+    noticeIds.length
+      ? prisma.notice.findMany({
+          where: { id: { in: noticeIds } },
+          select: { id: true, title: true },
+        })
+      : Promise.resolve([] as { id: number; title: string }[]),
+  ]);
+
+  const complaintMap = new Map(complaints.map((row) => [row.id, row.reference]));
+  const hearingMap = new Map(hearings.map((row) => [row.id, row]));
+  const userMap = new Map(users.map((row) => [row.id, row.fullName]));
+  const noticeMap = new Map(notices.map((row) => [row.id, row.title]));
+
+  const targetFor = (row: AuditRecord): string => {
+    if (row.entityType === "setting") return "Barangay settings";
+    if (row.entityType === "auth") return "Sign-in";
+    if (row.entityId === null) return "—";
+
+    const id = row.entityId;
+
+    if (row.entityType === "complaint") {
+      return complaintMap.get(id) ?? `Complaint #${id} (record deleted)`;
+    }
+    if (row.entityType === "hearing") {
+      const hearing = hearingMap.get(id);
+      if (!hearing) return `Mediation #${id} (record deleted)`;
+      return `${hearing.complaint.reference} (${HEARING_KIND_LABEL[hearing.kind] ?? "Session"})`;
+    }
+    if (row.entityType === "user") {
+      return userMap.get(id) ?? `Account #${id} (record deleted)`;
+    }
+    if (row.entityType === "notice") {
+      return noticeMap.get(id) ?? `Notice #${id} (record deleted)`;
+    }
+
+    return `${row.entityType} #${id}`;
+  };
+
+  // Older entries stored database IDs in their summaries. Swap those for the
+  // same references shown in the target column so every row reads clearly.
+  const clarifySummary = (row: AuditRecord): string => {
+    if (row.entityId === null) return row.summary;
+
+    const hearing =
+      row.entityType === "hearing" ? hearingMap.get(row.entityId) : undefined;
+    const caseReference =
+      row.entityType === "complaint"
+        ? complaintMap.get(row.entityId)
+        : hearing?.complaint.reference;
+
+    let summary = row.summary.replace(/case #(\d+)/gi, (_match, id: string) =>
+      caseReference ?? `Complaint #${id} (record deleted)`,
+    );
+
+    if (row.entityType === "hearing") {
+      summary = summary.replace(/mediation session #(\d+)/gi, () =>
+        `mediation for ${
+          caseReference ?? `Mediation #${row.entityId} (record deleted)`
+        }`,
+      );
+    }
+
+    return summary;
+  };
+
+  return rows.map((row) => ({
+    ...row,
+    target: targetFor(row),
+    summary: clarifySummary(row),
+  }));
+}
+
 const auditService = {
   // Never let a failed write break the action it describes.
   async record(input: RecordInput): Promise<void> {
@@ -63,7 +184,7 @@ const auditService = {
     const page = query.page;
     const pageSize = query.limit;
 
-    const [items, total] = await Promise.all([
+    const [rows, total] = await Promise.all([
       prisma.auditLog.findMany({
         where,
         orderBy: { id: "desc" },
@@ -87,7 +208,7 @@ const auditService = {
     ]);
 
     return {
-      items,
+      items: await attachTargets(rows),
       total,
       page,
       pageSize,
@@ -97,7 +218,7 @@ const auditService = {
 
   // All rows matching the filters, for CSV export (capped to keep it sane).
   async exportAll(query: ExportAuditQuery): Promise<AuditListRow[]> {
-    return prisma.auditLog.findMany({
+    const rows = await prisma.auditLog.findMany({
       where: buildWhere(query),
       orderBy: { id: "desc" },
       take: 5000,
@@ -115,6 +236,8 @@ const auditService = {
         createdAt: true,
       },
     });
+
+    return attachTargets(rows);
   },
 };
 

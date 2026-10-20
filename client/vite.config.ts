@@ -18,6 +18,10 @@ export default defineConfig({
         changeOrigin: true,
         // secure: false, // uncomment if backend uses self-signed HTTPS
       },
+      '/uploads': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
     },
   },
 })

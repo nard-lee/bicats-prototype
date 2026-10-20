@@ -49,6 +49,9 @@ University of Baguio
 | 1.5 | Santiago, Ocampo | 10/20/2026 | | | Configurable branding, KP deadlines and notification channels; read-only settings for staff; sequential case references |
 | 1.6 | Santiago, Ocampo | 10/20/2026 | | | Overdue mediation detection, calendar/status flags, and daily staff alerts for sessions with no recorded outcome |
 | 1.7 | Santiago, Ocampo | 10/20/2026 | | | Free-text description required when the complaint type is "Others" |
+| 1.8 | Santiago, Ocampo | 10/20/2026 | | | Configurable mediation deadline and one-click completed/no-show actions for overdue mediations |
+| 1.9 | Santiago, Ocampo | 10/20/2026 | | | Global mediation views (overdue/upcoming/this week) and notification cleanup (auto-resolve, per-user cap, retention) |
+| 1.10 | Santiago, Ocampo | 10/20/2026 | | | Audit log resolves case/account/notice references in targets and historical summaries, flags deleted records, and records old-to-new status/priority changes |
 
 ---
 
@@ -697,7 +700,7 @@ This ERD represents the BICATS system and connects directly to the functions des
 - **StatusUpdate Table** — The case timeline. Each status change records a public note, an optional internal note, and an optional mediation date (`hearingAt`) that is mirrored to a Hearing record.
 - **Hearing Table** — Scheduled mediation, conciliation, or arbitration sessions, including date, kind, status, location, notes, and outcome.
 - **Notice Table** — Public advisories with a published flag for the home-page notice board.
-- **Notification Table** — In-app notifications for staff (reminders, overdue alerts, escalations, missed-session alerts, new-complaint alerts), deduplicated by `dedupeKey`.
+- **Notification Table** — In-app notifications for staff (reminders, overdue alerts, escalations, missed-session alerts, new-complaint alerts), deduplicated by `dedupeKey`, capped at the newest 100 per user, and expired after 90 days. Missed-session alerts are removed when the session is completed, cancelled, or rescheduled.
 - **AuditLog Table** — An immutable trail of who did what, when, and from which IP, with actor name/role snapshots that survive account changes.
 - **BarangaySettings Table** — A singleton row (id = 1) holding the barangay profile, branding assets, signatory names and printed titles, public hotlines, configurable KP deadline lengths and the per-event SMS/email notification toggles used across the system.
 - **ReferenceCounter Table** — One row per calendar year holding the last sequence number issued, used to generate sequential case references (`BK-2026-000001`).
@@ -866,6 +869,7 @@ This ERD represents the BICATS system and connects directly to the functions des
 | tanodNumber | Barangay tanod / duty desk number | VARCHAR(30) | Optional | None | 0918 111 2222 |
 | deadlineReceived | Days allowed to issue the summons after filing | INT | Required | None | 3 |
 | deadlineSummoned | Days allowed between summons and mediation | INT | Required | None | 15 |
+| deadlineMediation | Days allowed to conclude mediation | INT | Required | None | 15 |
 | deadlineConciliation | Days allowed for conciliation | INT | Required | None | 15 |
 | riskWindowDays | Days before a deadline when a case is flagged "due soon" | INT | Required | None | 3 |
 | notifyStatusSms | Send status-change SMS to complainants | BOOLEAN | Required | None | true |
@@ -1023,7 +1027,7 @@ BICATS presents a clean, responsive interface with two experiences: a **public**
 - l.4. **Punong Barangay / Lupon Chairman** — name and printed-title inputs (document signatories)
 - l.5. **Logo Upload** — image upload (PNG, JPG or WebP; max 2 MB)
 - l.6. **Signature Uploads** — Punong Barangay and Lupon Chairman signature images
-- l.7. **KP Deadlines** — number inputs for received, summoned and conciliation deadlines plus the "due soon" window
+- l.7. **KP Deadlines** — number inputs for received, summoned, mediation and conciliation deadlines plus the "due soon" window
 - l.8. **Notification Matrix** — SMS/email toggles for status changes, mediation schedules and cancellations
 - l.9. **Message Channel Status** — read-only indicators of whether SMS and email providers are configured
 - l.10. **Live Letterhead Preview** — read-only preview of the document header and signature blocks
@@ -1105,6 +1109,9 @@ Representative test cases (to be maintained alongside the QA plan).
 | TC-11 | Audit completeness | Perform a status update | An AuditLog row records actor, action, entity, and IP |
 | TC-12 | Session security | Use an expired/invalid token | Access is denied; the client refreshes or forces login |
 | TC-13 | Overdue mediation flag | Leave a scheduled session past its date + grace period with no outcome | Session is flagged overdue in the calendar/list; staff receive a daily in-app alert until it is resolved |
+| TC-14 | Mediation deadline | Move a case to the mediation status | `dueAt` is set from the configured mediation deadline (default +15 days); deadline reminders resume |
+| TC-15 | Mediation filters & alert cleanup | Open the Mediation page with missed sessions and resolve a session | Overdue/upcoming/week views list sessions across months; missed-session alerts disappear and the inbox stays capped at 100 per user |
+| TC-16 | Audit clarity | View an audit entry for an existing and a deleted case | Existing entries show the case reference and old/new status; deleted records are labelled "(record deleted)" instead of a bare ID |
 
 ## 6.4 TESTIMONIALS
 

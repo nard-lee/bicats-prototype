@@ -70,8 +70,16 @@ export const noticeService = {
     });
   },
 
-  async remove(id: number): Promise<void> {
-    await ensureNoticeExists(id);
+  async remove(id: number): Promise<{ title: string }> {
+    const notice = await prisma.notice.findUnique({
+      where: { id },
+      select: { id: true, title: true },
+    });
+
+    if (!notice) throw new CustomError("Notice not found", undefined, 404);
+
     await prisma.notice.delete({ where: { id } });
+
+    return { title: notice.title };
   },
 };

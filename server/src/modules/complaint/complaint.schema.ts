@@ -154,6 +154,7 @@ export type DeadlineDays = Partial<Record<ComplaintStatus, number>>;
 export const KP_DEADLINE_DAYS: DeadlineDays = {
   received: 3, // summon the respondent
   summoned: 15, // hold mediation
+  mediation: 15, // conclude mediation
   conciliation: 15, // conclude the Pangkat conciliation
 };
 
@@ -161,11 +162,13 @@ export const KP_DEADLINE_DAYS: DeadlineDays = {
 export function deadlineDaysFrom(settings: {
   deadlineReceived: number;
   deadlineSummoned: number;
+  deadlineMediation: number;
   deadlineConciliation: number;
 }): DeadlineDays {
   return {
     received: settings.deadlineReceived,
     summoned: settings.deadlineSummoned,
+    mediation: settings.deadlineMediation,
     conciliation: settings.deadlineConciliation,
   };
 }
