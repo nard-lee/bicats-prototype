@@ -8,21 +8,11 @@ import {
   useRouteLoaderData,
   useSearchParams,
 } from "react-router";
-import {
-  AlertTriangle,
-  CheckCircle2,
-  ClipboardList,
-  FileDown,
-  FolderOpen,
-  RefreshCw,
-  Timer,
-  type LucideIcon,
-} from "lucide-react";
+import { FileDown, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import DataPagination from "@/components/data-pagination";
 import { api } from "@/lib/api";
@@ -71,12 +61,34 @@ const CHECKBOX =
 
 const NOW_MS = Date.now();
 
+const FILTER_MODE_KEY = "bicats:list-filter-mode";
+
+type FilterMode = "quick" | "dropdown";
+
+function loadFilterMode(): FilterMode {
+  try {
+    return localStorage.getItem(FILTER_MODE_KEY) === "dropdown" ? "dropdown" : "quick";
+  } catch {
+    return "quick";
+  }
+}
+
 export default function ComplaintsList() {
   const { t, lang } = useT();
   const { items, total, page, pageSize, totalPages, stats } = useLoaderData() as ComplaintsPage;
   const navigate = useNavigate();
   const revalidator = useRevalidator();
   const [params] = useSearchParams();
+
+  const [filterMode, setFilterMode] = useState<FilterMode>(loadFilterMode);
+  const switchFilterMode = (mode: FilterMode) => {
+    setFilterMode(mode);
+    try {
+      localStorage.setItem(FILTER_MODE_KEY, mode);
+    } catch {
+      // Private mode etc. — just keep the in-memory choice.
+    }
+  };
 
   // Secretaries keep the register but cannot change it.
   const { user } = useRouteLoaderData("admin") as AdminLoaderData;
@@ -215,57 +227,28 @@ export default function ComplaintsList() {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <Stat
-            icon={ClipboardList}
-            label="Total"
-            value={stats.total}
-            tone="bg-primary/10 text-primary"
-            active={activeStat === "total"}
-            onClick={() => applyStat("total")}
-          />
-          <Stat
-            icon={FolderOpen}
-            label="Open"
-            value={stats.open}
-            tone="bg-sky-500/10 text-sky-600 dark:text-sky-400"
-            active={activeStat === "open"}
-            onClick={() => applyStat("open")}
-          />
-          <Stat
-            icon={AlertTriangle}
-            label="Overdue"
-            value={stats.overdue}
-            tone="bg-rose-500/10 text-rose-600 dark:text-rose-400"
-            active={activeStat === "overdue"}
-            onClick={() => applyStat("overdue")}
-          />
-          <Stat
-            icon={Timer}
-            label="Due soon"
-            value={stats.dueSoon}
-            tone="bg-amber-500/10 text-amber-600 dark:text-amber-400"
-            active={activeStat === "dueSoon"}
-            onClick={() => applyStat("dueSoon")}
-          />
-          <Stat
-            icon={CheckCircle2}
-            label="Settled"
-            value={stats.settled}
-            tone="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-            active={activeStat === "settled"}
-            onClick={() => applyStat("settled")}
-          />
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-4">
+        {/* Quick triage vs dropdowns, remembered across visits. */}
+        <div className="flex rounded-md border p-0.5" role="tablist" aria-label="Filter mode">
+          <Button
+            type="button"
+            size="sm"
+            variant={filterMode === "quick" ? "secondary" : "ghost"}
+            className="h-7 px-2.5 text-xs"
+            onClick={() => switchFilterMode("quick")}
+          >
+            Quick
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={filterMode === "dropdown" ? "secondary" : "ghost"}
+            className="h-7 px-2.5 text-xs"
+            onClick={() => switchFilterMode("dropdown")}
+          >
+            Dropdowns
+          </Button>
         </div>
-        <ComplaintSearch defaultValue={q} />
-      </div>
-
-      <Form
-        method="get"
-        className="flex shrink-0 flex-wrap items-center gap-2"
-      >
-        <input type="hidden" name="q" value={q} />
 
         <Button
           type="button"
@@ -279,6 +262,68 @@ export default function ComplaintsList() {
             className={revalidator.state === "loading" ? "animate-spin" : ""}
           />
         </Button>
+
+        {hasFilters && (
+          <Button asChild type="button" variant="outline">
+            <Link to="/admin/complaints">Clear</Link>
+          </Button>
+        )}
+
+        <ComplaintSearch defaultValue={q} />
+      </div>
+
+      {filterMode === "quick" ? (
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <Stat
+            label="Total"
+            value={stats.total}
+            tone="text-primary"
+            active={activeStat === "total"}
+            onClick={() => applyStat("total")}
+          />
+          <Stat
+            label="Open"
+            value={stats.open}
+            tone="text-sky-600 dark:text-sky-400"
+            active={activeStat === "open"}
+            onClick={() => applyStat("open")}
+          />
+          <Stat
+            label="Overdue"
+            value={stats.overdue}
+            tone="text-rose-600 dark:text-rose-400"
+            active={activeStat === "overdue"}
+            onClick={() => applyStat("overdue")}
+          />
+          <Stat
+            label="Due soon"
+            value={stats.dueSoon}
+            tone="text-amber-600 dark:text-amber-400"
+            active={activeStat === "dueSoon"}
+            onClick={() => applyStat("dueSoon")}
+          />
+          <Stat
+            label="Settled"
+            value={stats.settled}
+            tone="text-emerald-600 dark:text-emerald-400"
+            active={activeStat === "settled"}
+            onClick={() => applyStat("settled")}
+          />
+          <div className="ml-auto">
+            <DataPagination
+              page={page}
+              totalPages={totalPages}
+              total={total}
+              pageSize={pageSize}
+            />
+          </div>
+        </div>
+      ) : (
+        <Form
+          method="get"
+          className="flex shrink-0 flex-wrap items-center gap-2"
+        >
+          <input type="hidden" name="q" value={q} />
 
         <Select name="status" defaultValue={status}>
           <SelectTrigger className="w-[170px]">
@@ -340,12 +385,6 @@ export default function ComplaintsList() {
 
         <Button type="submit">Filter</Button>
 
-        {hasFilters && (
-          <Button asChild type="button" variant="outline">
-            <Link to="/admin/complaints">Clear</Link>
-          </Button>
-        )}
-
         <div className="ml-auto">
           <DataPagination
             page={page}
@@ -355,6 +394,7 @@ export default function ComplaintsList() {
           />
         </div>
       </Form>
+      )}
 
       {selected.length > 0 && (
         <div className="flex shrink-0 flex-wrap items-center gap-2 rounded-md border bg-muted/50 px-3 py-2">
@@ -499,14 +539,12 @@ export default function ComplaintsList() {
 }
 
 function Stat({
-  icon: Icon,
   label,
   value,
   tone,
   active,
   onClick,
 }: {
-  icon: LucideIcon;
   label: string;
   value: number;
   tone: string;
@@ -518,30 +556,13 @@ function Stat({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className="group/stat cursor-pointer rounded-xl text-left outline-none"
+      className={cn(
+        "cursor-pointer rounded-full border px-3 py-1 text-xs outline-none transition-colors hover:bg-muted/60 focus-visible:ring-1 focus-visible:ring-ring",
+        active ? "border-primary ring-1 ring-primary" : "border-border bg-background",
+      )}
     >
-      <Card
-        size="sm"
-        className={cn(
-          "transition-colors hover:bg-muted/50 group-focus-visible/stat:ring-1 group-focus-visible/stat:ring-ring",
-          active && "ring-1 ring-primary",
-        )}
-      >
-        <CardContent className="flex flex-row items-center gap-2">
-          <span
-            className={cn(
-              "flex size-8 shrink-0 items-center justify-center rounded-md",
-              tone,
-            )}
-          >
-            <Icon className="size-4" />
-          </span>
-          <span className="text-lg leading-none font-semibold tabular-nums">
-            {value}
-          </span>
-          <span className="text-xs text-muted-foreground">{label}</span>
-        </CardContent>
-      </Card>
+      <span className={cn("mr-1 font-semibold tabular-nums", tone)}>{value}</span>
+      <span className="text-muted-foreground">{label}</span>
     </button>
   );
 }
