@@ -11,10 +11,14 @@ const COMPLAINT_TYPES = [
   "type7", "type8", "type9", "type10", "type11", "type12",
 ];
 
-const TOTAL = 5;
+const TOTAL = 15;
 
 // Fallback when the settings row has not been created yet.
 const RECEIVED_DEADLINE_DAYS = 3;
+const SUMMONED_DEADLINE_DAYS = 5;
+const MEDIATION_DEADLINE_DAYS = 30;
+
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 const UPLOAD_DIR = path.resolve("uploads");
 fs.mkdirSync(UPLOAD_DIR, { recursive: true });
@@ -206,15 +210,60 @@ async function main() {
 
   const settings = await prisma.barangaySettings.findUnique({
     where: { id: 1 },
-    select: { deadlineReceived: true },
+    select: {
+      deadlineReceived: true,
+      deadlineSummoned: true,
+      deadlineMediation: true,
+    },
   });
-  const receivedDeadlineDays = settings?.deadlineReceived ?? RECEIVED_DEADLINE_DAYS;
+  const deadlineDays = {
+    received: settings?.deadlineReceived ?? RECEIVED_DEADLINE_DAYS,
+    summoned: settings?.deadlineSummoned ?? SUMMONED_DEADLINE_DAYS,
+    mediation: settings?.deadlineMediation ?? MEDIATION_DEADLINE_DAYS,
+  };
 
   let sequence = 0;
 
-  for (let i = 0; i < TOTAL; i++) {
-    const incidentAt = faker.date.past({ years: 1 });
-    const createdAt = faker.date.between({ from: incidentAt, to: new Date() });
+  // A realistic mix so the demo data is not wall-to-wall overdue:
+  // fresh cases on track, some due soon, a few genuinely overdue,
+  // a couple mid-process, and some already resolved.
+  type SeedPlan = {
+    status: "received" | "mediation" | "settled" | "certified" | "dismissed";
+    ageDays: number; // how long ago the complaint was filed
+  };
+
+  const plan: SeedPlan[] = faker.helpers.shuffle([
+    ...Array.from({ length: 4 }, () => ({
+      status: "received" as const,
+      ageDays: faker.number.int({ min: 0, max: 2 }),
+    })),
+    ...Array.from({ length: 3 }, () => ({
+      status: "received" as const,
+      ageDays: faker.number.int({ min: 2, max: 4 }),
+    })),
+    ...Array.from({ length: 2 }, () => ({
+      status: "received" as const,
+      ageDays: faker.number.int({ min: 5, max: 9 }),
+    })),
+    ...Array.from({ length: 3 }, () => ({
+      status: "mediation" as const,
+      ageDays: faker.number.int({ min: 8, max: 20 }),
+    })),
+    ...Array.from({ length: 3 }, () => ({
+      status: faker.helpers.arrayElement(["settled", "certified", "dismissed"] as const),
+      ageDays: faker.number.int({ min: 14, max: 45 }),
+    })),
+  ]);
+
+  const TERMINAL = ["settled", "certified", "dismissed"];
+  const NOW = new Date();
+
+  for (const item of plan) {
+    const createdAt = new Date(NOW.getTime() - item.ageDays * DAY_MS);
+    const incidentAt = faker.date.between({
+      from: new Date(createdAt.getTime() - 365 * DAY_MS),
+      to: createdAt,
+    });
     const contact = faker.phone.number({ style: "international" });
     const evidence = await makeEvidence();
 
@@ -226,6 +275,59 @@ async function main() {
       faker.number.float({ min: 0, max: 1 }) < 0.6
         ? faker.date.between({ from: createdAt, to: new Date() })
         : null;
+
+    const isTerminal = TERMINAL.includes(item.status);
+    const updates: {
+      status: string;
+      publicNote: string | null;
+      hearingAt?: Date | null;
+      internalNote?: string | null;
+      createdAt: Date;
+    }[] = [
+      {
+        status: "received",
+        publicNote: "Complaint received and recorded.",
+        createdAt,
+      },
+    ];
+
+    let priority = faker.helpers.arrayElement(["low", "normal", "normal", "high"]);
+    let dueAt: Date | null;
+
+    if (item.status === "mediation") {
+      const mediationStarted = faker.date.between({
+        from: new Date(createdAt.getTime() + deadlineDays.received * DAY_MS),
+        to: NOW,
+      });
+      updates.push({
+        status: "mediation",
+        publicNote: "Scheduled for mediation before the Punong Barangay.",
+        createdAt: mediationStarted,
+        hearingAt: faker.date.between({
+          from: mediationStarted,
+          to: new Date(NOW.getTime() + 10 * DAY_MS),
+        }),
+      });
+      dueAt = new Date(mediationStarted.getTime() + deadlineDays.mediation * DAY_MS);
+    } else if (isTerminal) {
+      // Resolved cases no longer carry a deadline or priority.
+      const resolvedAt = faker.date.between({ from: createdAt, to: NOW });
+      const note = {
+        settled: "The parties reached an amicable settlement.",
+        certified: "No amicable settlement was reached; certified for court filing.",
+        dismissed: "The complaint was dismissed for lack of merit.",
+      }[item.status];
+      updates.push({
+        status: item.status,
+        publicNote: note,
+        createdAt: resolvedAt,
+        internalNote: "Seed data entry.",
+      });
+      dueAt = null;
+      priority = "none";
+    } else {
+      dueAt = new Date(createdAt.getTime() + deadlineDays.received * DAY_MS);
+    }
 
     await prisma.complaint.create({
       data: {
@@ -258,22 +360,15 @@ async function main() {
         incidentPlace: faker.location.city(),
         narrative: faker.lorem.paragraphs(2),
 
-        // Every seeded case starts at the first KP stage.
-        status: "received",
-        priority: faker.helpers.arrayElement(["low", "normal", "normal", "high"]),
-        dueAt: new Date(createdAt.getTime() + receivedDeadlineDays * 24 * 60 * 60 * 1000),
+        status: item.status,
+        priority,
+        dueAt,
         createdAt,
         consentAt: faker.date.between({ from: createdAt, to: new Date() }),
         viewedAt: openedAt,
 
         evidence: { create: evidence },
-        updates: {
-          create: {
-            status: "received",
-            publicNote: "Complaint received and recorded.",
-            createdAt,
-          },
-        },
+        updates: { create: updates },
       },
     });
   }
@@ -283,7 +378,7 @@ async function main() {
     data: { lastValue: sequence },
   });
 
-  console.log(`✅ Seeded ${TOTAL} received complaints with evidence.`);
+  console.log(`✅ Seeded ${TOTAL} complaints with evidence (mixed freshness/statuses).`);
 
   // ---- Staff inbox: recent cases with a mix of read and unread alerts ----
   const staff = await prisma.user.findMany({
@@ -309,7 +404,7 @@ async function main() {
         userId: member.id,
         type: "new_complaint",
         title: `New complaint ${complaint.reference}`,
-        body: `${complaint.complainantName} vs ${complaint.respondentName} was filed.`,
+        body: `${complaint.complainantName} filed a complaint just now.`,
         complaintId: complaint.id,
         reference: complaint.reference,
         dedupeKey: `seed:new_complaint:${complaint.id}:${member.id}`,
