@@ -43,7 +43,7 @@ model RefreshToken {
   revokedAt DateTime?
 }
 
-// ---- Per-year sequential reference counter (BK-<year>-000001) ----
+// ---- Per-year sequential reference counter (BK-<year>-000001-<check>) ----
 model ReferenceCounter {
   year      Int      @id
   lastValue Int
@@ -53,7 +53,7 @@ model ReferenceCounter {
 // ---- Complaints ----
 model Complaint {
   id        Int    @id @default(autoincrement())
-  reference String @unique // e.g. BK-2026-000001
+  reference String @unique // e.g. BK-2026-000001-K7
 
   // Complainant
   complainantName    String
@@ -192,7 +192,7 @@ model Notification {
   id          Int        @id @default(autoincrement())
   userId      Int
   user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type        String     @default("info") // reminder | overdue | escalation | hearing_overdue | new_complaint | info
+  type        String    @default("info") // reminder | overdue | escalation | hearing_overdue | hearing_upcoming | new_complaint | info
   title       String
   body        String
   complaintId Int?

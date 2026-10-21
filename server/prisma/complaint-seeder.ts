@@ -1,7 +1,7 @@
 import "dotenv/config";
 import fs from "node:fs";
 import path from "node:path";
-import { randomUUID } from "node:crypto";
+import { randomInt, randomUUID } from "node:crypto";
 import zlib from "node:zlib";
 import { prisma } from "../src/db";
 import { faker } from "@faker-js/faker";
@@ -198,6 +198,12 @@ async function main() {
     create: { year, lastValue: 0 },
   });
 
+  // Same alphabet as complaint.service for the public check suffix.
+  const CHECK_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+  const checkSuffix = () =>
+    CHECK_ALPHABET.charAt(randomInt(CHECK_ALPHABET.length)) +
+    CHECK_ALPHABET.charAt(randomInt(CHECK_ALPHABET.length));
+
   const settings = await prisma.barangaySettings.findUnique({
     where: { id: 1 },
     select: { deadlineReceived: true },
@@ -213,7 +219,7 @@ async function main() {
     const evidence = await makeEvidence();
 
     sequence += 1;
-    const reference = `BK-${year}-${String(sequence).padStart(6, "0")}`;
+    const reference = `BK-${year}-${String(sequence).padStart(6, "0")}-${checkSuffix()}`;
 
     // Roughly three in five cases have already been opened by staff.
     const openedAt =

@@ -160,7 +160,7 @@ m. **Role-Based Access Control (RBAC)** — A security model that grants capabil
 
 n. **Barangay Settings** — The editable barangay profile (name, city, province, officials, contact details) used on letters and printable documents.
 
-o. **Reference Number** — A unique case identifier in the form `BK-<year>-<sequence>` (e.g. `BK-2026-000001`) shown to residents for tracking.
+o. **Reference Number** — A unique case identifier in the form `BK-<year>-<sequence>-<check>` (e.g. `BK-2026-000001-K7`) shown to residents for tracking. The random check characters keep public tracking codes from being guessed by enumerating the sequence.
 
 p. **Dashboard Analytics** — Reports showing complaint volumes, status distribution, trends, and hotspot puroks.
 
@@ -472,7 +472,7 @@ The system exchanges data with four external parties: residents (who file and tr
     |  submit complaint +           |                              |
     |  evidence (multipart) ------> |  validate (Zod)              |
     |                               |  rate-limit check            |
-    |                               |  generate BK-<year>-<seq>   |
+    |                               |  generate BK-<year>-<seq>-<check>   |
     |                               |  process evidence upload ---->| store files in uploads/
     |                               |  create complaint ----------->| INSERT Complaint
     |                               |  create initial StatusUpdate->| INSERT StatusUpdate
@@ -703,7 +703,7 @@ This ERD represents the BICATS system and connects directly to the functions des
 - **Notification Table** — In-app notifications for staff (reminders, overdue alerts, escalations, missed-session alerts, new-complaint alerts), deduplicated by `dedupeKey`, capped at the newest 100 per user, and expired after 90 days. Missed-session alerts are removed when the session is completed, cancelled, or rescheduled.
 - **AuditLog Table** — An immutable trail of who did what, when, and from which IP, with actor name/role snapshots that survive account changes.
 - **BarangaySettings Table** — A singleton row (id = 1) holding the barangay profile, branding assets, signatory names and printed titles, public hotlines, configurable KP deadline lengths and the per-event SMS/email notification toggles used across the system.
-- **ReferenceCounter Table** — One row per calendar year holding the last sequence number issued, used to generate sequential case references (`BK-2026-000001`).
+- **ReferenceCounter Table** — One row per calendar year holding the last sequence number issued, used to generate case references (`BK-2026-000001-K7`: sequence plus two random check characters).
 
 ## 4.2 DATA DICTIONARY
 
@@ -739,7 +739,7 @@ This ERD represents the BICATS system and connects directly to the functions des
 | Field Name | Description | Data Type | Field Type | Key | Example Value |
 | --- | --- | --- | --- | --- | --- |
 | id | Unique identifier of the complaint | INT | Required | PK | 356 |
-| reference | Human-readable case reference | VARCHAR(20) | Required | Unique | BK-2026-000001 |
+| reference | Human-readable case reference | VARCHAR(20) | Required | Unique | BK-2026-000001-K7 |
 | complainantName | Name of the complainant | VARCHAR(120) | Required | None | "Juan D. Dela Cruz" |
 | complainantAge | Age of the complainant | INT | Required | None | 34 |
 | complainantPurok | Purok/zone of the complainant (hotspot analytics) | VARCHAR(80) | Required | None | "Purok 3" |
@@ -823,9 +823,9 @@ This ERD represents the BICATS system and connects directly to the functions des
 | userId | Recipient staff (FK to User) | INT | Required | FK | 1 |
 | type | Notification category | ENUM('reminder','overdue','escalation','hearing_overdue','new_complaint','info') | Required | None | hearing_overdue |
 | title | Short headline | VARCHAR(200) | Required | None | "Case due tomorrow" |
-| body | Notification text | TEXT | Required | None | "BK-2026-000001 is due by Oct 22." |
+| body | Notification text | TEXT | Required | None | "BK-2026-000001-K7 is due by Oct 22." |
 | complaintId | Related complaint (FK to Complaint) | INT | Optional | FK | 356 |
-| reference | Case reference (denormalized) | VARCHAR(20) | Optional | None | BK-2026-000001 |
+| reference | Case reference (denormalized) | VARCHAR(20) | Optional | None | BK-2026-000001-K7 |
 | dedupeKey | Idempotency key (one per event/recipient) | VARCHAR(200) | Optional | Unique | reminder:356:2026-10-21:1 |
 | readAt | Read timestamp (null = unread) | TIMESTAMP | Optional | Index | NULL |
 | createdAt | Creation timestamp | TIMESTAMP | Required | Index | 2026-10-19 08:00:00 |
@@ -1096,7 +1096,7 @@ Representative test cases (to be maintained alongside the QA plan).
 
 | ID | Description | Steps | Expected Result |
 | --- | --- | --- | --- |
-| TC-01 | File a valid complaint | Complete the form with valid data, attach one image, consent, submit | Case is created; a unique sequential `BK-<year>-<sequence>` reference is returned |
+| TC-01 | File a valid complaint | Complete the form with valid data, attach one image, consent, submit | Case is created; a unique `BK-<year>-<sequence>-<check>` reference is returned |
 | TC-02 | File with missing required field | Submit the form with the narrative blank | Validation error is shown; no case is created |
 | TC-03 | Track with correct credentials | Enter reference + registered contact | Public case view is returned; contact is masked |
 | TC-04 | Track with wrong contact | Enter reference + wrong contact | "Not found" response; no data leaked |

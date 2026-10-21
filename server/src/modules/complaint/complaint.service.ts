@@ -1,6 +1,7 @@
 
 import { prisma } from "../../db.js";
 import { Prisma } from "../../generated/prisma/client.js";
+import { randomInt } from "node:crypto";
 
 import { COMPLAINT_STATUSES, COMPLAINT_PRIORITIES, computeNextDueAt, deadlineDaysFrom } from "./complaint.schema.js";
 import type {
@@ -14,8 +15,20 @@ import type {
 import settingService from "../setting/setting.service.js";
 
 // Atomically reserves the next number for the year and formats it as
-// BK-<year>-000001. The upsert runs inside the complaint transaction so two
-// concurrent filings can never share a sequence number.
+// BK-<year>-000001-<check>. The two random check characters keep public
+// tracking codes from being enumerated (they must be learned, not guessed).
+// The upsert runs inside the complaint transaction so two concurrent filings
+// can never share a sequence number.
+const CHECK_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"; // unambiguous chars
+
+function randomChar(): string {
+    return CHECK_ALPHABET.charAt(randomInt(CHECK_ALPHABET.length));
+}
+
+function checkSuffix(): string {
+    return randomChar() + randomChar();
+}
+
 async function nextReference(tx: Prisma.TransactionClient, year: number): Promise<string> {
     const rows = await tx.$queryRaw<{ lastValue: number }[]>`
         INSERT INTO "ReferenceCounter" ("year", "lastValue")
@@ -27,7 +40,7 @@ async function nextReference(tx: Prisma.TransactionClient, year: number): Promis
 
     const value = rows[0]?.lastValue ?? 1;
 
-    return `BK-${year}-${String(value).padStart(6, "0")}`;
+    return `BK-${year}-${String(value).padStart(6, "0")}-${checkSuffix()}`;
 }
 
 function normalizePhone(input: string): string {

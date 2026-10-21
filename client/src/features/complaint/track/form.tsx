@@ -75,7 +75,7 @@ export default function Track() {
             id="reference"
             name="reference"
             defaultValue={params.get("ref") ?? ""}
-            placeholder="BK-2026-000001"
+            placeholder="BK-2026-000001-K7"
             required
           />
         </div>
