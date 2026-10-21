@@ -329,8 +329,12 @@ export default function ComplaintsList() {
           <SelectContent>
             <SelectItem value="all">{t("anyDue")}</SelectItem>
             <SelectItem value="open">{t("openOnly")}</SelectItem>
-            <SelectItem value="overdue">{t("overdueOnly")}</SelectItem>
-            <SelectItem value="dueSoon">{t("dueSoonOnly")}</SelectItem>
+            {["overdue", "dueSoon"].includes(risk) && (
+              // Arriving via a stat button; show it so the select isn't blank.
+              <SelectItem value={risk}>
+                {t(risk === "overdue" ? "overdueOnly" : "dueSoonOnly")}
+              </SelectItem>
+            )}
           </SelectContent>
         </Select>
 
