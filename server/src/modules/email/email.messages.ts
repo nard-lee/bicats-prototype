@@ -83,6 +83,27 @@ export function mediationCancelledEmail(input: {
   return { subject, text: stripTags(lines), html: wrap(subject, lines) };
 }
 
+// Daily pre-session reminder for the complainant.
+export function hearingReminderEmail(input: {
+  reference: string;
+  kind: string;
+  scheduledAt: Date;
+  location?: string | null;
+}): EmailMessage {
+  const subject = `BICATS: Reminder - your ${kindLabel(input.kind)} session is within 24 hours`;
+
+  const lines = [
+    `Reminder: your ${kindLabel(input.kind)} session for complaint <strong>${input.reference}</strong> starts within 24 hours.`,
+    `When: <strong>${formatWhen(input.scheduledAt)}</strong>`,
+  ];
+  if (input.location) {
+    lines.push(`Where: <strong>${input.location}</strong>`);
+  }
+  lines.push("Please arrive on time and bring any documents related to your case.");
+
+  return { subject, text: stripTags(lines), html: wrap(subject, lines) };
+}
+
 function stripTags(lines: string[]): string {
   return lines.map((line) => line.replace(/<[^>]+>/g, "")).join("\n\n");
 }

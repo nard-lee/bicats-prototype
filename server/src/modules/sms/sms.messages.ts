@@ -72,3 +72,22 @@ export function mediationScheduledSms(input: {
 export function mediationCancelledSms(input: { reference: string; kind: string }): string {
   return `BARANGAY: Your ${kindLabel(input.kind)} for ${input.reference} has been cancelled. We will inform you of the next step. Do not reply.`;
 }
+
+// Daily pre-session reminder for the complainant.
+export function hearingReminderSms(input: {
+  reference: string;
+  kind: string;
+  scheduledAt: Date;
+  location?: string | null;
+}): string {
+  const parts = [
+    `BARANGAY: Reminder that your ${kindLabel(input.kind)} session for ${input.reference} is within 24 hours, on ${formatWhen(input.scheduledAt)}.`,
+  ];
+
+  if (input.location) {
+    parts.push(`Venue: ${input.location}.`);
+  }
+  parts.push("Bring any documents related to your case. Please arrive on time. Do not reply.");
+
+  return parts.join(" ");
+}

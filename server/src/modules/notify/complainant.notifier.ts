@@ -1,12 +1,14 @@
 import { prisma } from "@/db.js";
 import emailService from "../email/email.service.js";
 import {
+  hearingReminderEmail,
   mediationCancelledEmail,
   mediationScheduledEmail,
   statusUpdateEmail,
 } from "../email/email.messages.js";
 import smsService from "../sms/sms.service.js";
 import {
+  hearingReminderSms,
   mediationCancelledSms,
   mediationScheduledSms,
   statusUpdateSms,
@@ -138,6 +140,33 @@ const complainantNotifier = {
       mediationCancelledSms(message),
       mediationCancelledEmail(message),
       "mediation_cancelled",
+      channels,
+    );
+  },
+
+  // Daily reminder that a scheduled session happens within 24 hours.
+  async hearingReminder(
+    complaintId: number,
+    input: { kind: string; scheduledAt: Date; location?: string | null },
+  ): Promise<void> {
+    if (!smsService.isSmsEnabled() && !emailService.isEmailEnabled()) return;
+
+    const settings = await settingService.get();
+    const channels = {
+      sms: settings.notifyMediationSms,
+      email: settings.notifyMediationEmail,
+    };
+    if (!channels.sms && !channels.email) return;
+
+    const target = await findTarget(complaintId);
+    if (!target) return;
+
+    const message = { reference: target.reference, ...input };
+    await dispatch(
+      target,
+      hearingReminderSms(message),
+      hearingReminderEmail(message),
+      "hearing_reminder",
       channels,
     );
   },
