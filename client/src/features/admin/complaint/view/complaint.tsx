@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { useLoaderData, useRevalidator, useRouteLoaderData, Link } from "react-router";
 import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +35,9 @@ import type { AdminLoaderData } from "@/layouts/admin/loader";
 
 const NOW_MS = Date.now();
 
+// Newest events are already first; show a window of them and page deeper.
+const HISTORY_PAGE = 6;
+
 function Info({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="space-y-1">
@@ -61,6 +64,15 @@ export default function ComplaintView() {
 
   const evidence = complaint.evidence || [];
   const history = complaint.history || [];
+
+  const [visibleCount, setVisibleCount] = useState(HISTORY_PAGE);
+  const visibleHistory = history.slice(0, visibleCount);
+  const hasMore = history.length > visibleCount;
+  const isCollapsed = visibleCount <= HISTORY_PAGE;
+
+  const historyCounter = t("historyOf")
+    .replace("{visible}", String(visibleHistory.length))
+    .replace("{total}", String(history.length));
 
   const availableDocs = DOCUMENT_TYPES.filter((doc) => {
     if (doc === "settlement") return complaint.status === "settled";
@@ -307,9 +319,32 @@ export default function ComplaintView() {
                           </a>
                         </Button>
                       </div>
-                    ))}
+                  ))}
+                </div>
+                {(hasMore || !isCollapsed) && (
+                  <div className="mt-6 flex items-center justify-between gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setVisibleCount((c) => c + HISTORY_PAGE)}
+                      className="w-full"
+                    >
+                      {t("showOlderHistory")}
+                    </Button>
+                    {!isCollapsed && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setVisibleCount(HISTORY_PAGE)}
+                      >
+                        {t("showRecentHistory")}
+                      </Button>
+                    )}
                   </div>
-                </CardContent>
+                )}
+              </CardContent>
               </Card>
             )}
           </div>
@@ -324,11 +359,14 @@ export default function ComplaintView() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
+                <p className="mb-4 text-xs text-muted-foreground tabular-nums">
+                  {historyCounter}
+                </p>
                 <div className="space-y-6">
-                  {history.map((event, index) => (
+                  {visibleHistory.map((event, index) => (
                     <div key={index} className="relative flex gap-4">
                       {/* Timeline Line */}
-                      {index !== history.length - 1 && (
+                      {index !== visibleHistory.length - 1 && (
                         <div className="absolute left-3 top-8 bottom-[-24px] w-px bg-border" />
                       )}
 

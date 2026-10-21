@@ -296,13 +296,24 @@ async function main() {
     let dueAt: Date | null;
 
     if (item.status === "mediation") {
+      // Walk the case through the real KP steps so the history timeline
+      // has several pages of events, not just one.
+      const summonedAt = faker.date.between({
+        from: new Date(createdAt.getTime() + DAY_MS),
+        to: new Date(NOW.getTime() - DAY_MS),
+      });
       const mediationStarted = faker.date.between({
-        from: new Date(createdAt.getTime() + deadlineDays.received * DAY_MS),
+        from: summonedAt,
         to: NOW,
       });
       updates.push({
+        status: "summoned",
+        publicNote: "Respondent was summoned before the Punong Barangay.",
+        createdAt: summonedAt,
+      });
+      updates.push({
         status: "mediation",
-        publicNote: "Scheduled for mediation before the Punong Barangay.",
+        publicNote: "Mediation before the Punong Barangay.",
         createdAt: mediationStarted,
         hearingAt: faker.date.between({
           from: mediationStarted,
@@ -312,12 +323,34 @@ async function main() {
       dueAt = new Date(mediationStarted.getTime() + deadlineDays.mediation * DAY_MS);
     } else if (isTerminal) {
       // Resolved cases no longer carry a deadline or priority.
-      const resolvedAt = faker.date.between({ from: createdAt, to: NOW });
+      const summonedAt = faker.date.between({
+        from: new Date(createdAt.getTime() + DAY_MS),
+        to: new Date(NOW.getTime() - 3 * DAY_MS),
+      });
+      const mediationStarted = faker.date.between({
+        from: summonedAt,
+        to: new Date(NOW.getTime() - 2 * DAY_MS),
+      });
+      const resolvedAt = faker.date.between({
+        from: mediationStarted,
+        to: NOW,
+      });
       const note = {
         settled: "The parties reached an amicable settlement.",
         certified: "No amicable settlement was reached; certified for court filing.",
         dismissed: "The complaint was dismissed for lack of merit.",
       }[item.status];
+      updates.push({
+        status: "summoned",
+        publicNote: "Respondent was summoned before the Punong Barangay.",
+        createdAt: summonedAt,
+      });
+      updates.push({
+        status: "mediation",
+        publicNote: "Mediation before the Punong Barangay.",
+        createdAt: mediationStarted,
+        hearingAt: mediationStarted,
+      });
       updates.push({
         status: item.status,
         publicNote: note,
