@@ -153,9 +153,9 @@ export const updatePrioritySchema = z.object({
 export type DeadlineDays = Partial<Record<ComplaintStatus, number>>;
 
 export const KP_DEADLINE_DAYS: DeadlineDays = {
-  received: 3, // summon the respondent
-  summoned: 15, // hold mediation
-  mediation: 15, // conclude mediation
+  received: 1, // summon the respondent by the next working day
+  summoned: 15, // hold mediation within 15 days of the summons
+  mediation: 15, // conclude mediation (from the first meeting of the parties)
   conciliation: 15, // conclude the Pangkat conciliation
 };
 

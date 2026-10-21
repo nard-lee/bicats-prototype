@@ -260,11 +260,11 @@ model BarangaySettings {
   hotline     String @default("")
   tanodNumber String @default("")
 
-  // KP deadlines (days) and the "due soon" warning window
-  deadlineReceived     Int @default(3)
-  deadlineSummoned     Int @default(15)
-  deadlineMediation    Int @default(15)
-  deadlineConciliation Int @default(15)
+// KP deadlines (days) and the "due soon" warning window
+deadlineReceived     Int @default(1)  // issue the summons by the next working day
+deadlineSummoned     Int @default(15) // hold/complete mediation from the first meeting
+deadlineMediation    Int @default(15) // conclude mediation before constituting the Pangkat
+deadlineConciliation Int @default(15) // conclude Pangkat conciliation (extendable +15)
   riskWindowDays       Int @default(3)
 
   // Complainant notifications per event and channel

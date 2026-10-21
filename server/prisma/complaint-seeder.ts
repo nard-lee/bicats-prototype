@@ -14,7 +14,8 @@ const COMPLAINT_TYPES = [
 const TOTAL = 15;
 
 // Fallback when the settings row has not been created yet.
-const RECEIVED_DEADLINE_DAYS = 3;
+// The Punong Barangay issues the summons by the next working day.
+const RECEIVED_DEADLINE_DAYS = 1;
 const SUMMONED_DEADLINE_DAYS = 5;
 const MEDIATION_DEADLINE_DAYS = 30;
 
@@ -235,15 +236,15 @@ async function main() {
   const plan: SeedPlan[] = faker.helpers.shuffle([
     ...Array.from({ length: 4 }, () => ({
       status: "received" as const,
-      ageDays: faker.number.int({ min: 0, max: 2 }),
+      ageDays: faker.number.int({ min: 0, max: 1 }), // within the summons deadline
     })),
     ...Array.from({ length: 3 }, () => ({
       status: "received" as const,
-      ageDays: faker.number.int({ min: 2, max: 4 }),
+      ageDays: faker.number.int({ min: 1, max: 3 }), // borderline / just past
     })),
     ...Array.from({ length: 2 }, () => ({
       status: "received" as const,
-      ageDays: faker.number.int({ min: 5, max: 9 }),
+      ageDays: faker.number.int({ min: 5, max: 9 }), // clearly overdue
     })),
     ...Array.from({ length: 3 }, () => ({
       status: "mediation" as const,
