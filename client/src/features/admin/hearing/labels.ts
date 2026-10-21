@@ -26,10 +26,11 @@ export const STATUS_STYLE: Record<HearingStatus, string> = {
   scheduled: "border-primary/20 bg-primary/10 text-primary",
   completed:
     "border-emerald-500/20 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
-  cancelled: "border-border bg-muted text-muted-foreground",
-  no_show:
-    "border-amber-500/20 bg-amber-500/15 text-amber-700 dark:text-amber-300",
+  cancelled: "border-border bg-muted text-muted-foreground line-through",
+  // A recorded negative outcome (red) is visually distinct from the
+  // amber "needs action" overdue state.
+  no_show: "border-red-500/25 bg-red-500/10 text-red-700 dark:text-red-300",
 };
 
 export const OVERDUE_STYLE =
-  "border-amber-500/20 bg-amber-500/15 text-amber-700 dark:text-amber-300";
+  "border-amber-500/30 bg-amber-500/15 text-amber-700 dark:text-amber-300 ring-1 ring-amber-500/40";
