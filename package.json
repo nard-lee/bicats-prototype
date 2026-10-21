@@ -3,19 +3,26 @@
   "version": "1.0.0",
   "private": true,
   "description": "BICATS — Barangay complaint system (Vite client + Express/Prisma server)",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "build": "pnpm --dir client build && pnpm --dir server typecheck",
-    "install:all": "pnpm --dir server install && pnpm --dir client install",
+    "install:all": "pnpm install && pnpm --dir server install && pnpm --dir client install",
+    "dev": "concurrently -k -n SERVER,CLIENT -c blue,green \"pnpm dev:server\" \"pnpm dev:client\"",
     "dev:server": "pnpm --dir server dev",
     "dev:client": "pnpm --dir client dev",
     "db:generate": "pnpm --dir server db:generate",
     "db:push": "pnpm --dir server db:push",
     "db:seed:users": "pnpm --dir server db:seed:users",
-    "db:seed": "pnpm --dir server db:seed",
+    "db:seed": "pnpm --dir server db:seed:complaints",
     "db:seed:all": "pnpm --dir server db:seed:all",
     "db:studio": "pnpm --dir server db:studio",
     "typecheck:server": "pnpm --dir server typecheck",
     "typecheck:client": "pnpm --dir client exec tsc -b",
     "lint:client": "pnpm --dir client lint"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.6"
   }
 }
