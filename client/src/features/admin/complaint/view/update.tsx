@@ -8,11 +8,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import DateTimePicker from "@/components/ui/date-time-picker";
 import { api } from "@/lib/api";
 import { useT, type Key } from "@/lib/I18n";
+import { PRIORITIES, type ComplaintPriority } from "../priority";
 import type { ComplaintStatus } from "./loader";
 
 interface StatusUpdateModalProps {
   complaintId: number;
   currentStatus: ComplaintStatus;
+  currentPriority: ComplaintPriority;
   currentHearingAt?: string | null;
   onSuccess: () => void;
 }
@@ -35,12 +37,13 @@ const ALLOWED_TRANSITIONS: Record<ComplaintStatus, ComplaintStatus[]> = {
   dismissed: [],
 };
 
-export default function StatusUpdateModal({ complaintId, currentStatus, currentHearingAt, onSuccess }: StatusUpdateModalProps) {
+export default function StatusUpdateModal({ complaintId, currentStatus, currentPriority, currentHearingAt, onSuccess }: StatusUpdateModalProps) {
   const { t } = useT();
   const [open, setOpen] = useState(false);
 
   // Form State
   const [newStatus, setNewStatus] = useState<ComplaintStatus>(currentStatus);
+  const [priority, setPriority] = useState<ComplaintPriority>(currentPriority);
   const [publicNote, setPublicNote] = useState("");
   const [internalNote, setInternalNote] = useState("");
   const [hearingAt, setHearingAt] = useState<string>("");
@@ -52,10 +55,12 @@ export default function StatusUpdateModal({ complaintId, currentStatus, currentH
   const allowedNextStatuses = ALLOWED_TRANSITIONS[currentStatus] || [];
   const canChangeStatus = allowedNextStatuses.length > 0;
   const canScheduleHearing = !["settled", "certified", "dismissed"].includes(currentStatus);
+  const canChangePriority = canScheduleHearing;
 
   // Check if any field in the main form has been modified
   const hasChanges =
     (canChangeStatus && newStatus !== currentStatus) ||
+    (canChangePriority && priority !== currentPriority) ||
     publicNote.trim().length > 0 ||
     internalNote.trim().length > 0 ||
     (canScheduleHearing && hearingAt !== isoToLocalInput(currentHearingAt));
@@ -63,6 +68,7 @@ export default function StatusUpdateModal({ complaintId, currentStatus, currentH
   // Reset form when modal opens
   function resetForm() {
     setNewStatus(currentStatus);
+    setPriority(currentPriority);
     setPublicNote("");
     setInternalNote("");
     setHearingAt(isoToLocalInput(currentHearingAt));
@@ -88,6 +94,12 @@ export default function StatusUpdateModal({ complaintId, currentStatus, currentH
           hearingAt: canScheduleHearing && hearingAt ? hearingAt : null,
         },
       });
+
+      if (canChangePriority && priority !== currentPriority) {
+        await api.patch(`/complaints/${complaintId}/priority`, {
+          json: { priority },
+        });
+      }
 
       setOpen(false);
       toast.success("Status updated.");
@@ -119,42 +131,66 @@ export default function StatusUpdateModal({ complaintId, currentStatus, currentH
         <DialogHeader>
           <DialogTitle>Update Case Details</DialogTitle>
           <DialogDescription>
-            Add notes, schedule mediation, or move the case to the next stage.
+            Add notes, adjust priority, schedule mediation, or move the case to the next stage.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          <div className="grid gap-2">
-            <Label htmlFor="status">Status</Label>
-            <Select
-              value={newStatus}
-              onValueChange={(val) => setNewStatus(val as ComplaintStatus)}
-              disabled={!canChangeStatus}
-            >
-              <SelectTrigger id="status">
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                {allStatuses.map((s) => {
-                  const isAllowed = allowedNextStatuses.includes(s);
-                  return (
-                    <SelectItem
-                      key={s}
-                      value={s}
-                      disabled={!isAllowed && s !== currentStatus}
-                    >
-                      {t(`st_${s}` as Key)}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-2">
+              <Label htmlFor="status">Status</Label>
+              <Select
+                value={newStatus}
+                onValueChange={(val) => setNewStatus(val as ComplaintStatus)}
+                disabled={!canChangeStatus}
+              >
+                <SelectTrigger id="status">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {allStatuses.map((s) => {
+                    const isAllowed = allowedNextStatuses.includes(s);
+                    return (
+                      <SelectItem
+                        key={s}
+                        value={s}
+                        disabled={!isAllowed && s !== currentStatus}
+                      >
+                        {t(`st_${s}` as Key)}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="priority">Priority</Label>
+              <Select
+                value={priority}
+                onValueChange={(val) => setPriority(val as ComplaintPriority)}
+                disabled={!canChangePriority || isSubmitting}
+              >
+                <SelectTrigger id="priority">
+                  <SelectValue placeholder="Select priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PRIORITIES.map((p) => (
+                    <SelectItem key={p} value={p}>
+                      {t(`pr_${p}` as Key)}
                     </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
-            {!canChangeStatus && (
-              <p className="text-xs text-muted-foreground">
-                This case is closed. You can only add notes.
-              </p>
-            )}
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
+          {(!canChangeStatus || !canScheduleHearing) && (
+            <p className="text-xs text-muted-foreground">
+              {!canChangeStatus
+                ? "This case is closed. You can only add notes."
+                : "Priority and mediation date are locked for closed cases."}
+            </p>
+          )}
 
           <div className="grid gap-2">
             <Label htmlFor="publicNote">Public Note / Resolution Summary</Label>

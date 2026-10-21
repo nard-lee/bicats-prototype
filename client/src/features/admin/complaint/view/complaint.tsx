@@ -28,7 +28,6 @@ import { useT, type Key } from "@/lib/I18n";
 import type { ComplaintDetail } from "./loader";
 import StatusUpdateModal from "./update";
 import ReopenCaseModal from "./reopen";
-import PrioritySelect from "./priority-select";
 import { PRIORITY_STYLE } from "../priority";
 import { DOCUMENT_TYPES } from "../documents/loader";
 import { complaintTypeLabel } from "../type-label";
@@ -108,17 +107,10 @@ export default function ComplaintView() {
         <div className="flex flex-wrap items-center gap-2">
           {canWrite && (
             <>
-              {complaint.priority !== "none" && (
-                <PrioritySelect
-                  complaintId={complaint.id}
-                  current={complaint.priority}
-                  onSuccess={() => revalidator.revalidate()}
-                />
-              )}
-
               <StatusUpdateModal
                 complaintId={complaint.id}
                 currentStatus={complaint.status}
+                currentPriority={complaint.priority}
                 currentHearingAt={complaint.nextHearingAt}
                 onSuccess={() => revalidator.revalidate()}
               />
@@ -142,7 +134,9 @@ export default function ComplaintView() {
               <Badge>{t(`st_${complaint.status}` as Key)}</Badge>
               {complaint.priority !== "none" && (
                 <Badge className={cn("border", PRIORITY_STYLE[complaint.priority])}>
-                  {t(`pr_${complaint.priority}` as Key)}
+                  {t(
+                    `pr${complaint.priority[0].toUpperCase()}${complaint.priority.slice(1)}Full` as Key,
+                  )}
                 </Badge>
               )}
 
