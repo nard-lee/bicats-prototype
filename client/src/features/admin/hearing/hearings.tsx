@@ -35,6 +35,15 @@ import type { HearingsData, HearingItem } from "./loader";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+// Chip dot colors for the calendar, mirroring STATUS_STYLE in labels.ts
+// (dots instead of full badges because chips are only ~11px tall).
+const STATUS_DOT: Record<HearingItem["status"], string> = {
+  scheduled: "bg-primary",
+  completed: "bg-emerald-500",
+  cancelled: "bg-muted-foreground",
+  no_show: "bg-red-500",
+};
+
 type HearingView = "month" | "overdue" | "upcoming" | "week";
 
 const VIEWS: HearingView[] = ["month", "overdue", "upcoming", "week"];
@@ -355,6 +364,13 @@ export default function HearingsPage() {
                       )}
                       title={hearing.overdue ? "Overdue: no outcome recorded" : undefined}
                     >
+                      <span
+                        className={cn(
+                          "inline-block h-1.5 w-1.5 -translate-y-px rounded-full",
+                          hearing.overdue ? "bg-amber-500" : STATUS_DOT[hearing.status],
+                        )}
+                        aria-hidden
+                      />{" "}
                       <span className="tabular-nums">{fmtTime(hearing.scheduledAt)}</span>{" "}
                       {hearing.reference}
                     </span>
