@@ -1,11 +1,30 @@
 import { useEffect, useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useNavigate } from "react-router";
-import { Loader2, Search } from "lucide-react";
+import { Clock, History, Loader2, Search } from "lucide-react";
 import { cn } from "cn";
 import { Input } from "@/components/ui/input";
 import { api } from "@/lib/api";
 import type { ComplaintListItem, Paginated } from "./loader";
+
+const HISTORY_KEY = "bicats:recent-searches";
+
+function loadHistory(): string[] {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    const parsed = raw ? (JSON.parse(raw) as unknown) : [];
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is string => typeof item === "string").slice(0, 8)
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function rememberSearch(term: string) {
+  const next = [term, ...loadHistory().filter((item) => item !== term)].slice(0, 8);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
+}
 
 export function ComplaintSearch({ defaultValue = "" }: { defaultValue?: string }) {
   const navigate = useNavigate();
@@ -14,6 +33,7 @@ export function ComplaintSearch({ defaultValue = "" }: { defaultValue?: string }
   const [results, setResults] = useState<ComplaintListItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [active, setActive] = useState(-1);
+  const [recent, setRecent] = useState<string[]>(() => loadHistory());
   const boxRef = useRef<HTMLDivElement>(null);
 
   // Debounced live search
@@ -58,7 +78,9 @@ export function ComplaintSearch({ defaultValue = "" }: { defaultValue?: string }
   }, []);
 
   const term = query.trim();
-  const showDropdown = open && term.length >= 2;
+  const showResults = term.length >= 2;
+  const showRecents = term.length < 2 && recent.length > 0;
+  const showDropdown = open && (showResults || showRecents);
 
   function handleChange(value: string) {
     setQuery(value);
@@ -71,8 +93,16 @@ export function ComplaintSearch({ defaultValue = "" }: { defaultValue?: string }
 
   function submitAll() {
     if (!term) return;
+    rememberSearch(term);
+    setRecent(loadHistory());
     setOpen(false);
     navigate(`/admin/complaints?q=${encodeURIComponent(term)}`);
+  }
+
+  function clearHistory() {
+    localStorage.removeItem(HISTORY_KEY);
+    setRecent([]);
+    setActive(-1);
   }
 
   function openComplaint(item: ComplaintListItem) {
@@ -103,7 +133,7 @@ export function ComplaintSearch({ defaultValue = "" }: { defaultValue?: string }
       <Input
         value={query}
         onChange={(e) => handleChange(e.target.value)}
-        onFocus={() => term.length >= 2 && setOpen(true)}
+        onFocus={() => setOpen(true)}
         onKeyDown={onKeyDown}
         placeholder="Search complaints..."
         className="pl-9"
@@ -116,7 +146,50 @@ export function ComplaintSearch({ defaultValue = "" }: { defaultValue?: string }
         <Loader2 className="absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
       )}
 
-      {showDropdown && (
+      {showDropdown && showRecents && (
+        <div
+          id="complaint-search-results"
+          className="absolute z-20 mt-1 w-full overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md"
+        >
+          <div className="flex items-center justify-between px-3 pt-2 pb-1">
+            <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+              <History className="h-3.5 w-3.5" />
+              Recent searches
+            </span>
+            <button
+              type="button"
+              onClick={clearHistory}
+              className="text-xs text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Clear
+            </button>
+          </div>
+          <ul className="py-1">
+            {recent.map((item, index) => (
+              <li key={item}>
+                <button
+                  type="button"
+                  onMouseEnter={() => setActive(index)}
+                  onClick={() => {
+                    rememberSearch(item);
+                    setOpen(false);
+                    navigate(`/admin/complaints?q=${encodeURIComponent(item)}`);
+                  }}
+                  className={cn(
+                    "flex w-full items-center gap-2 px-3 py-2 text-left text-sm",
+                    index === active && "bg-accent text-accent-foreground",
+                  )}
+                >
+                  <Clock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  <span className="truncate">{item}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {showDropdown && showResults && (
         <div
           id="complaint-search-results"
           className="absolute z-20 mt-1 w-full overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md"
