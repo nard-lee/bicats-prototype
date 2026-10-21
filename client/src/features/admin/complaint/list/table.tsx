@@ -250,19 +250,6 @@ export default function ComplaintsList() {
           </Button>
         </div>
 
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          onClick={() => revalidator.revalidate()}
-          disabled={revalidator.state === "loading"}
-          title="Reload"
-        >
-          <RefreshCw
-            className={revalidator.state === "loading" ? "animate-spin" : ""}
-          />
-        </Button>
-
         {hasFilters && (
           <Button asChild type="button" variant="outline">
             <Link to="/admin/complaints">Clear</Link>
@@ -274,6 +261,18 @@ export default function ComplaintsList() {
 
       {filterMode === "quick" ? (
         <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={() => revalidator.revalidate()}
+            disabled={revalidator.state === "loading"}
+            title="Reload"
+          >
+            <RefreshCw
+              className={revalidator.state === "loading" ? "animate-spin" : ""}
+            />
+          </Button>
           <Stat
             label="Total"
             value={stats.total}
@@ -324,6 +323,19 @@ export default function ComplaintsList() {
           className="flex shrink-0 flex-wrap items-center gap-2"
         >
           <input type="hidden" name="q" value={q} />
+
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          onClick={() => revalidator.revalidate()}
+          disabled={revalidator.state === "loading"}
+          title="Reload"
+        >
+          <RefreshCw
+            className={revalidator.state === "loading" ? "animate-spin" : ""}
+          />
+        </Button>
 
         <Select name="status" defaultValue={status}>
           <SelectTrigger className="w-[170px]">
