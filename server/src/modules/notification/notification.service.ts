@@ -136,7 +136,7 @@ export const notificationService = {
       userId: member.id,
       type: "new_complaint",
       title: `New complaint ${input.reference}`,
-      body: `${input.complainantName} vs ${input.respondentName} was filed just now.`,
+      body: `${input.complainantName} filed a complaint just now.`,
       complaintId: input.id,
       reference: input.reference,
       dedupeKey: `new_complaint:${input.id}:${member.id}`,
