@@ -254,7 +254,7 @@ export default function ComplaintsList() {
   );
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-6">
+    <div className="-mx-3 flex h-full min-h-0 flex-col gap-6">
       {filterMode === "quick" ? (
         <div className="flex shrink-0 flex-wrap items-center gap-2">
           <Button
