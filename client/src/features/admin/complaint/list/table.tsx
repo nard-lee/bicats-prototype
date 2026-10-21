@@ -250,12 +250,6 @@ export default function ComplaintsList() {
           </Button>
         </div>
 
-        {hasFilters && (
-          <Button asChild type="button" variant="outline">
-            <Link to="/admin/complaints">Clear</Link>
-          </Button>
-        )}
-
         <ComplaintSearch defaultValue={q} />
       </div>
 
@@ -308,6 +302,11 @@ export default function ComplaintsList() {
             active={activeStat === "settled"}
             onClick={() => applyStat("settled")}
           />
+          {hasFilters && (
+            <Button asChild type="button" variant="outline">
+              <Link to="/admin/complaints">Clear</Link>
+            </Button>
+          )}
           <div className="ml-auto">
             <DataPagination
               page={page}
@@ -396,6 +395,12 @@ export default function ComplaintsList() {
         </Select>
 
         <Button type="submit">Filter</Button>
+
+        {hasFilters && (
+          <Button asChild type="button" variant="outline">
+            <Link to="/admin/complaints">Clear</Link>
+          </Button>
+        )}
 
         <div className="ml-auto">
           <DataPagination
