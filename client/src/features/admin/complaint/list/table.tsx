@@ -305,16 +305,14 @@ export default function ComplaintsList() {
               <Link to="/admin/complaints">Clear</Link>
             </Button>
           )}
-          <div className="ml-2">
-            <ComplaintSearch defaultValue={q} />
-          </div>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-2">
             <DataPagination
               page={page}
               totalPages={totalPages}
               total={total}
               pageSize={pageSize}
             />
+            <ComplaintSearch defaultValue={q} />
           </div>
         </div>
       ) : (
@@ -405,13 +403,13 @@ export default function ComplaintsList() {
           </Button>
         )}
         <div className="ml-auto flex items-center gap-2">
-          <ComplaintSearch defaultValue={q} />
           <DataPagination
             page={page}
             totalPages={totalPages}
             total={total}
             pageSize={pageSize}
           />
+          <ComplaintSearch defaultValue={q} />
         </div>
       </Form>
       )}
