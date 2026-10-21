@@ -1,4 +1,5 @@
 import { prisma } from "../db.js";
+import complainantNotifier from "../modules/notify/complainant.notifier.js";
 import {
   complaintRisk,
   escalatedPriority,
@@ -28,7 +29,8 @@ function prettyDate(date: Date): string {
  * Scan open cases whose KP deadline is within the next day (or already past):
  *  1. auto-escalate overdue cases that are still at a low priority,
  *  2. create one in-app notification per active staff member, per case, per day, and
- *  3. remind staff about mediation sessions whose date has passed without an outcome.
+ *  3. remind staff about mediation sessions whose date has passed without an outcome,
+ *  4. remind the parties (and staff) about scheduled sessions happening within 24 hours.
  * Dedupe keys keep the scan idempotent.
  */
 export async function runReminderScan(): Promise<number> {
@@ -107,11 +109,11 @@ export async function runReminderScan(): Promise<number> {
       userId: member.id,
       type: overdue ? "overdue" : "reminder",
       title: overdue
-        ? `${complaint.reference} is overdue`
-        : `${complaint.reference} is due soon`,
+        ? `${complaint.reference} step deadline passed`
+        : `${complaint.reference} next step due within ${windowDays} day(s)`,
       body: overdue
-        ? `The current Katarungang Pambarangay step for ${complaint.reference} passed its deadline on ${prettyDate(dueAt)}.`
-        : `The next Katarungang Pambarangay step for ${complaint.reference} is due by ${prettyDate(dueAt)}.`,
+        ? `The deadline for the case's current stage lapsed on ${prettyDate(dueAt)}. Open the case, record the outcome, and schedule the next KP step (summon, mediation, or conciliation).`
+        : `The next KP step for this case must be recorded by ${prettyDate(dueAt)} or the case will start going into overdue.`,
       complaintId: complaint.id,
       reference: complaint.reference,
       dedupeKey: `${risk}:${complaint.id}:${stamp}:${member.id}`,
@@ -123,8 +125,8 @@ export async function runReminderScan(): Promise<number> {
     staff.map((member) => ({
       userId: member.id,
       type: "escalation",
-      title: `${item.reference} escalated to ${item.priority}`,
-      body: `An overdue case was auto-escalated to ${item.priority} priority. Review ${item.reference}.`,
+      title: `${item.reference} priority raised to ${item.priority}`,
+      body: `This case has stayed past-deadline, so its priority was automatically raised to "${item.priority}". Follow up ${item.reference} or record a resolution.`,
       complaintId: item.id,
       reference: item.reference,
       dedupeKey: `escalation:${item.id}:${item.priority}:${member.id}`,
@@ -141,8 +143,8 @@ export async function runReminderScan(): Promise<number> {
       return staff.map((member) => ({
         userId: member.id,
         type: "hearing_overdue",
-        title: `${reference} ${label} session is overdue`,
-        body: `The ${label} session scheduled for ${prettyDate(hearing.scheduledAt)} has no recorded outcome. Mark it completed, no-show, or reschedule it.`,
+        title: `${reference}: missed ${label} session on ${prettyDate(hearing.scheduledAt)}`,
+        body: `The ${label} session did not end with a recorded outcome. Close it out as completed, no-show, or reschedule a new date so the case can move.`,
         complaintId: hearing.complaintId,
         reference,
         dedupeKey: `hearing_overdue:${hearing.id}:${stamp}:${member.id}`,
@@ -150,9 +152,66 @@ export async function runReminderScan(): Promise<number> {
     });
 
   const rows = [...reminderRows, ...escalationRows, ...hearingRows];
-  if (rows.length === 0) return 0;
 
-  return notificationService.createForUsers(rows);
+  // ---- Daily pre-session reminders to the complainant (and staff) ----
+  const next24 = new Date(now.getTime() + DAY);
+  const upcoming = await prisma.hearing.findMany({
+    where: {
+      status: "scheduled",
+      scheduledAt: { gte: now, lte: next24 },
+    },
+    select: {
+      id: true,
+      complaintId: true,
+      kind: true,
+      scheduledAt: true,
+      location: true,
+      complaint: { select: { reference: true } },
+    },
+  });
+
+  const prefixes = upcoming.map((hearing) => `hearing_upcoming:${hearing.id}:${stamp}:`);
+  const existing =
+    prefixes.length > 0
+      ? await prisma.notification.findMany({
+          where: { OR: prefixes.map((prefix) => ({ dedupeKey: { startsWith: prefix } })) },
+          select: { dedupeKey: true },
+        })
+      : [];
+  const fresh = upcoming.filter(
+    (hearing) =>
+      !existing.some((row) =>
+        (row.dedupeKey ?? "").startsWith(`hearing_upcoming:${hearing.id}:${stamp}:`),
+      ),
+  );
+
+  const upcomingRows = fresh.flatMap((hearing) => {
+    const label = HEARING_KIND_LABEL[hearing.kind] ?? "mediation";
+    const reference = hearing.complaint.reference;
+
+    return staff.map((member) => ({
+      userId: member.id,
+      type: "hearing_upcoming",
+      title: `${reference}: ${label} session within 24 hours`,
+      body: `The ${label} session starts ${prettyDate(hearing.scheduledAt)}. Confirm attendance and prepare the venue.`,
+      complaintId: hearing.complaintId,
+      reference,
+      dedupeKey: `hearing_upcoming:${hearing.id}:${stamp}:${member.id}`,
+    }));
+  });
+
+  for (const hearing of fresh) {
+    await complainantNotifier.hearingReminder(hearing.complaintId, {
+      kind: hearing.kind,
+      scheduledAt: hearing.scheduledAt,
+      location: hearing.location,
+    });
+  }
+
+  const allRows = [...rows, ...upcomingRows];
+  if (allRows.length === 0) return 0;
+
+  return notificationService.createForUsers(allRows);
 }
 
 export function startReminderJob(): void {
