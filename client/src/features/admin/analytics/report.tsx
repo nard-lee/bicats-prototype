@@ -240,8 +240,84 @@ export default function AdminReport() {
     URL.revokeObjectURL(url);
   }
 
+  const monthLabel = monthOptions.find((option) => option.value === month)?.label ?? month;
+  const digestRows: [string, string][] = digest
+    ? [
+        [t("anDigestFiled"), String(digest.filed.total)],
+        [
+          t("anDigestResolved"),
+          `${digest.resolved.total} — ${t("st_settled")} ${digest.resolved.settled}, ${t("st_certified")} ${digest.resolved.certified}, ${t("st_dismissed")} ${digest.resolved.dismissed}`,
+        ],
+        [
+          t("anDigestAvgTime"),
+          digest.resolved.avgResolutionDays != null
+            ? `${digest.resolved.avgResolutionDays.toFixed(1)} ${t("anDigestDays")}`
+            : "—",
+        ],
+        [t("anDigestSessions"), String(digest.sessions.held)],
+        [t("anDigestNoShow"), String(digest.sessions.noShow)],
+        [t("anDigestOpen"), String(digest.snapshot.open)],
+        [t("anDigestOverdue"), String(digest.snapshot.overdue)],
+      ]
+    : [];
+
   return (
-    <div className="space-y-8">
+    <>
+      {/* Print-only: a plain paper document instead of the dashboard */}
+      <article className="mx-auto hidden w-full max-w-[210mm] bg-white px-[18mm] py-[14mm] text-black print:block">
+        <h1 className="text-center text-sm font-bold tracking-wide uppercase">
+          {t("adminAnalytics")}
+        </h1>
+        <p className="mt-1 text-center text-xs">{monthLabel}</p>
+
+        {digest && (
+          <table className="mt-8 w-full border-collapse text-[13px]">
+            <tbody>
+              {digestRows.map(([label, value]) => (
+                <tr key={label} className="border-b border-black/20 align-top">
+                  <td className="w-1/2 px-1 py-1.5 pr-4">{label}</td>
+                  <td className="px-1 py-1.5 text-right font-semibold">{value}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+
+        {digest && (
+          <div className="mt-10 grid grid-cols-2 gap-12">
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase">{t("anDigestByType")}</p>
+              <table className="w-full border-collapse text-[13px]">
+                <tbody>
+                  {digest.filed.byType.map((item) => (
+                    <tr key={item.complaintType} className="border-b border-black/20">
+                      <td className="px-1 py-1">
+                        {t(item.complaintType as Key) || item.complaintType}
+                      </td>
+                      <td className="px-1 py-1 text-right">{item._count.complaintType}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase">{t("anTopPurok")}</p>
+              <table className="w-full border-collapse text-[13px]">
+                <tbody>
+                  {digest.filed.byPurok.map((item) => (
+                    <tr key={item.complainantPurok} className="border-b border-black/20">
+                      <td className="px-1 py-1">{item.complainantPurok}</td>
+                      <td className="px-1 py-1 text-right">{item._count.complainantPurok}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </article>
+
+      <div className="space-y-8 print:hidden">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">{t("adminAnalytics")}</h1>
@@ -563,7 +639,8 @@ export default function AdminReport() {
       </section>
 
       <p className="text-xs text-muted-foreground">{t("anBasedOn")}</p>
-    </div>
+      </div>
+    </>
   );
 }
 
