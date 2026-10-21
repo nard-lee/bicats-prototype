@@ -55,6 +55,87 @@ export const analyticsService = {
     });
   },
 
+  async getMonthlyDigest(year: number, month: number) {
+    const start = new Date(Date.UTC(year, month - 1, 1));
+    const end = new Date(Date.UTC(year, month, 1));
+
+    const [filedByType, filedByPurok, resolvedByStatus, sessions, snapshot, avgResolution] =
+      await Promise.all([
+        // New cases filed within the month, by complaint type
+        prisma.complaint.groupBy({
+          by: ["complaintType"],
+          where: { createdAt: { gte: start, lt: end } },
+          _count: { complaintType: true },
+          orderBy: { _count: { complaintType: "desc" } },
+        }),
+        // Where the month's filers came from (top puroks)
+        prisma.complaint.groupBy({
+          by: ["complainantPurok"],
+          where: { createdAt: { gte: start, lt: end } },
+          _count: { complainantPurok: true },
+          orderBy: { _count: { complainantPurok: "desc" } },
+          take: 10,
+        }),
+        // Terminal-status transitions recorded within the month
+        prisma.statusUpdate.groupBy({
+          by: ["status"],
+          where: {
+            createdAt: { gte: start, lt: end },
+            status: { in: TERMINAL_STATUSES },
+          },
+          _count: { status: true },
+        }),
+        // Sessions actually held / missed within the month
+        prisma.hearing.groupBy({
+          by: ["status"],
+          where: {
+            scheduledAt: { gte: start, lt: end },
+            status: { in: ["completed", "no_show"] },
+          },
+          _count: { status: true },
+        }),
+        // Backlog snapshot as of now
+        Promise.all([
+          prisma.complaint.count({ where: { status: { in: OPEN_STATUSES } } }),
+          prisma.complaint.count({
+            where: { status: { notIn: TERMINAL_STATUSES }, dueAt: { lt: new Date() } },
+          }),
+        ]),
+        // Average days from filing to reaching a terminal status
+        prisma.$queryRaw<{ days: number | null }[]>`
+          SELECT AVG(EXTRACT(EPOCH FROM (s."createdAt" - c."createdAt")) / 86400.0)::float AS days
+          FROM "StatusUpdate" s
+          JOIN "Complaint" c ON c."id" = s."complaintId"
+          WHERE s."status" IN ('settled', 'certified', 'dismissed')
+            AND s."createdAt" >= ${start}
+            AND s."createdAt" < ${end}
+        `,
+      ]);
+
+    const filedTotal = filedByType.reduce((sum, row) => sum + row._count.complaintType, 0);
+
+    const resolvedCounts: Record<string, number> = { settled: 0, certified: 0, dismissed: 0 };
+    for (const row of resolvedByStatus) resolvedCounts[row.status] = row._count.status;
+    const resolvedTotal = Object.values(resolvedCounts).reduce((a, b) => a + b, 0);
+
+    const sessionCounts: Record<string, number> = { completed: 0, no_show: 0 };
+    for (const row of sessions) sessionCounts[row.status] = row._count.status;
+
+    return {
+      month: `${year}-${String(month).padStart(2, "0")}`,
+      filed: { total: filedTotal, byType: filedByType, byPurok: filedByPurok },
+      resolved: {
+        total: resolvedTotal,
+        settled: resolvedCounts.settled,
+        certified: resolvedCounts.certified,
+        dismissed: resolvedCounts.dismissed,
+        avgResolutionDays: avgResolution[0]?.days ?? null,
+      },
+      sessions: { held: sessionCounts.completed, noShow: sessionCounts.no_show },
+      snapshot: { open: snapshot[0], overdue: snapshot[1] },
+    };
+  },
+
   async getOverview() {
     const settings = await prisma.barangaySettings.findUnique({ where: { id: 1 } });
     const windowDays = settings?.riskWindowDays ?? 3;

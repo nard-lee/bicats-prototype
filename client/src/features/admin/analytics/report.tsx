@@ -1,6 +1,8 @@
+import { useEffect, useState } from "react";
 import { useLoaderData } from "react-router";
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
@@ -24,6 +26,7 @@ import {
 } from "recharts";
 import { AlertTriangle, CalendarClock, ClipboardList, FileDown, MapPin, Printer } from "lucide-react";
 import { useT, type Key } from "@/lib/I18n";
+import { api } from "@/lib/api";
 
 // Warm on-brand palette derived from the theme tokens so the charts match the
 // rest of the app instead of the old hardcoded colours.
@@ -73,9 +76,55 @@ type ReportData = {
   statusDist: { status: string; _count: { status: number } }[];
 };
 
+type DigestData = {
+  month: string;
+  filed: {
+    total: number;
+    byType: { complaintType: string; _count: { complaintType: number } }[];
+    byPurok: { complainantPurok: string; _count: { complainantPurok: number } }[];
+  };
+  resolved: {
+    total: number;
+    settled: number;
+    certified: number;
+    dismissed: number;
+    avgResolutionDays: number | null;
+  };
+  sessions: { held: number; noShow: number };
+  snapshot: { open: number; overdue: number };
+};
+
+function monthOptionsFor(now: Date): { value: string; label: string }[] {
+  const options: { value: string; label: string }[] = [];
+  for (let i = 0; i < 12; i++) {
+    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    options.push({ value, label: date.toLocaleString("en-PH", { month: "long", year: "numeric" }) });
+  }
+  return options;
+}
+
 export default function AdminReport() {
   const { t, lang } = useT();
   const data = useLoaderData() as ReportData;
+
+  const monthOptions = monthOptionsFor(NOW);
+  const [month, setMonth] = useState(monthOptions[0].value);
+  const [digest, setDigest] = useState<DigestData | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    api
+      .get(`analytics/digest?month=${month}`)
+      .json<DigestData>()
+      .then((d) => {
+        if (active) setDigest(d);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [month]);
 
   const locale = lang === "tl" ? "fil-PH" : "en-PH";
 
@@ -142,6 +191,26 @@ export default function AdminReport() {
     rows.push([`${t("adminAnalytics")} — ${t("anSubtitle")}`]);
     rows.push(["Generated", new Date().toLocaleString(locale)]);
     rows.push([]);
+    if (digest) {
+      rows.push([`${t("anDigest")} — ${digest.month}`]);
+      rows.push([t("anDigestFiled"), String(digest.filed.total)]);
+      rows.push([
+        t("anDigestResolved"),
+        String(digest.resolved.total),
+        `${digest.resolved.settled} settled / ${digest.resolved.certified} certified / ${digest.resolved.dismissed} dismissed`,
+      ]);
+      rows.push([
+        t("anDigestAvgTime"),
+        digest.resolved.avgResolutionDays != null
+          ? `${digest.resolved.avgResolutionDays.toFixed(1)} ${t("anDigestDays")}`
+          : "—",
+      ]);
+      rows.push([t("anDigestSessions"), String(digest.sessions.held)]);
+      rows.push([t("anDigestNoShow"), String(digest.sessions.noShow)]);
+      rows.push([t("anDigestOpen"), String(digest.snapshot.open)]);
+      rows.push([t("anDigestOverdue"), String(digest.snapshot.overdue)]);
+      rows.push([]);
+    }
     rows.push([t("anTotal"), String(totalComplaints)]);
     rows.push([t("anThisMonth"), String(thisMonth)]);
     rows.push([t("anTopType"), topType ? `${topType.name} (${topType.value})` : "—"]);
@@ -211,6 +280,111 @@ export default function AdminReport() {
           </Card>
         ))}
       </section>
+
+      {/* Monthly digest */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("anDigest")}</CardTitle>
+          <CardDescription>
+            {t("anDigestDesc")}
+          </CardDescription>
+          <CardAction className="print-hide">
+            <select
+              className="rounded-md border border-border bg-card px-3 py-2 text-sm"
+              value={month}
+              onChange={(e) => setMonth(e.target.value)}
+            >
+              {monthOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </CardAction>
+        </CardHeader>
+        <CardContent>
+          {digest ? (
+            <div className="space-y-6">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+                {(
+                  [
+                    { label: t("anDigestFiled"), value: String(digest.filed.total), hint: undefined },
+                    {
+                      label: t("anDigestResolved"),
+                      value: String(digest.resolved.total),
+                      hint: `${digest.resolved.settled} / ${digest.resolved.certified} / ${digest.resolved.dismissed}`,
+                    },
+                    {
+                      label: t("anDigestAvgTime"),
+                      value:
+                        digest.resolved.avgResolutionDays != null
+                          ? `${digest.resolved.avgResolutionDays.toFixed(1)}`
+                          : "—",
+                      hint: t("anDigestDays"),
+                    },
+                    { label: t("anDigestSessions"), value: String(digest.sessions.held), hint: undefined },
+                    { label: t("anDigestNoShow"), value: String(digest.sessions.noShow), hint: undefined },
+                    { label: t("anDigestOpen"), value: String(digest.snapshot.open), hint: undefined },
+                    { label: t("anDigestOverdue"), value: String(digest.snapshot.overdue), hint: undefined },
+                  ] as { label: string; value: string; hint?: string }[]
+                ).map(({ label, value, hint }) => (
+                  <div
+                    key={label}
+                    className="rounded-lg border bg-muted/30 px-4 py-3 print:bg-white"
+                  >
+                    <p className="text-xs text-muted-foreground">{label}</p>
+                    <p className="mt-1 flex items-baseline gap-1.5 text-xl font-semibold">
+                      {value}
+                      {hint && <span className="text-xs font-normal text-muted-foreground">{hint}</span>}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid gap-6 sm:grid-cols-2">
+                <div>
+                  <p className="mb-2 text-sm font-semibold">{t("anDigestByType")}</p>
+                  {digest.filed.byType.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">{t("anNoData")}</p>
+                  ) : (
+                    <ul className="space-y-1.5 text-sm">
+                      {digest.filed.byType.slice(0, 6).map((item) => (
+                        <li key={item.complaintType} className="flex justify-between gap-4">
+                          <span className="truncate text-muted-foreground">
+                            {t(item.complaintType as Key) || item.complaintType}
+                          </span>
+                          <span className="font-medium">{item._count.complaintType}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                <div>
+                  <p className="mb-2 text-sm font-semibold">{t("anTopPurok")}</p>
+                  {digest.filed.byPurok.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">{t("anNoData")}</p>
+                  ) : (
+                    <ul className="space-y-1.5 text-sm">
+                      {digest.filed.byPurok.map((item) => (
+                        <li key={item.complainantPurok} className="flex justify-between gap-4">
+                          <span className="truncate text-muted-foreground">
+                            {item.complainantPurok}
+                          </span>
+                          <span className="font-medium">{item._count.complainantPurok}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex h-24 items-center justify-center text-sm text-muted-foreground">
+              {t("anNoData")}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Where cases stand */}
       <section className="grid gap-6 lg:grid-cols-2">
