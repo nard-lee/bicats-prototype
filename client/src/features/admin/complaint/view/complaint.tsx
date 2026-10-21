@@ -319,32 +319,9 @@ export default function ComplaintView() {
                           </a>
                         </Button>
                       </div>
-                  ))}
-                </div>
-                {(hasMore || !isCollapsed) && (
-                  <div className="mt-6 flex items-center justify-between gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setVisibleCount((c) => c + HISTORY_PAGE)}
-                      className="w-full"
-                    >
-                      {t("showOlderHistory")}
-                    </Button>
-                    {!isCollapsed && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setVisibleCount(HISTORY_PAGE)}
-                      >
-                        {t("showRecentHistory")}
-                      </Button>
-                    )}
+                    ))}
                   </div>
-                )}
-              </CardContent>
+                </CardContent>
               </Card>
             )}
           </div>
@@ -419,6 +396,28 @@ export default function ComplaintView() {
                     </div>
                   ))}
                 </div>
+                {(hasMore || !isCollapsed) && (
+                  <div className="mt-6 grid grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setVisibleCount((c) => c + HISTORY_PAGE)}
+                    >
+                      {t("showOlderHistory")}
+                    </Button>
+                    {!isCollapsed && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setVisibleCount(HISTORY_PAGE)}
+                      >
+                        {t("showRecentHistory")}
+                      </Button>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
