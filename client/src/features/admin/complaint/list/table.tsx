@@ -230,33 +230,31 @@ export default function ComplaintsList() {
     <div className="flex rounded-md border p-0.5" role="tablist" aria-label="Filter mode">
       <Button
         type="button"
-        size="sm"
+        size="icon"
         variant={filterMode === "quick" ? "secondary" : "ghost"}
-        className="h-7 px-2.5 text-xs"
+        className="size-7"
+        title="Quick filters"
+        aria-label="Quick filters"
         onClick={() => switchFilterMode("quick")}
       >
-        <Zap className="mr-1 h-3.5 w-3.5" />
-        Quick
+        <Zap className="!size-3.5" />
       </Button>
       <Button
         type="button"
-        size="sm"
+        size="icon"
         variant={filterMode === "dropdown" ? "secondary" : "ghost"}
-        className="h-7 px-2.5 text-xs"
+        className="size-7"
+        title="Dropdown filters"
+        aria-label="Dropdown filters"
         onClick={() => switchFilterMode("dropdown")}
       >
-        <SlidersHorizontal className="mr-1 h-3.5 w-3.5" />
-        Dropdowns
+        <SlidersHorizontal className="!size-3.5" />
       </Button>
     </div>
   );
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-6">
-      <div className="flex shrink-0 flex-wrap items-center justify-end gap-4">
-        <ComplaintSearch defaultValue={q} />
-      </div>
-
       {filterMode === "quick" ? (
         <div className="flex shrink-0 flex-wrap items-center gap-2">
           <Button
@@ -307,6 +305,9 @@ export default function ComplaintsList() {
               <Link to="/admin/complaints">Clear</Link>
             </Button>
           )}
+          <div className="ml-2">
+            <ComplaintSearch defaultValue={q} />
+          </div>
           <div className="ml-auto">
             <DataPagination
               page={page}
@@ -403,8 +404,8 @@ export default function ComplaintsList() {
             <Link to="/admin/complaints">Clear</Link>
           </Button>
         )}
-
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
+          <ComplaintSearch defaultValue={q} />
           <DataPagination
             page={page}
             totalPages={totalPages}
