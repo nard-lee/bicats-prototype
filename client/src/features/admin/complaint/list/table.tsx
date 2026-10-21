@@ -8,7 +8,7 @@ import {
   useRouteLoaderData,
   useSearchParams,
 } from "react-router";
-import { FileDown, RefreshCw } from "lucide-react";
+import { FileDown, RefreshCw, SlidersHorizontal, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
@@ -225,31 +225,35 @@ export default function ComplaintsList() {
     return time >= NOW_MS && time <= NOW_MS + DUE_SOON_MS;
   };
 
+  // Quick triage vs dropdowns, remembered across visits.
+  const modeTabs = (
+    <div className="flex rounded-md border p-0.5" role="tablist" aria-label="Filter mode">
+      <Button
+        type="button"
+        size="sm"
+        variant={filterMode === "quick" ? "secondary" : "ghost"}
+        className="h-7 px-2.5 text-xs"
+        onClick={() => switchFilterMode("quick")}
+      >
+        <Zap className="mr-1 h-3.5 w-3.5" />
+        Quick
+      </Button>
+      <Button
+        type="button"
+        size="sm"
+        variant={filterMode === "dropdown" ? "secondary" : "ghost"}
+        className="h-7 px-2.5 text-xs"
+        onClick={() => switchFilterMode("dropdown")}
+      >
+        <SlidersHorizontal className="mr-1 h-3.5 w-3.5" />
+        Dropdowns
+      </Button>
+    </div>
+  );
+
   return (
     <div className="flex h-full min-h-0 flex-col gap-6">
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-4">
-        {/* Quick triage vs dropdowns, remembered across visits. */}
-        <div className="flex rounded-md border p-0.5" role="tablist" aria-label="Filter mode">
-          <Button
-            type="button"
-            size="sm"
-            variant={filterMode === "quick" ? "secondary" : "ghost"}
-            className="h-7 px-2.5 text-xs"
-            onClick={() => switchFilterMode("quick")}
-          >
-            Quick
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant={filterMode === "dropdown" ? "secondary" : "ghost"}
-            className="h-7 px-2.5 text-xs"
-            onClick={() => switchFilterMode("dropdown")}
-          >
-            Dropdowns
-          </Button>
-        </div>
-
+      <div className="flex shrink-0 flex-wrap items-center justify-end gap-4">
         <ComplaintSearch defaultValue={q} />
       </div>
 
@@ -267,38 +271,34 @@ export default function ComplaintsList() {
               className={revalidator.state === "loading" ? "animate-spin" : ""}
             />
           </Button>
+          {modeTabs}
           <Stat
             label="Total"
             value={stats.total}
-            tone="text-primary"
             active={activeStat === "total"}
             onClick={() => applyStat("total")}
           />
           <Stat
             label="Open"
             value={stats.open}
-            tone="text-sky-600 dark:text-sky-400"
             active={activeStat === "open"}
             onClick={() => applyStat("open")}
           />
           <Stat
             label="Overdue"
             value={stats.overdue}
-            tone="text-rose-600 dark:text-rose-400"
             active={activeStat === "overdue"}
             onClick={() => applyStat("overdue")}
           />
           <Stat
             label="Due soon"
             value={stats.dueSoon}
-            tone="text-amber-600 dark:text-amber-400"
             active={activeStat === "dueSoon"}
             onClick={() => applyStat("dueSoon")}
           />
           <Stat
             label="Settled"
             value={stats.settled}
-            tone="text-emerald-600 dark:text-emerald-400"
             active={activeStat === "settled"}
             onClick={() => applyStat("settled")}
           />
@@ -335,6 +335,8 @@ export default function ComplaintsList() {
             className={revalidator.state === "loading" ? "animate-spin" : ""}
           />
         </Button>
+
+        {modeTabs}
 
         <Select name="status" defaultValue={status}>
           <SelectTrigger className="w-[170px]">
@@ -558,28 +560,24 @@ export default function ComplaintsList() {
 function Stat({
   label,
   value,
-  tone,
   active,
   onClick,
 }: {
   label: string;
   value: number;
-  tone: string;
   active: boolean;
   onClick: () => void;
 }) {
   return (
-    <button
+    <Button
       type="button"
+      size="sm"
+      variant={active ? "secondary" : "outline"}
       onClick={onClick}
       aria-pressed={active}
-      className={cn(
-        "cursor-pointer rounded-full border px-3 py-1 text-xs outline-none transition-colors hover:bg-muted/60 focus-visible:ring-1 focus-visible:ring-ring",
-        active ? "border-primary ring-1 ring-primary" : "border-border bg-background",
-      )}
+      className="tabular-nums"
     >
-      <span className={cn("mr-1 font-semibold tabular-nums", tone)}>{value}</span>
-      <span className="text-muted-foreground">{label}</span>
-    </button>
+      {value} {label}
+    </Button>
   );
 }
