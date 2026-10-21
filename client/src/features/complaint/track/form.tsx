@@ -62,6 +62,7 @@ export default function Track() {
   };
 
   const result = data?.result;
+  const filedAt = result?.updates[0]?.createdAt;
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-12">
@@ -205,9 +206,9 @@ export default function Track() {
             </Card>
           )}
 
-          {result.updates.length > 0 && (
+          {filedAt && (
             <div className="text-right text-xs text-muted-foreground">
-              {t("filedDate")}: {fmt(result.updates[0].createdAt)}
+              {t("filedDate")}: {fmt(filedAt)}
             </div>
           )}
         </div>

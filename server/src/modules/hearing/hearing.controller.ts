@@ -11,14 +11,6 @@ import {
   updateHearingSchema,
 } from "./hearing.schema.js";
 
-function handleError(res: Response, err: unknown, fallback: string): void {
-  if (err instanceof CustomError) {
-    res.status(err.statusCode).json({ error: err.message, fields: err.fields });
-    return;
-  }
-  res.status(500).json({ error: fallback });
-}
-
 const KIND_LABEL: Record<string, string> = {
   mediation: "mediation",
   conciliation: "conciliation",
@@ -27,94 +19,76 @@ const KIND_LABEL: Record<string, string> = {
 
 const hearingController = {
   async list(req: Request, res: Response): Promise<void> {
-    try {
-      const filters = validateRequest(listHearingsSchema, req.query);
-      res.json({ items: await hearingService.list(filters) });
-    } catch (err) {
-      handleError(res, err, "Failed to load mediation");
-    }
+    const filters = validateRequest(listHearingsSchema, req.query);
+    res.json({ items: await hearingService.list(filters) });
   },
 
   async complaintOptions(_req: Request, res: Response): Promise<void> {
-    try {
-      res.json({ items: await hearingService.complaintOptions() });
-    } catch (err) {
-      handleError(res, err, "Failed to load complaints");
-    }
+    res.json({ items: await hearingService.complaintOptions() });
   },
 
   async create(req: Request, res: Response): Promise<void> {
-    try {
-      const input = validateRequest(createHearingSchema, req.body);
-      const created = await hearingService.create(input, req.user?.userId);
-      res.status(201).json({ success: true, ...created });
+    const input = validateRequest(createHearingSchema, req.body);
+    const created = await hearingService.create(input, req.user?.userId);
+    res.status(201).json({ success: true, ...created });
 
-      await auditFromRequest(req, {
-        action: "hearing.create",
-        entityType: "hearing",
-        entityId: created.id,
-        summary: `Scheduled a ${KIND_LABEL[input.kind] ?? "mediation"} session for ${created.reference}`,
-        meta: { complaintId: input.complaintId, reference: created.reference, kind: input.kind, scheduledAt: input.scheduledAt.toISOString() },
-      });
+    await auditFromRequest(req, {
+      action: "hearing.create",
+      entityType: "hearing",
+      entityId: created.id,
+      summary: `Scheduled a ${KIND_LABEL[input.kind] ?? "mediation"} session for ${created.reference}`,
+      meta: { complaintId: input.complaintId, reference: created.reference, kind: input.kind, scheduledAt: input.scheduledAt.toISOString() },
+    });
 
-      // Text/email the complainant that their session is booked.
-      void complainantNotifier.mediationScheduled(input.complaintId, {
-        kind: input.kind,
-        scheduledAt: input.scheduledAt,
-        location: input.location ?? null,
-      });
-    } catch (err) {
-      handleError(res, err, "Failed to schedule mediation");
-    }
+    // Text/email the complainant that their session is booked.
+    void complainantNotifier.mediationScheduled(input.complaintId, {
+      kind: input.kind,
+      scheduledAt: input.scheduledAt,
+      location: input.location ?? null,
+    });
   },
 
   async update(req: Request, res: Response): Promise<void> {
     const id = Number(req.params.id);
 
     if (!id || Number.isNaN(id)) {
-      res.status(400).json({ error: "Invalid mediation ID" });
-      return;
+      throw new CustomError("Invalid mediation ID", undefined, 400);
     }
 
-    try {
-      const input = validateRequest(updateHearingSchema, req.body);
-      const updated = await hearingService.update(id, input);
-      res.json({ success: true });
+    const input = validateRequest(updateHearingSchema, req.body);
+    const updated = await hearingService.update(id, input);
+    res.json({ success: true });
 
-      await auditFromRequest(req, {
-        action: "hearing.update",
-        entityType: "hearing",
-        entityId: id,
-        summary: updated.rescheduled
-          ? `Rescheduled mediation for ${updated.reference}`
-          : input.status
-            ? `Marked mediation for ${updated.reference} as ${input.status.replace("_", " ")}`
-            : `Updated mediation details for ${updated.reference}`,
-        meta: {
-          reference: updated.reference,
-          ...(input.status ? { status: input.status } : {}),
-          ...(input.scheduledAt ? { scheduledAt: input.scheduledAt.toISOString() } : {}),
-        },
+    await auditFromRequest(req, {
+      action: "hearing.update",
+      entityType: "hearing",
+      entityId: id,
+      summary: updated.rescheduled
+        ? `Rescheduled mediation for ${updated.reference}`
+        : input.status
+          ? `Marked mediation for ${updated.reference} as ${input.status.replace("_", " ")}`
+          : `Updated mediation details for ${updated.reference}`,
+      meta: {
+        reference: updated.reference,
+        ...(input.status ? { status: input.status } : {}),
+        ...(input.scheduledAt ? { scheduledAt: input.scheduledAt.toISOString() } : {}),
+      },
+    });
+
+    // Text/email the complainant only when the session actually moved.
+    if (updated.rescheduled && input.scheduledAt && input.status !== "cancelled") {
+      void complainantNotifier.mediationScheduled(updated.complaintId, {
+        kind: updated.kind,
+        scheduledAt: input.scheduledAt,
+        location: input.location ?? null,
+        rescheduled: true,
       });
+    }
 
-      // Text/email the complainant only when the session actually moved.
-      if (updated.rescheduled && input.scheduledAt && input.status !== "cancelled") {
-        void complainantNotifier.mediationScheduled(updated.complaintId, {
-          kind: updated.kind,
-          scheduledAt: input.scheduledAt,
-          location: input.location ?? null,
-          rescheduled: true,
-        });
-      }
-
-      if (input.status === "cancelled" && updated.previousStatus !== "cancelled") {
-        void complainantNotifier.mediationCancelled(updated.complaintId, {
-          kind: updated.kind,
-        });
-      }
-
-    } catch (err) {
-      handleError(res, err, "Failed to update mediation");
+    if (input.status === "cancelled" && updated.previousStatus !== "cancelled") {
+      void complainantNotifier.mediationCancelled(updated.complaintId, {
+        kind: updated.kind,
+      });
     }
   },
 
@@ -122,29 +96,24 @@ const hearingController = {
     const id = Number(req.params.id);
 
     if (!id || Number.isNaN(id)) {
-      res.status(400).json({ error: "Invalid mediation ID" });
-      return;
+      throw new CustomError("Invalid mediation ID", undefined, 400);
     }
 
-    try {
-      const cancelled = await hearingService.cancel(id);
-      res.json({ success: true });
+    const cancelled = await hearingService.cancel(id);
+    res.json({ success: true });
 
-      await auditFromRequest(req, {
-        action: "hearing.cancel",
-        entityType: "hearing",
-        entityId: id,
-        summary: `Cancelled mediation for ${cancelled.reference}`,
-        meta: { reference: cancelled.reference },
-      });
+    await auditFromRequest(req, {
+      action: "hearing.cancel",
+      entityType: "hearing",
+      entityId: id,
+      summary: `Cancelled mediation for ${cancelled.reference}`,
+      meta: { reference: cancelled.reference },
+    });
 
-      // Text/email the complainant their session is cancelled.
-      void complainantNotifier.mediationCancelled(cancelled.complaintId, {
-        kind: cancelled.kind,
-      });
-    } catch (err) {
-      handleError(res, err, "Failed to cancel mediation");
-    }
+    // Text/email the complainant their session is cancelled.
+    void complainantNotifier.mediationCancelled(cancelled.complaintId, {
+      kind: cancelled.kind,
+    });
   },
 };
 

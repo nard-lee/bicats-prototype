@@ -55,13 +55,18 @@ export const analyticsService = {
     });
   },
 
-  async getMonthlyDigest(year: number, month: number) {
-    const start = new Date(Date.UTC(year, month - 1, 1));
-    const end = new Date(Date.UTC(year, month, 1));
+  async getDigestRange(
+    fromYear: number,
+    fromMonth: number,
+    toYear: number,
+    toMonth: number,
+  ) {
+    const start = new Date(Date.UTC(fromYear, fromMonth - 1, 1));
+    const end = new Date(Date.UTC(toYear, toMonth, 1));
 
     const [filedByType, filedByPurok, resolvedByStatus, sessions, snapshot, avgResolution] =
       await Promise.all([
-        // New cases filed within the month, by complaint type
+        // New cases filed in range, by complaint type
         prisma.complaint.groupBy({
           by: ["complaintType"],
           where: { createdAt: { gte: start, lt: end } },
@@ -76,7 +81,7 @@ export const analyticsService = {
           orderBy: { _count: { complainantPurok: "desc" } },
           take: 10,
         }),
-        // Terminal-status transitions recorded within the month
+        // Terminal-status transitions recorded in range
         prisma.statusUpdate.groupBy({
           by: ["status"],
           where: {
@@ -85,7 +90,7 @@ export const analyticsService = {
           },
           _count: { status: true },
         }),
-        // Sessions actually held / missed within the month
+        // Sessions actually held / missed in range
         prisma.hearing.groupBy({
           by: ["status"],
           where: {
@@ -122,7 +127,8 @@ export const analyticsService = {
     for (const row of sessions) sessionCounts[row.status] = row._count.status;
 
     return {
-      month: `${year}-${String(month).padStart(2, "0")}`,
+      from: `${fromYear}-${String(fromMonth).padStart(2, "0")}`,
+      to: `${toYear}-${String(toMonth).padStart(2, "0")}`,
       filed: { total: filedTotal, byType: filedByType, byPurok: filedByPurok },
       resolved: {
         total: resolvedTotal,

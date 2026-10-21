@@ -13,6 +13,7 @@ const complaintController = {
 
     async create(req: Request, res: Response): Promise<void> {
         const files = (req.files as Express.Multer.File[] | undefined) ?? [];
+
         try {
             const request = validateRequest(createComplaintSchema, req.body);
             const { id, reference } = await complaintService.create(request, files);
@@ -29,35 +30,22 @@ const complaintController = {
             } catch (err) {
                 console.error("==> notifications: new complaint alert failed", err);
             }
-        } catch (err: unknown) {
+        } catch (err) {
+            // Rejecting the request leaves the uploads orphaned on disk.
             await removeUploadedFiles(files);
-
-            if (err instanceof CustomError) {
-                res.status(400).json({ error: err.message, fields: err.fields });
-                return;
-            }
-            res.status(500).json({ error: "Internal server error" });
+            throw err;
         }
     },
 
     async track(req: Request, res: Response): Promise<void> {
-        try {
-            const { reference, phone } = validateRequest(trackComplaintSchema, req.body);
-            const result = await complaintService.track(reference, phone);
+        const { reference, phone } = validateRequest(trackComplaintSchema, req.body);
+        const result = await complaintService.track(reference, phone);
 
-            if (!result) {
-                res.status(404).json({ error: "No matching complaint found" });
-                return;
-            }
-
-            res.json(result);
-        } catch (err: unknown) {
-            if (err instanceof CustomError) {
-                res.status(400).json({ error: err.message, fields: err.fields });
-                return;
-            }
-            res.status(500).json({ error: "Internal server error" });
+        if (!result) {
+            throw new CustomError("No matching complaint found", undefined, 404);
         }
+
+        res.json(result);
     },
 
     async list(req: Request, res: Response): Promise<void> {
@@ -79,49 +67,34 @@ const complaintController = {
         const id = Number(req.params.id);
 
         if (!id || isNaN(id)) {
-            res.status(400).json({ error: "Invalid complaint ID" });
-            return;
+            throw new CustomError("Invalid complaint ID", undefined, 400);
         }
 
-        try {
-            await complaintService.markViewed(id);
+        await complaintService.markViewed(id);
 
-            // Opening the case also clears its notifications for this user.
-            const userId = req.user?.userId;
-            if (userId) {
-                await notificationService.markReadForComplaint(userId, id);
-            }
-
-            res.json({ success: true });
-        } catch {
-            res.status(500).json({ error: "Failed to mark as viewed" });
+        // Opening the case also clears its notifications for this user.
+        const userId = req.user?.userId;
+        if (userId) {
+            await notificationService.markReadForComplaint(userId, id);
         }
+
+        res.json({ success: true });
     },
 
     async getById(req: Request, res: Response): Promise<void> {
         const id = Number(req.params.id);
 
         if (!id || isNaN(id)) {
-            res.status(400).json({ error: "Invalid complaint ID" });
-            return;
+            throw new CustomError("Invalid complaint ID", undefined, 400);
         }
 
-        try {
-            const complaint = await complaintService.getById(id);
+        const complaint = await complaintService.getById(id);
 
-            if (!complaint) {
-                res.status(404).json({ error: "Complaint not found" });
-                return;
-            }
-
-            res.json(complaint);
-        } catch (err: unknown) {
-            if (err instanceof CustomError) {
-                res.status(400).json({ error: err.message });
-                return;
-            }
-            res.status(500).json({ error: "Internal server error" });
+        if (!complaint) {
+            throw new CustomError("Complaint not found", undefined, 404);
         }
+
+        res.json(complaint);
     },
 
     async updateStatus(req: Request, res: Response): Promise<void> {
@@ -130,28 +103,23 @@ const complaintController = {
 
         const userId = req.user?.userId;
 
-        try {
-            const updated = await complaintService.updateStatus(id, status, publicNote, internalNote, hearingAt ? new Date(hearingAt) : undefined, userId);
-            res.json({ success: true });
+        const updated = await complaintService.updateStatus(id, status, publicNote, internalNote, hearingAt ? new Date(hearingAt) : undefined, userId);
+        res.json({ success: true });
 
-            await auditFromRequest(req, {
-                action: "complaint.status.update",
-                entityType: "complaint",
-                entityId: id,
-                summary: `${updated.reference}: status changed from "${updated.previousStatus ?? "unknown"}" to "${status}"`,
-                meta: { status, previousStatus: updated.previousStatus, hasPublicNote: !!publicNote, hasInternalNote: !!internalNote },
-            });
+        await auditFromRequest(req, {
+            action: "complaint.status.update",
+            entityType: "complaint",
+            entityId: id,
+            summary: `${updated.reference}: status changed from "${updated.previousStatus ?? "unknown"}" to "${status}"`,
+            meta: { status, previousStatus: updated.previousStatus, hasPublicNote: !!publicNote, hasInternalNote: !!internalNote },
+        });
 
-            // Text/email the complainant about the new step (and any mediation date).
-            void complainantNotifier.statusUpdate(id, {
-                status,
-                publicNote: publicNote ?? null,
-                hearingAt: hearingAt ? new Date(hearingAt) : null,
-            });
-            
-        } catch (err) {
-            res.status(500).json({ error: "Failed to update status" });
-        }
+        // Text/email the complainant about the new step (and any mediation date).
+        void complainantNotifier.statusUpdate(id, {
+            status,
+            publicNote: publicNote ?? null,
+            hearingAt: hearingAt ? new Date(hearingAt) : null,
+        });
     },
 
     async bulkStatus(req: Request, res: Response): Promise<void> {
@@ -163,58 +131,43 @@ const complaintController = {
         const status = typeof req.body?.status === "string" ? req.body.status : "";
 
         if (ids.length === 0 || !(COMPLAINT_STATUSES as readonly string[]).includes(status)) {
-            res.status(400).json({ error: "Select at least one complaint and a valid status" });
-            return;
+            throw new CustomError("Select at least one complaint and a valid status", undefined, 400);
         }
 
-        try {
-            const updated = await complaintService.bulkUpdateStatus(ids, status, req.user?.userId);
-            res.json({ success: true, updated });
+        const updated = await complaintService.bulkUpdateStatus(ids, status, req.user?.userId);
+        res.json({ success: true, updated });
 
-            await auditFromRequest(req, {
-                action: "complaint.bulk_status",
-                entityType: "complaint",
-                summary: `Set ${updated} case(s) to "${status}"`,
-                meta: { ids, status, updated },
-            });
-        } catch {
-            res.status(500).json({ error: "Failed to update complaints" });
-        }
+        await auditFromRequest(req, {
+            action: "complaint.bulk_status",
+            entityType: "complaint",
+            summary: `Set ${updated} case(s) to "${status}"`,
+            meta: { ids, status, updated },
+        });
     },
 
     async updatePriority(req: Request, res: Response): Promise<void> {
         const id = Number(req.params.id);
 
         if (!id || isNaN(id)) {
-            res.status(400).json({ error: "Invalid complaint ID" });
-            return;
+            throw new CustomError("Invalid complaint ID", undefined, 400);
         }
 
-        try {
-            const { priority } = validateRequest(updatePrioritySchema, req.body);
-            const result = await complaintService.setPriority(id, priority);
+        const { priority } = validateRequest(updatePrioritySchema, req.body);
+        const result = await complaintService.setPriority(id, priority);
 
-            if (!result || result.count === 0) {
-                res.status(404).json({ error: "Complaint not found" });
-                return;
-            }
-
-            res.json({ success: true });
-
-            await auditFromRequest(req, {
-                action: "complaint.priority.update",
-                entityType: "complaint",
-                entityId: id,
-                summary: `${result.reference}: priority changed from "${result.previousPriority}" to "${priority}"`,
-                meta: { priority, previousPriority: result.previousPriority },
-            });
-        } catch (err: unknown) {
-            if (err instanceof CustomError) {
-                res.status(400).json({ error: err.message, fields: err.fields });
-                return;
-            }
-            res.status(500).json({ error: "Failed to update priority" });
+        if (!result || result.count === 0) {
+            throw new CustomError("Complaint not found", undefined, 404);
         }
+
+        res.json({ success: true });
+
+        await auditFromRequest(req, {
+            action: "complaint.priority.update",
+            entityType: "complaint",
+            entityId: id,
+            summary: `${result.reference}: priority changed from "${result.previousPriority}" to "${priority}"`,
+            meta: { priority, previousPriority: result.previousPriority },
+        });
     },
 
     async reopenCase(req: Request, res: Response) {
@@ -223,28 +176,23 @@ const complaintController = {
         const userId = req.user?.userId;
 
         if (!id || isNaN(id)) {
-            return res.status(400).json({ error: "Invalid Complaint ID" });
+            throw new CustomError("Invalid Complaint ID", undefined, 400);
         }
 
         if (!reason || typeof reason !== "string" || reason.trim().length === 0) {
-            return res.status(400).json({ error: "A reason for reopening is required" });
+            throw new CustomError("A reason for reopening is required", undefined, 400);
         }
 
-        try {
-            const reopened = await complaintService.reopenCase(id, reason, userId);
-            res.json({ success: true, message: "Case reopened successfully" });
+        const reopened = await complaintService.reopenCase(id, reason, userId);
+        res.json({ success: true, message: "Case reopened successfully" });
 
-            await auditFromRequest(req, {
-                action: "complaint.reopen",
-                entityType: "complaint",
-                entityId: id,
-                summary: `Reopened ${reopened.reference}: ${reason}`,
-                meta: { reason },
-            });
-        } catch (err) {
-            console.error(err);
-            res.status(500).json({ error: "Failed to reopen case" });
-        }
+        await auditFromRequest(req, {
+            action: "complaint.reopen",
+            entityType: "complaint",
+            entityId: id,
+            summary: `Reopened ${reopened.reference}: ${reason}`,
+            meta: { reason },
+        });
     }
 }
 

@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { Clock, History, Loader2, Search } from "lucide-react";
 import { cn } from "cn";
 import { Input } from "@/components/ui/input";
 import { api } from "@/lib/api";
+import { useT } from "@/lib/I18n";
 import type { ComplaintListItem, Paginated } from "./loader";
 
 const HISTORY_KEY = "bicats:recent-searches";
@@ -27,7 +28,9 @@ function rememberSearch(term: string) {
 }
 
 export function ComplaintSearch({ defaultValue = "" }: { defaultValue?: string }) {
+  const { t } = useT();
   const navigate = useNavigate();
+  const [params] = useSearchParams();
   const [query, setQuery] = useState(defaultValue);
   const [open, setOpen] = useState(false);
   const [results, setResults] = useState<ComplaintListItem[]>([]);
@@ -91,12 +94,22 @@ export function ComplaintSearch({ defaultValue = "" }: { defaultValue?: string }
     }
   }
 
+  // Searching keeps the active dropdown/stat filters — the URL is the one
+  // source of truth for the whole toolbar.
+  function runSearch(term: string) {
+    const next = new URLSearchParams(params);
+    next.delete("page");
+    next.set("q", term);
+    const qs = next.toString();
+    navigate(`/admin/complaints${qs ? `?${qs}` : ""}`);
+  }
+
   function submitAll() {
     if (!term) return;
     rememberSearch(term);
     setRecent(loadHistory());
     setOpen(false);
-    navigate(`/admin/complaints?q=${encodeURIComponent(term)}`);
+    runSearch(term);
   }
 
   function clearHistory() {
@@ -139,7 +152,8 @@ export function ComplaintSearch({ defaultValue = "" }: { defaultValue?: string }
         onChange={(e) => handleChange(e.target.value)}
         onFocus={() => setOpen(true)}
         onKeyDown={onKeyDown}
-        placeholder="Search complaints..."
+        placeholder={t("clSearchPlaceholder")}
+        aria-label={t("clSearchPlaceholder")}
         className="pl-9"
         role="combobox"
         aria-expanded={showDropdown}
@@ -158,14 +172,14 @@ export function ComplaintSearch({ defaultValue = "" }: { defaultValue?: string }
           <div className="flex items-center justify-between px-3 pt-2 pb-1">
             <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
               <History className="h-3.5 w-3.5" />
-              Recent searches
+              {t("clRecentSearches")}
             </span>
             <button
               type="button"
               onClick={clearHistory}
               className="text-xs text-muted-foreground transition-colors hover:text-foreground"
             >
-              Clear
+              {t("clClear")}
             </button>
           </div>
           <ul className="py-1">
@@ -177,7 +191,7 @@ export function ComplaintSearch({ defaultValue = "" }: { defaultValue?: string }
                   onClick={() => {
                     rememberSearch(item);
                     setOpen(false);
-                    navigate(`/admin/complaints?q=${encodeURIComponent(item)}`);
+                    runSearch(item);
                   }}
                   className={cn(
                     "flex w-full items-center gap-2 px-3 py-2 text-left text-sm",
@@ -200,7 +214,7 @@ export function ComplaintSearch({ defaultValue = "" }: { defaultValue?: string }
         >
           {results.length === 0 ? (
             <p className="px-3 py-6 text-center text-sm text-muted-foreground">
-              {loading ? "Searching..." : "No matches found."}
+              {loading ? t("clSearching") : t("clNoSearchMatches")}
             </p>
           ) : (
             <ul className="max-h-96 overflow-auto py-1">

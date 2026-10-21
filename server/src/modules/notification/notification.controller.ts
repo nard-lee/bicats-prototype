@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 
+import { CustomError } from "../../utils/custom.exception.js";
 import notificationService from "./notification.service.js";
 import { notificationEvents } from "./notification.events.js";
 
@@ -9,8 +10,7 @@ const notificationController = {
   async list(req: Request, res: Response): Promise<void> {
     const userId = req.user?.userId;
     if (!userId) {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
+      throw new CustomError("Unauthorized", undefined, 401);
     }
 
     res.json(await notificationService.list(userId));
@@ -21,8 +21,7 @@ const notificationController = {
     const id = Number(req.params.id);
 
     if (!userId || !id || Number.isNaN(id)) {
-      res.status(400).json({ error: "Invalid request" });
-      return;
+      throw new CustomError("Invalid request", undefined, 400);
     }
 
     await notificationService.markRead(id, userId);
@@ -32,8 +31,7 @@ const notificationController = {
   async markAllRead(req: Request, res: Response): Promise<void> {
     const userId = req.user?.userId;
     if (!userId) {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
+      throw new CustomError("Unauthorized", undefined, 401);
     }
 
     await notificationService.markAllRead(userId);
@@ -45,8 +43,7 @@ const notificationController = {
   async stream(req: Request, res: Response): Promise<void> {
     const userId = req.user?.userId;
     if (!userId) {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
+      throw new CustomError("Unauthorized", undefined, 401);
     }
 
     res.status(200);

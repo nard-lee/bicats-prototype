@@ -1,5 +1,12 @@
 import { z } from "zod";
 
+import type {
+    ComplaintPriority,
+    ComplaintRisk,
+    ComplaintStatus,
+    DeadlineDays,
+} from "./complaint.types.js";
+
 export function normalizePhone(input: string) {
     let digits = input.replace(/\D/g, "");
     if (digits.startsWith("63") && digits.length === 12) {
@@ -64,41 +71,6 @@ export const trackComplaintSchema = z.object({
     phone: z.string().trim().min(7).max(20),
 });
 
-export type ComplaintTrackUpdate = {
-    status: string;
-    publicNote: string | null;
-    hearingAt: string | null;
-    createdAt: string;
-};
-
-export type ComplaintTrackResult = {
-    reference: string;
-    status: string;
-    updates: ComplaintTrackUpdate[];
-};
-
-export type Paginated<T> = {
-  items: T[];
-  total: number;
-  page: number;
-  pageSize: number;
-  totalPages: number;
-};
-
-export type ComplaintListRow = {
-  id: number;
-  reference: string;
-  complainantName: string;
-  respondentName: string;
-  complaintType: string;
-  complaintTypeOther: string | null;
-  status: string;
-  priority: string;
-  createdAt: Date;
-  viewedAt: Date | null;
-  dueAt: Date | null;
-};
-
 export const COMPLAINT_STATUSES = [
   "received",
   "summoned",
@@ -109,8 +81,6 @@ export const COMPLAINT_STATUSES = [
   "dismissed",
 ] as const;
 
-export type ComplaintStatus = (typeof COMPLAINT_STATUSES)[number];
-
 // Cases that no longer have a pending step (no deadline).
 export const TERMINAL_STATUSES: readonly ComplaintStatus[] = [
   "settled",
@@ -120,7 +90,6 @@ export const TERMINAL_STATUSES: readonly ComplaintStatus[] = [
 
 // ---- Priority triage ----
 export const COMPLAINT_PRIORITIES = ["none", "low", "normal", "high", "urgent"] as const;
-export type ComplaintPriority = (typeof COMPLAINT_PRIORITIES)[number];
 
 const PRIORITY_RANK: Record<ComplaintPriority, number> = {
   none: 0,
@@ -150,8 +119,6 @@ export const updatePrioritySchema = z.object({
 
 // Katarungang Pambarangay flow: for each status, how many days the barangay
 // has to take the next step (see the KP rules cited in the barangay handbook).
-export type DeadlineDays = Partial<Record<ComplaintStatus, number>>;
-
 export const KP_DEADLINE_DAYS: DeadlineDays = {
   received: 1, // summon the respondent by the next working day
   summoned: 15, // hold mediation within 15 days of the summons
@@ -188,8 +155,6 @@ export function computeNextDueAt(
 // A case is "due soon" when its deadline falls within this window.
 export const RISK_WINDOW_DAYS = 3;
 
-export type ComplaintRisk = "overdue" | "due_soon" | "on_track" | "none";
-
 // Simple decision-support signal used by reminders and dashboards.
 export function complaintRisk(
   dueAt: Date | null,
@@ -206,53 +171,5 @@ export function complaintRisk(
   }
   return "on_track";
 }
-
-export type ComplaintListFilters = {
-  q?: string | undefined;
-  status?: string | undefined;
-  type?: string | undefined;
-  priority?: string | undefined;
-  open?: boolean | undefined;
-  overdue?: boolean | undefined;
-  dueSoon?: boolean | undefined;
-};
-
-export type ComplaintDetail = {
-  id: number;
-  reference: string;
-  complainantName: string;
-  respondentName: string;
-  complaintType: string;
-  complaintTypeOther: string | null;
-  status: string;
-  priority: string;
-  createdAt: string;
-  dueAt: string | null;
-  nextHearingAt: string | null;
-  nextHearingKind: string | null;
-  description: string;
-  evidence: Array<{
-    originalName: string;
-    url: string;
-    mimeType: string;
-    size: number;
-  }>;
-  history: Array<{
-    status: string;
-    date: string;
-    note?: string;
-    by: string;
-    hearingAt?: string;
-  }>;
-  complainantAge: number;
-  complainantPurok: string;
-  complainantContact: string;
-  complainantEmail: string | null;
-  complainantAddress: string;
-  respondentAddress: string | null;
-  relationship: string | null;
-  incidentAt: string;
-  incidentPlace: string;
-};
 
 export type CreateComplaintInput = z.output<typeof createComplaintSchema>;

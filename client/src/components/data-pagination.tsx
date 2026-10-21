@@ -8,12 +8,14 @@ export default function DataPagination({
   total,
   pageSize,
   className = "",
+  onPageChange,
 }: {
   page: number;
   totalPages: number;
   total: number;
   pageSize: number;
   className?: string;
+  onPageChange?: (page: number) => void;
 }) {
   const [params] = useSearchParams();
 
@@ -28,6 +30,36 @@ export default function DataPagination({
 
   const showControls = total > pageSize;
 
+  const navButton = (target: number, direction: "prev" | "next", enabled: boolean) => {
+    const label = direction === "prev" ? "Previous page" : "Next page";
+    const icon = direction === "prev" ? <ChevronLeft /> : <ChevronRight />;
+    if (!enabled) {
+      return (
+        <Button type="button" variant="outline" size="icon" disabled aria-label={label}>
+          {icon}
+        </Button>
+      );
+    }
+    if (onPageChange) {
+      return (
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          aria-label={label}
+          onClick={() => onPageChange(target)}
+        >
+          {icon}
+        </Button>
+      );
+    }
+    return (
+      <Button asChild variant="outline" size="icon" aria-label={label}>
+        <Link to={href(target)}>{icon}</Link>
+      </Button>
+    );
+  };
+
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       <span className="text-sm text-muted-foreground">
@@ -35,40 +67,8 @@ export default function DataPagination({
       </span>
       {showControls && (
         <>
-          {page > 1 ? (
-            <Button asChild variant="outline" size="icon" aria-label="Previous page">
-              <Link to={href(page - 1)}>
-                <ChevronLeft />
-              </Link>
-            </Button>
-          ) : (
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              disabled
-              aria-label="Previous page"
-            >
-              <ChevronLeft />
-            </Button>
-          )}
-          {page < totalPages ? (
-            <Button asChild variant="outline" size="icon" aria-label="Next page">
-              <Link to={href(page + 1)}>
-                <ChevronRight />
-              </Link>
-            </Button>
-          ) : (
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              disabled
-              aria-label="Next page"
-            >
-              <ChevronRight />
-            </Button>
-          )}
+          {navButton(page - 1, "prev", page > 1)}
+          {navButton(page + 1, "next", page < totalPages)}
         </>
       )}
     </div>

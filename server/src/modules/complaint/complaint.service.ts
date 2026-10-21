@@ -1,65 +1,18 @@
 
 import { prisma } from "../../db.js";
 import { Prisma } from "../../generated/prisma/client.js";
-import { randomInt } from "node:crypto";
 
 import { COMPLAINT_STATUSES, COMPLAINT_PRIORITIES, computeNextDueAt, deadlineDaysFrom } from "./complaint.schema.js";
+import type { CreateComplaintInput } from "./complaint.schema.js";
 import type {
     ComplaintDetail,
     ComplaintListFilters,
     ComplaintListRow,
     ComplaintTrackResult,
-    CreateComplaintInput,
     Paginated,
-} from "./complaint.schema.js";
+} from "./complaint.types.js";
+import { getEvidenceUrl, nextReference, normalizePhone } from "./complaint.helpers.js";
 import settingService from "../setting/setting.service.js";
-
-// Atomically reserves the next number for the year and formats it as
-// BK-<year>-000001-<check>. The two random check characters keep public
-// tracking codes from being enumerated (they must be learned, not guessed).
-// The upsert runs inside the complaint transaction so two concurrent filings
-// can never share a sequence number.
-const CHECK_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"; // unambiguous chars
-
-function randomChar(): string {
-    return CHECK_ALPHABET.charAt(randomInt(CHECK_ALPHABET.length));
-}
-
-function checkSuffix(): string {
-    return randomChar() + randomChar();
-}
-
-async function nextReference(tx: Prisma.TransactionClient, year: number): Promise<string> {
-    const rows = await tx.$queryRaw<{ lastValue: number }[]>`
-        INSERT INTO "ReferenceCounter" ("year", "lastValue")
-        VALUES (${year}, 1)
-        ON CONFLICT ("year")
-        DO UPDATE SET "lastValue" = "ReferenceCounter"."lastValue" + 1
-        RETURNING "lastValue"
-    `;
-
-    const value = rows[0]?.lastValue ?? 1;
-
-    return `BK-${year}-${String(value).padStart(6, "0")}-${checkSuffix()}`;
-}
-
-function normalizePhone(input: string): string {
-    let digits = input.replace(/\D/g, "");
-
-    if (digits.startsWith("63") && digits.length === 12) {
-        digits = "0" + digits.slice(2);
-    }
-
-    return digits;
-}
-
-function getEvidenceUrl(storedName: string): string {
-    const baseUrl = (
-        process.env.PUBLIC_API_URL ?? "http://localhost:3000"
-    ).replace(/\/+$/, "");
-
-    return `${baseUrl}/uploads/${encodeURIComponent(storedName)}`;
-}
 
 const complaintService = {
 

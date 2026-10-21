@@ -82,7 +82,7 @@ app.use('/api/settings', settingRouter);
 
 // ---- Unknown API route ----
 app.use("/api", (_req, res) => {
-  res.status(404).json({ error: "Not found" });
+  res.status(404).json({ message: "Not found" });
 });
 
 app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
@@ -99,7 +99,7 @@ app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
     return res.status(400).json({ message: "Validation failed", fields });
   }
 
-  // ADD THIS BLOCK
+  // Middleware and multer reject with ApiError, which carries its own status.
   const status = (err as { statusCode?: number })?.statusCode;
   if (typeof status === "number" && status < 500) {
     return res.status(status).json({ message: (err as Error).message });

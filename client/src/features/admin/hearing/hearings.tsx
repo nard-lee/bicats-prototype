@@ -1,74 +1,20 @@
 import { useMemo, useState } from "react";
-import { Link, useLoaderData, useRevalidator, useSearchParams } from "react-router";
-import { ChevronLeft, ChevronRight, Clock, Plus } from "lucide-react";
+import { useLoaderData, useRevalidator, useSearchParams } from "react-router";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { cn } from "cn";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useT } from "@/lib/I18n";
 import { api } from "@/lib/api";
+import MonthCalendar from "./components/month-calendar";
+import SessionsTable from "./components/sessions-table";
+import ViewSwitch from "./components/view-switch";
+import { PAGE_SIZE, dayKey, pad, type HearingView } from "./components/constants";
 import HearingDialog, { type HearingDialogMode } from "./dialog";
-import {
-  KIND_LABEL,
-  KIND_STYLE,
-  OVERDUE_STYLE,
-  STATUS_LABEL,
-  STATUS_STYLE,
-} from "./labels";
 import type { HearingsData, HearingItem } from "./loader";
-
-const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-// Chip dot colors for the calendar, mirroring STATUS_STYLE in labels.ts
-// (dots instead of full badges because chips are only ~11px tall).
-const STATUS_DOT: Record<HearingItem["status"], string> = {
-  scheduled: "bg-primary",
-  completed: "bg-emerald-500",
-  cancelled: "bg-muted-foreground",
-  no_show: "bg-red-500",
-};
-
-type HearingView = "month" | "overdue" | "upcoming" | "week";
-
-const VIEWS: HearingView[] = ["month", "overdue", "upcoming", "week"];
-
-const VIEW_LABEL: Record<HearingView, string> = {
-  month: "This month",
-  overdue: "Overdue",
-  upcoming: "Upcoming",
-  week: "This week",
-};
-
-const EMPTY_MESSAGE: Record<HearingView, string> = {
-  month: "No mediation scheduled this month.",
-  overdue: "No overdue mediations.",
-  upcoming: "Nothing scheduled ahead.",
-  week: "No sessions in the next 7 days.",
-};
 
 // Module-scope so we don't call new Date() during render.
 const NOW = new Date();
-
-const pad = (value: number) => String(value).padStart(2, "0");
-
-const dayKey = (date: Date) =>
-  `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 
 export default function HearingsPage() {
   const { lang } = useT();
@@ -79,6 +25,7 @@ export default function HearingsPage() {
   const [dialog, setDialog] = useState<HearingDialogMode | null>(null);
   const [hoveredDay, setHoveredDay] = useState<string | null>(null);
   const [resolvingId, setResolvingId] = useState<number | null>(null);
+  const [page, setPage] = useState(1);
 
   const locale = lang === "tl" ? "fil-PH" : "en-PH";
 
@@ -155,6 +102,13 @@ export default function HearingsPage() {
           ? data.week
           : data.hearings;
 
+  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const visibleRows =
+    activeView === "month"
+      ? rows.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+      : rows;
+
   const fmtTime = (iso: string) =>
     new Date(iso).toLocaleTimeString(locale, { hour: "numeric", minute: "2-digit" });
 
@@ -166,12 +120,14 @@ export default function HearingsPage() {
     const params = new URLSearchParams(searchParams);
     params.set("month", `${d.getFullYear()}-${pad(d.getMonth() + 1)}`);
     setSearchParams(params);
+    setPage(1);
   };
 
   const goToday = () => {
     const params = new URLSearchParams(searchParams);
     params.set("month", `${today.getFullYear()}-${pad(today.getMonth() + 1)}`);
     setSearchParams(params);
+    setPage(1);
   };
 
   const setView = (view: HearingView) => {
@@ -179,6 +135,7 @@ export default function HearingsPage() {
     if (view === "month") params.delete("view");
     else params.set("view", view);
     setSearchParams(params);
+    setPage(1);
   };
 
   const refresh = () => revalidator.revalidate();
@@ -227,6 +184,7 @@ export default function HearingsPage() {
                   const params = new URLSearchParams(searchParams);
                   params.set("month", value);
                   setSearchParams(params);
+                  setPage(1);
                 }}
               >
                 <SelectTrigger size="sm" className="w-[180px]" aria-label="Month">
@@ -254,239 +212,27 @@ export default function HearingsPage() {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-1.5">
-        {VIEWS.map((view) => (
-          <Button
-            key={view}
-            variant={activeView === view ? "default" : "outline"}
-            size="sm"
-            aria-pressed={activeView === view}
-            onClick={() => setView(view)}
-          >
-            {VIEW_LABEL[view]} ({viewCounts[view]})
-          </Button>
-        ))}
-      </div>
+      <ViewSwitch activeView={activeView} viewCounts={viewCounts} onViewChange={setView} />
 
       {activeView === "month" && (
-        <Card>
-          <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 space-y-0">
-            <CardTitle>{monthLabel}</CardTitle>
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="secondary">{scheduledCount} scheduled</Badge>
-              {overdueCount > 0 && (
-                <Badge className={cn("border", OVERDUE_STYLE)}>{overdueCount} overdue</Badge>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent>
-          <div className="grid grid-cols-7 gap-1">
-            {WEEKDAYS.map((day) => (
-              <div
-                key={day}
-                className="px-1 pb-1 text-center text-xs font-medium text-muted-foreground"
-              >
-                {day}
-              </div>
-            ))}
-
-            {cells.map((cell, index) => {
-              if (!cell) {
-                return (
-                  <div
-                    key={`empty-${index}`}
-                    className="min-h-24 rounded-md border border-dashed border-transparent"
-                  />
-                );
-              }
-
-              const key = dayKey(cell);
-              const items = byDay.get(key) ?? [];
-              const isToday = key === todayKey;
-              const isBusy = items.length >= 2;
-              const isHovered = hoveredDay === key;
-              const visible = isBusy && isHovered ? items : items.slice(0, 2);
-
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => createOn(cell)}
-                  onMouseEnter={() => setHoveredDay(key)}
-                  onMouseLeave={() => setHoveredDay((current) => (current === key ? null : current))}
-                  disabled={data.complaints.length === 0}
-                  className={cn(
-                    "relative flex min-h-24 flex-col items-stretch gap-1 rounded-md border p-1.5 text-left align-top transition-all",
-                    "hover:border-primary/40 hover:bg-muted/40 disabled:cursor-default",
-                    isToday ? "border-primary/50 bg-primary/5" : "border-border",
-                    isBusy &&
-                      "hover:z-10 hover:ring-2 hover:ring-primary/40 hover:shadow-sm",
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "flex h-5 w-5 items-center justify-center rounded-full text-xs tabular-nums",
-                      isToday
-                        ? "bg-primary font-semibold text-primary-foreground"
-                        : "text-muted-foreground",
-                    )}
-                  >
-                    {cell.getDate()}
-                  </span>
-
-                  {isBusy && (
-                    <span className="pointer-events-none absolute top-1.5 right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
-                      {items.length}
-                    </span>
-                  )}
-
-                  {visible.map((hearing) => (
-                    <span
-                      key={hearing.id}
-                      role="button"
-                      tabIndex={0}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDialog({ type: "edit", hearing });
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.stopPropagation();
-                          e.preventDefault();
-                          setDialog({ type: "edit", hearing });
-                        }
-                      }}
-                      className={cn(
-                        "cursor-pointer truncate rounded border px-1.5 py-0.5 text-[11px] font-medium transition-colors hover:ring-1 hover:ring-foreground/25",
-                        KIND_STYLE[hearing.kind],
-                        hearing.status === "cancelled" && "line-through opacity-60",
-                        hearing.overdue && "border-amber-500/60 ring-1 ring-amber-500/40",
-                      )}
-                      title={hearing.overdue ? "Overdue: no outcome recorded" : undefined}
-                    >
-                      <span
-                        className={cn(
-                          "inline-block h-1.5 w-1.5 -translate-y-px rounded-full",
-                          hearing.overdue ? "bg-amber-500" : STATUS_DOT[hearing.status],
-                        )}
-                        aria-hidden
-                      />{" "}
-                      <span className="tabular-nums">{fmtTime(hearing.scheduledAt)}</span>{" "}
-                      {hearing.reference}
-                    </span>
-                  ))}
-
-                  {!isHovered && items.length > 2 && (
-                    <span className="px-1 text-[11px] text-muted-foreground">
-                      +{items.length - 2} more
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
+        <MonthCalendar
+          monthLabel={monthLabel} scheduledCount={scheduledCount}
+          overdueCount={overdueCount} cells={cells}
+          byDay={byDay} todayKey={todayKey}
+          hoveredDay={hoveredDay} setHoveredDay={setHoveredDay}
+          complaintsAvailable={data.complaints.length > 0} fmtTime={fmtTime}
+          onCreate={createOn} onEdit={(hearing) => setDialog({ type: "edit", hearing })}
+        />
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{VIEW_LABEL[activeView]}</CardTitle>
-        </CardHeader>
-        <CardContent className="px-0">
-          {rows.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 py-8 text-center">
-              <div className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                <Clock className="size-5" />
-              </div>
-              <p className="text-sm text-muted-foreground">{EMPTY_MESSAGE[activeView]}</p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="px-6">When</TableHead>
-                  <TableHead>Case</TableHead>
-                  <TableHead>Parties</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead className="px-6 text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map((hearing) => (
-                  <TableRow key={hearing.id}>
-                    <TableCell className="px-6 tabular-nums">
-                      {fmtDate(hearing.scheduledAt)} · {fmtTime(hearing.scheduledAt)}
-                    </TableCell>
-                    <TableCell>
-                      <Link
-                        to={`/admin/complaints/${hearing.complaintId}`}
-                        className="text-lg font-semibold tracking-wide transition-colors hover:text-primary"
-                      >
-                        {hearing.reference}
-                      </Link>
-                    </TableCell>
-                    <TableCell className="max-w-[16rem] truncate text-muted-foreground">
-                      {hearing.complainantName} and {hearing.respondentName}
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={cn("border", KIND_STYLE[hearing.kind])}>
-                        {KIND_LABEL[hearing.kind]}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        className={cn(
-                          "border",
-                          hearing.overdue ? OVERDUE_STYLE : STATUS_STYLE[hearing.status],
-                        )}
-                      >
-                        {hearing.overdue ? "Overdue" : STATUS_LABEL[hearing.status]}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {hearing.location ?? "—"}
-                    </TableCell>
-                    <TableCell className="px-6 text-right">
-                      <div className="flex justify-end gap-2">
-                        {hearing.overdue && (
-                          <>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              disabled={resolvingId === hearing.id}
-                              onClick={() => void resolve(hearing, "completed")}
-                            >
-                              Complete
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              disabled={resolvingId === hearing.id}
-                              onClick={() => void resolve(hearing, "no_show")}
-                            >
-                              No-show
-                            </Button>
-                          </>
-                        )}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setDialog({ type: "edit", hearing })}
-                        >
-                          Edit
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+      <SessionsTable
+        activeView={activeView} rows={rows}
+        visibleRows={visibleRows} currentPage={currentPage}
+        totalPages={totalPages} resolvingId={resolvingId}
+        fmtDate={fmtDate} fmtTime={fmtTime}
+        onResolve={resolve} onEdit={(hearing) => setDialog({ type: "edit", hearing })}
+        onPageChange={setPage}
+      />
 
       {dialog && (
         <HearingDialog

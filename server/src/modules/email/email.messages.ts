@@ -1,13 +1,13 @@
 // Email bodies for resident notifications (plain text + simple HTML).
 // Subjects and text are kept short and share the same wording as SMS.
 
-import { kindLabel, statusLabel } from "../sms/sms.messages.js";
+import { formatLongWhen } from "../notify/format.js";
+import { kindLabel, statusLabel } from "../notify/labels.js";
+import type { EmailMessage } from "./email.types.js";
 
-export function formatWhen(date: Date): string {
-  return date.toLocaleString("en-PH", { dateStyle: "full", timeStyle: "short" });
+function stripTags(lines: string[]): string {
+  return lines.map((line) => line.replace(/<[^>]+>/g, "")).join("\n\n");
 }
-
-export type EmailMessage = { subject: string; text: string; html: string };
 
 function wrap(title: string, lines: string[]): string {
   const body = lines
@@ -37,7 +37,7 @@ export function statusUpdateEmail(input: {
     `Your complaint <strong>${input.reference}</strong> is now <strong>"${label}"</strong>.`,
   ];
   if (input.hearingAt) {
-    lines.push(`A mediation session is set on <strong>${formatWhen(input.hearingAt)}</strong>.`);
+    lines.push(`A mediation session is set on <strong>${formatLongWhen(input.hearingAt)}</strong>.`);
   }
   if (input.publicNote) {
     lines.push(input.publicNote);
@@ -59,7 +59,7 @@ export function mediationScheduledEmail(input: {
 
   const lines = [
     `Your ${kindLabel(input.kind)} for complaint <strong>${input.reference}</strong> has been <strong>${verb}</strong>.`,
-    `When: <strong>${formatWhen(input.scheduledAt)}</strong>`,
+    `When: <strong>${formatLongWhen(input.scheduledAt)}</strong>`,
   ];
   if (input.location) {
     lines.push(`Where: <strong>${input.location}</strong>`);
@@ -94,7 +94,7 @@ export function hearingReminderEmail(input: {
 
   const lines = [
     `Reminder: your ${kindLabel(input.kind)} session for complaint <strong>${input.reference}</strong> starts within 24 hours.`,
-    `When: <strong>${formatWhen(input.scheduledAt)}</strong>`,
+    `When: <strong>${formatLongWhen(input.scheduledAt)}</strong>`,
   ];
   if (input.location) {
     lines.push(`Where: <strong>${input.location}</strong>`);
@@ -102,8 +102,4 @@ export function hearingReminderEmail(input: {
   lines.push("Please arrive on time and bring any documents related to your case.");
 
   return { subject, text: stripTags(lines), html: wrap(subject, lines) };
-}
-
-function stripTags(lines: string[]): string {
-  return lines.map((line) => line.replace(/<[^>]+>/g, "")).join("\n\n");
 }

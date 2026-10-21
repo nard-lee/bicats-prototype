@@ -1,4 +1,5 @@
 import { config } from "@/utils/env.config.js";
+import type { SmsSendInput } from "./sms.types.js";
 
 const SMS_MAX_LENGTH = 670;
 
@@ -15,17 +16,11 @@ export function toPhilippineNumber(input: string): string {
   return digits;
 }
 
-type SendInput = {
-  to: string;
-  content: string;
-  metadata?: Record<string, string>;
-};
-
 const smsService = {
   isSmsEnabled,
 
   // Fire-and-forget: resolves to true/false, never throws, and never logs secrets.
-  async send({ to, content, metadata }: SendInput): Promise<boolean> {
+  async send({ to, content, metadata }: SmsSendInput): Promise<boolean> {
     if (!isSmsEnabled()) return false;
 
     const recipient = toPhilippineNumber(to);

@@ -30,7 +30,7 @@ import { useT, type Key } from "@/lib/I18n";
 import type { ComplaintDetail } from "./loader";
 import StatusUpdateModal from "./update";
 import ReopenCaseModal from "./reopen";
-import { PRIORITY_STYLE } from "../priority";
+import { PRIORITY_STYLE, type ComplaintPriority } from "../priority";
 import { DOCUMENT_TYPES } from "../documents/loader";
 import { complaintTypeLabel } from "../type-label";
 import type { AdminLoaderData } from "@/layouts/admin/loader";
@@ -39,6 +39,13 @@ const NOW_MS = Date.now();
 
 // Newest events are already first; show a window of them and page deeper.
 const HISTORY_PAGE = 6;
+
+const PRIORITY_FULL_KEY: Record<Exclude<ComplaintPriority, "none">, Key> = {
+  low: "prLowFull",
+  normal: "prNormalFull",
+  high: "prHighFull",
+  urgent: "prUrgentFull",
+};
 
 function Info({ label, value }: { label: string; value: ReactNode }) {
   return (
@@ -150,9 +157,7 @@ export default function ComplaintView() {
               <Badge>{t(`st_${complaint.status}` as Key)}</Badge>
               {complaint.priority !== "none" && (
                 <Badge className={cn("border", PRIORITY_STYLE[complaint.priority])}>
-                  {t(
-                    `pr${complaint.priority[0].toUpperCase()}${complaint.priority.slice(1)}Full` as Key,
-                  )}
+                  {t(PRIORITY_FULL_KEY[complaint.priority])}
                 </Badge>
               )}
 

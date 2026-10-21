@@ -1,4 +1,5 @@
 import { config } from "@/utils/env.config.js";
+import type { EmailSendInput } from "./email.types.js";
 
 export function isEmailEnabled(): boolean {
   return (
@@ -7,18 +8,11 @@ export function isEmailEnabled(): boolean {
   );
 }
 
-type SendInput = {
-  to: string;
-  subject: string;
-  text: string;
-  html?: string;
-};
-
 const emailService = {
   isEmailEnabled,
 
   // Fire-and-forget: resolves to true/false, never throws, and never logs secrets.
-  async send({ to, subject, text, html }: SendInput): Promise<boolean> {
+  async send({ to, subject, text, html }: EmailSendInput): Promise<boolean> {
     if (!isEmailEnabled()) return false;
 
     try {

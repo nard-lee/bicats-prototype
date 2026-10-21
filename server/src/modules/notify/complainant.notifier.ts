@@ -6,6 +6,7 @@ import {
   mediationScheduledEmail,
   statusUpdateEmail,
 } from "../email/email.messages.js";
+import type { EmailMessage } from "../email/email.types.js";
 import smsService from "../sms/sms.service.js";
 import {
   hearingReminderSms,
@@ -33,7 +34,7 @@ async function findTarget(complaintId: number): Promise<Target | null> {
 async function dispatch(
   target: Target,
   sms: string,
-  email: { subject: string; text: string; html: string },
+  email: EmailMessage,
   event: string,
   channels: { sms: boolean; email: boolean },
 ): Promise<void> {

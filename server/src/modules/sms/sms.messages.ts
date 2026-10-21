@@ -1,33 +1,8 @@
 // Message builders for resident SMS. Keep each message short and under the
 // 670-character UniSMS limit; templates are plain text (no HTML).
 
-const STATUS_LABEL: Record<string, string> = {
-  received: "received",
-  summoned: "summoned",
-  mediation: "in mediation",
-  conciliation: "in conciliation",
-  settled: "settled",
-  certified: "certified for filing",
-  dismissed: "dismissed",
-};
-
-const KIND_LABEL: Record<string, string> = {
-  mediation: "mediation",
-  conciliation: "conciliation",
-  hearing: "arbitration",
-};
-
-export function kindLabel(kind: string): string {
-  return KIND_LABEL[kind] ?? kind;
-}
-
-export function statusLabel(status: string): string {
-  return STATUS_LABEL[status] ?? status;
-}
-
-export function formatWhen(date: Date): string {
-  return date.toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" });
-}
+import { formatShortWhen } from "../notify/format.js";
+import { kindLabel, statusLabel } from "../notify/labels.js";
 
 export function statusUpdateSms(input: {
   reference: string;
@@ -35,11 +10,11 @@ export function statusUpdateSms(input: {
   publicNote?: string | null;
   hearingAt?: Date | null;
 }): string {
-  const label = STATUS_LABEL[input.status] ?? input.status;
+  const label = statusLabel(input.status);
   const parts = [`BARANGAY: Your complaint ${input.reference} is now "${label}".`];
 
   if (input.hearingAt) {
-    parts.push(`Mediation set on ${formatWhen(input.hearingAt)}.`);
+    parts.push(`Mediation set on ${formatShortWhen(input.hearingAt)}.`);
   }
   if (input.publicNote) {
     parts.push(input.publicNote);
@@ -58,7 +33,7 @@ export function mediationScheduledSms(input: {
 }): string {
   const verb = input.rescheduled ? "rescheduled" : "scheduled";
   const parts = [
-    `BARANGAY: Your ${kindLabel(input.kind)} for ${input.reference} is ${verb} on ${formatWhen(input.scheduledAt)}.`,
+    `BARANGAY: Your ${kindLabel(input.kind)} for ${input.reference} is ${verb} on ${formatShortWhen(input.scheduledAt)}.`,
   ];
 
   if (input.location) {
@@ -81,7 +56,7 @@ export function hearingReminderSms(input: {
   location?: string | null;
 }): string {
   const parts = [
-    `BARANGAY: Reminder that your ${kindLabel(input.kind)} session for ${input.reference} is within 24 hours, on ${formatWhen(input.scheduledAt)}.`,
+    `BARANGAY: Reminder that your ${kindLabel(input.kind)} session for ${input.reference} is within 24 hours, on ${formatShortWhen(input.scheduledAt)}.`,
   ];
 
   if (input.location) {

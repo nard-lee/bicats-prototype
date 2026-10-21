@@ -64,10 +64,10 @@ export async function settingsAction({
   } catch (err: unknown) {
     if (err instanceof HTTPError) {
       const body = err.data as
-        | { error?: string; fields?: Record<string, string> }
+        | { message?: string; fields?: Record<string, string> }
         | undefined;
       return {
-        error: body?.error ?? `Update failed (${err.response.status})`,
+        error: body?.message ?? `Update failed (${err.response.status})`,
         fields: body?.fields,
       };
     }

@@ -62,10 +62,10 @@ const authService = {
       include: { user: { select: { id: true, role: true } } },
     });
 
-    if (!stored) throw new CustomError('Invalid session', { refreshToken: 'Invalid or expired session' });
+    if (!stored) throw new CustomError('Invalid session', { refreshToken: 'Invalid or expired session' }, 401);
     if (stored.expiresAt < new Date()) {
       await prisma.refreshToken.delete({ where: { id: stored.id } });
-      throw new CustomError('Invalid session', { refreshToken: 'Session expired, please log in again' });
+      throw new CustomError('Invalid session', { refreshToken: 'Session expired, please log in again' }, 401);
     }
 
     await prisma.refreshToken.delete({ where: { id: stored.id } });
