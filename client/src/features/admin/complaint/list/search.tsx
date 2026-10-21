@@ -106,6 +106,10 @@ export function ComplaintSearch({ defaultValue = "" }: { defaultValue?: string }
   }
 
   function openComplaint(item: ComplaintListItem) {
+    if (term.length >= 2) {
+      rememberSearch(term);
+      setRecent(loadHistory());
+    }
     setOpen(false);
     navigate(`/admin/complaints/${item.id}`);
   }
