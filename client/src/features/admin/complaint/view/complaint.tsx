@@ -23,6 +23,8 @@ import {
   XCircle,
   Calendar,
   AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { useT, type Key } from "@/lib/I18n";
 import type { ComplaintDetail } from "./loader";
@@ -65,14 +67,16 @@ export default function ComplaintView() {
   const evidence = complaint.evidence || [];
   const history = complaint.history || [];
 
-  const [visibleCount, setVisibleCount] = useState(HISTORY_PAGE);
-  const visibleHistory = history.slice(0, visibleCount);
-  const hasMore = history.length > visibleCount;
-  const isCollapsed = visibleCount <= HISTORY_PAGE;
+  const totalPages = Math.max(1, Math.ceil(history.length / HISTORY_PAGE));
+  const [page, setPage] = useState(1);
+  // Revalidations can shrink history; keep the page in valid range.
+  const safePage = Math.min(page, totalPages);
+  const pageEvents = history.slice((safePage - 1) * HISTORY_PAGE, safePage * HISTORY_PAGE);
 
-  const historyCounter = t("historyOf")
-    .replace("{visible}", String(visibleHistory.length))
-    .replace("{total}", String(history.length));
+  const pageCount = t("historyPage")
+    .replace("{page}", String(safePage))
+    .replace("{pages}", String(totalPages));
+  const historyCount = t("historyEvents").replace("{total}", String(history.length));
 
   const availableDocs = DOCUMENT_TYPES.filter((doc) => {
     if (doc === "settlement") return complaint.status === "settled";
@@ -337,13 +341,13 @@ export default function ComplaintView() {
               </CardHeader>
               <CardContent>
                 <p className="mb-4 text-xs text-muted-foreground tabular-nums">
-                  {historyCounter}
+                  {pageCount} · {historyCount}
                 </p>
                 <div className="space-y-6">
-                  {visibleHistory.map((event, index) => (
+                  {pageEvents.map((event, index) => (
                     <div key={index} className="relative flex gap-4">
                       {/* Timeline Line */}
-                      {index !== visibleHistory.length - 1 && (
+                      {index !== pageEvents.length - 1 && (
                         <div className="absolute left-3 top-8 bottom-[-24px] w-px bg-border" />
                       )}
 
@@ -396,26 +400,31 @@ export default function ComplaintView() {
                     </div>
                   ))}
                 </div>
-                {(hasMore || !isCollapsed) && (
-                  <div className="mt-6 grid grid-cols-2 gap-2">
+                {totalPages > 1 && (
+                  <div className="mt-6 grid grid-cols-[auto_1fr_auto] items-center gap-2">
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => setVisibleCount((c) => c + HISTORY_PAGE)}
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      disabled={safePage <= 1}
                     >
-                      {t("showOlderHistory")}
+                      <ChevronLeft className="mr-1 h-3.5 w-3.5" />
+                      {t("prevPage")}
                     </Button>
-                    {!isCollapsed && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setVisibleCount(HISTORY_PAGE)}
-                      >
-                        {t("showRecentHistory")}
-                      </Button>
-                    )}
+                    <span className="text-center text-xs tabular-nums text-muted-foreground">
+                      {pageCount}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={safePage >= totalPages}
+                    >
+                      {t("nextPage")}
+                      <ChevronRight className="ml-1 h-3.5 w-3.5" />
+                    </Button>
                   </div>
                 )}
               </CardContent>

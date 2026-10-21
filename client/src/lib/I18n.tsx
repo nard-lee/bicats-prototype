@@ -378,9 +378,10 @@ const en = {
   filedDate: "Filed Date",
   description: "Description",
   statusHistory: "Status History",
-  historyOf: "Showing {visible} of {total} events",
-  showOlderHistory: "Show older events",
-  showRecentHistory: "Show recent only",
+  historyPage: "Page {page} of {pages}",
+  historyEvents: "{total} events",
+  prevPage: "Prev",
+  nextPage: "Next",
   notes: "Notes",
 
   // documents
@@ -774,9 +775,10 @@ const tl: Record<Key, string> = {
   filedDate: "Petsa ng Paghain",
   description: "Paglalarawan",
   statusHistory: "Kasaysayan ng Status",
-  historyOf: "Ipinapakita ang {visible} sa {total} na kaganapan",
-  showOlderHistory: "Ipakita ang mas lumang kaganapan",
-  showRecentHistory: "Kamakailan lang",
+  historyPage: "Pahina {page} ng {pages}",
+  historyEvents: "{total} kaganapan",
+  prevPage: "Nakaraan",
+  nextPage: "Susunod",
   notes: "Mga Tala",
 
   // documents
