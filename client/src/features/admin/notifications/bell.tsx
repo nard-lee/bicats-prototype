@@ -125,24 +125,24 @@ export default function NotificationsBell() {
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 z-50 mt-2 w-80 overflow-hidden rounded-lg border bg-popover text-popover-foreground shadow-md">
-            <div className="flex items-center justify-between border-b px-3 py-2">
-              <span className="text-sm font-medium">{t("notifications")}</span>
+          <div className="absolute right-0 z-50 mt-2 w-[22rem] overflow-hidden rounded-lg border bg-popover text-popover-foreground shadow-md sm:w-96">
+            <div className="flex items-center justify-between border-b px-4 py-3">
+              <span className="text-base font-semibold">{t("notifications")}</span>
               {data.unread > 0 && (
                 <button
                   type="button"
                   onClick={markAllRead}
-                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                  className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
                 >
-                  <CheckCheck className="h-3.5 w-3.5" />
+                  <CheckCheck className="h-4 w-4" />
                   {t("markAllRead")}
                 </button>
               )}
             </div>
 
-            <div className="max-h-96 overflow-y-auto">
+            <div className="max-h-[28rem] overflow-y-auto">
               {data.items.length === 0 ? (
-                <p className="px-3 py-8 text-center text-sm text-muted-foreground">
+                <p className="px-4 py-10 text-center text-sm text-muted-foreground">
                   {t("noNotifications")}
                 </p>
               ) : (
@@ -151,12 +151,12 @@ export default function NotificationsBell() {
 
                   const row = (
                     <div
-                      className={`flex gap-3 px-3 py-3 transition-colors ${
+                      className={`flex gap-3 px-4 py-3.5 transition-colors ${
                         isUnread ? "bg-primary/5" : ""
                       }`}
                     >
                       <span
-                        className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
+                        className={`mt-2 h-2.5 w-2.5 shrink-0 rounded-full ${
                           isUnread
                             ? dotColor(n.type)
                             : "border border-muted-foreground/40 bg-transparent"
@@ -165,7 +165,7 @@ export default function NotificationsBell() {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2">
                           <p
-                            className={`min-w-0 truncate text-sm ${
+                            className={`min-w-0 truncate text-[15px] leading-snug ${
                               isUnread ? "font-semibold" : "text-muted-foreground"
                             }`}
                           >
@@ -178,11 +178,11 @@ export default function NotificationsBell() {
                           )}
                         </div>
                         <p
-                          className={`text-xs ${isUnread ? "" : "text-muted-foreground/70"}`}
+                          className={`text-[13px] leading-relaxed ${isUnread ? "" : "text-muted-foreground/70"}`}
                         >
                           {n.body}
                         </p>
-                        <p className="mt-1 text-[10px] text-muted-foreground/70">
+                        <p className="mt-1.5 text-xs text-muted-foreground/70">
                           {fmt(n.createdAt)}
                         </p>
                       </div>
