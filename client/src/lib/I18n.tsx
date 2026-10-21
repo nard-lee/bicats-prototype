@@ -347,6 +347,7 @@ const en = {
   notifications: "Notifications",
   noNotifications: "You're all caught up.",
   markAllRead: "Mark all read",
+  notifNew: "New",
   trackPhase: "Where your case is now",
   ph_received:
     "Your complaint is on record in the barangay blotter. The Punong Barangay will summon the respondent within 3 days.",
@@ -731,6 +732,7 @@ const tl: Record<Key, string> = {
   notifications: "Mga Abiso",
   noNotifications: "Wala kang bagong abiso.",
   markAllRead: "Markahan lahat na nabasa",
+  notifNew: "Bago",
   trackPhase: "Kung nasaan na ang kaso mo",
   ph_received:
     "Nakatala na ang reklamo mo sa blotter ng barangay. Ipatawag ng Punong Barangay ang inirereklamo sa loob ng 3 araw.",

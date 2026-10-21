@@ -147,17 +147,42 @@ export default function NotificationsBell() {
                 </p>
               ) : (
                 data.items.map((n) => {
+                  const isUnread = !n.readAt;
+
                   const row = (
                     <div
-                      className={`flex gap-3 px-3 py-3 ${n.readAt ? "" : "bg-muted/40"}`}
+                      className={`flex gap-3 px-3 py-3 transition-colors ${
+                        isUnread ? "bg-primary/5" : ""
+                      }`}
                     >
                       <span
-                        className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${dotColor(n.type)}`}
+                        className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
+                          isUnread
+                            ? dotColor(n.type)
+                            : "border border-muted-foreground/40 bg-transparent"
+                        }`}
                       />
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium">{n.title}</p>
-                        <p className="text-xs text-muted-foreground">{n.body}</p>
-                        <p className="mt-1 text-[10px] text-muted-foreground">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <p
+                            className={`min-w-0 truncate text-sm ${
+                              isUnread ? "font-semibold" : "text-muted-foreground"
+                            }`}
+                          >
+                            {n.title}
+                          </p>
+                          {isUnread && (
+                            <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+                              {t("notifNew")}
+                            </span>
+                          )}
+                        </div>
+                        <p
+                          className={`text-xs ${isUnread ? "" : "text-muted-foreground/70"}`}
+                        >
+                          {n.body}
+                        </p>
+                        <p className="mt-1 text-[10px] text-muted-foreground/70">
                           {fmt(n.createdAt)}
                         </p>
                       </div>
