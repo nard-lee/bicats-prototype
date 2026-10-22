@@ -93,6 +93,13 @@ const userService = {
     },
 
     async update(id: number, input: UpdateUserInput) {
+        const existing = await prisma.user.findUnique({
+            where: { id },
+            select: { id: true },
+        });
+
+        if (!existing) throw new CustomError("User not found", undefined, 404);
+
         const { password, ...rest } = input;
         const data = { ...rest } as Prisma.UserUpdateInput;
 

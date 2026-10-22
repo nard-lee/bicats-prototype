@@ -34,6 +34,7 @@ export const loginSchema = z.object({
       return normalized;
     }),
   password: z.string().min(1, "Password is required"),
+  remember: z.boolean().optional().default(false),
 });
 
 export type AuthToken = {
@@ -43,6 +44,10 @@ export type AuthToken = {
 
 export type LoginResult = AuthToken & {
   user: { id: number; fullName: string; role: string };
+};
+
+export type RefreshResult = AuthToken & {
+  remember: boolean;
 };
 
 export type LoginInput = z.infer<typeof loginSchema>;

@@ -33,8 +33,8 @@ export default function Login() {
   return (
     <AuthCard
       icon={<ShieldCheck className="size-8" />}
-      title="Barangay Staff Sign In"
-      subtitle="Para sa mga opisyal at kawani lamang"
+      title={t("loginTitle")}
+      subtitle={t("staffOnly")}
     >
 
       <Form method="post" className="space-y-5">
@@ -56,14 +56,13 @@ export default function Login() {
           )}
 
         <div className="space-y-2">
-          <Label htmlFor="email">identifier</Label>
+          <Label htmlFor="identifier">{t("loginIdentifier")}</Label>
           <Input
             id="identifier"
             name="identifier"
-            type="identifier"
+            type="text"
             placeholder="juan@example.com"
-            value="+639386161262"
-            autoComplete="off"
+            autoComplete="username"
             className="h-11"
             aria-invalid={!!fields.identifier}
             required
@@ -77,8 +76,7 @@ export default function Login() {
             id="password"
             name="password"
             type="password"
-            value="password123"
-            autoComplete="new-password"
+            autoComplete="current-password"
             placeholder="At least 8 characters"
             minLength={8}
             className="h-11"
@@ -91,17 +89,17 @@ export default function Login() {
         <div className="flex items-center gap-2">
           <Checkbox id="remember" name="remember" />
           <Label htmlFor="remember" className="font-normal">
-            Alalahanin ang device na ito
+            {t("remember")}
           </Label>
         </div>
 
         <Button type="submit" className="w-full" size="lg" disabled={submitting}>
-          {submitting ? "Nag-sa-sign in..." : "Mag-sign in"}
+          {submitting ? t("signingIn") : t("signIn")}
         </Button>
       </Form>
 
       <p className="text-center text-xs text-muted-foreground">
-        Nakalimutan ang password? Lapitan ang Barangay Secretary sa hall.
+        {t("forgot")}
       </p>
     </AuthCard>
   );

@@ -101,16 +101,29 @@ const complaintController = {
         const id = Number(req.params.id);
         const { status, publicNote, internalNote, hearingAt } = req.body;
 
+        if (!id || isNaN(id)) {
+            throw new CustomError("Invalid complaint ID", undefined, 400);
+        }
+
+        if (!(COMPLAINT_STATUSES as readonly string[]).includes(status)) {
+            throw new CustomError("Invalid complaint status", undefined, 400);
+        }
+
+        const hearingDate = hearingAt ? new Date(hearingAt) : undefined;
+        if (hearingDate && isNaN(hearingDate.getTime())) {
+            throw new CustomError("Invalid mediation date", undefined, 400);
+        }
+
         const userId = req.user?.userId;
 
-        const updated = await complaintService.updateStatus(id, status, publicNote, internalNote, hearingAt ? new Date(hearingAt) : undefined, userId);
+        const updated = await complaintService.updateStatus(id, status, publicNote, internalNote, hearingDate, userId);
         res.json({ success: true });
 
         await auditFromRequest(req, {
             action: "complaint.status.update",
             entityType: "complaint",
             entityId: id,
-            summary: `${updated.reference}: status changed from "${updated.previousStatus ?? "unknown"}" to "${status}"`,
+            summary: `${updated.reference}: status changed from "${updated.previousStatus}" to "${status}"`,
             meta: { status, previousStatus: updated.previousStatus, hasPublicNote: !!publicNote, hasInternalNote: !!internalNote },
         });
 
@@ -118,7 +131,7 @@ const complaintController = {
         void complainantNotifier.statusUpdate(id, {
             status,
             publicNote: publicNote ?? null,
-            hearingAt: hearingAt ? new Date(hearingAt) : null,
+            hearingAt: hearingDate ?? null,
         });
     },
 
@@ -176,7 +189,7 @@ const complaintController = {
         const userId = req.user?.userId;
 
         if (!id || isNaN(id)) {
-            throw new CustomError("Invalid Complaint ID", undefined, 400);
+            throw new CustomError("Invalid complaint ID", undefined, 400);
         }
 
         if (!reason || typeof reason !== "string" || reason.trim().length === 0) {

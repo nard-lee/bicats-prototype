@@ -43,6 +43,10 @@ export const analyticsController = {
     res.json(await analyticsService.getDigestRange(from.year, from.month, to.year, to.month));
   },
 
+  async getStats(_req: Request, res: Response) {
+    res.json(await analyticsService.getStats());
+  },
+
   async getOverview(req: Request, res: Response) {
     res.json(await analyticsService.getOverview());
   },

@@ -11,7 +11,7 @@ const COMPLAINT_TYPES = [
   "type7", "type8", "type9", "type10", "type11", "type12",
 ];
 
-const TOTAL = 300;
+const TOTAL = 100;
 
 // Fallback when the settings row has not been created yet.
 // The Punong Barangay issues the summons by the next working day.
@@ -230,30 +230,30 @@ async function main() {
   // a couple mid-process, and some already resolved.
   // The base mix (4/3/2/3/3 = 15 slots) is scaled to hit TOTAL,
   // keeping proportions at any dataset size.
-  const SCALE = TOTAL / 15;
+  const slots = (count: number) => Math.round((count * TOTAL) / 15);
   type SeedPlan = {
     status: "received" | "mediation" | "settled" | "certified" | "dismissed";
     ageDays: number; // how long ago the complaint was filed
   };
 
   const plan: SeedPlan[] = faker.helpers.shuffle([
-    ...Array.from({ length: 4 * SCALE }, () => ({
+    ...Array.from({ length: slots(4) }, () => ({
       status: "received" as const,
       ageDays: faker.number.int({ min: 0, max: 2 }), // within the summons deadline
     })),
-    ...Array.from({ length: 3 * SCALE }, () => ({
+    ...Array.from({ length: slots(3) }, () => ({
       status: "received" as const,
       ageDays: faker.number.int({ min: 1, max: 3 }), // borderline / just past
     })),
-    ...Array.from({ length: 2 * SCALE }, () => ({
+    ...Array.from({ length: slots(2) }, () => ({
       status: "received" as const,
       ageDays: faker.number.int({ min: 5, max: 12 }), // clearly overdue
     })),
-    ...Array.from({ length: 3 * SCALE }, () => ({
+    ...Array.from({ length: slots(3) }, () => ({
       status: "mediation" as const,
       ageDays: faker.number.int({ min: 8, max: 30 }),
     })),
-    ...Array.from({ length: 3 * SCALE }, () => ({
+    ...Array.from({ length: slots(3) }, () => ({
       status: faker.helpers.arrayElement(["settled", "certified", "dismissed"] as const),
       ageDays: faker.number.int({ min: 14, max: 90 }),
     })),

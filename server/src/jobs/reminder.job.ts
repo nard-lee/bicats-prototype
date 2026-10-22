@@ -7,6 +7,7 @@ import {
 } from "../modules/complaint/complaint.schema.js";
 import { INTERNAL_ROLES } from "../utils/roles.js";
 import notificationService from "../modules/notification/notification.service.js";
+import settingService from "../modules/setting/setting.service.js";
 import { isHearingOverdue } from "../modules/hearing/hearing.schema.js";
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -38,8 +39,8 @@ export async function runReminderScan(): Promise<number> {
 
   await notificationService.prune();
 
-  const settings = await prisma.barangaySettings.findUnique({ where: { id: 1 } });
-  const windowDays = settings?.riskWindowDays ?? 3;
+  const settings = await settingService.get();
+  const windowDays = settings.riskWindowDays;
   const soon = new Date(now.getTime() + windowDays * DAY);
 
   const cases = await prisma.complaint.findMany({
@@ -73,7 +74,7 @@ export async function runReminderScan(): Promise<number> {
   const stamp = dayKey(now);
 
   // ---- Auto-escalation: overdue cases climb in priority ----
-  const escalated: { id: number; reference: string; priority: string }[] = [];
+  const byTargetPriority = new Map<string, { id: number; reference: string }[]>();
 
   for (const complaint of cases) {
     if (!complaint.dueAt) continue;
@@ -83,17 +84,23 @@ export async function runReminderScan(): Promise<number> {
     const next = escalatedPriority(complaint.priority, overdueDays);
     if (!next) continue;
 
-    await prisma.complaint.update({
-      where: { id: complaint.id },
-      data: { priority: next },
-    });
-
-    escalated.push({
-      id: complaint.id,
-      reference: complaint.reference,
-      priority: next,
-    });
+    const bucket = byTargetPriority.get(next) ?? [];
+    bucket.push({ id: complaint.id, reference: complaint.reference });
+    byTargetPriority.set(next, bucket);
   }
+
+  await Promise.all(
+    [...byTargetPriority].map(([priority, items]) =>
+      prisma.complaint.updateMany({
+        where: { id: { in: items.map((item) => item.id) } },
+        data: { priority },
+      }),
+    ),
+  );
+
+  const escalated = [...byTargetPriority].flatMap(([priority, items]) =>
+    items.map((item) => ({ ...item, priority })),
+  );
 
   // ---- Daily deadline reminders ----
   const reminderRows = cases.flatMap((complaint) => {

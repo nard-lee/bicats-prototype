@@ -218,6 +218,7 @@ const en = {
   // login
   loginTitle: "Barangay Staff Sign In",
   staffOnly: "For officials and staff only",
+  loginIdentifier: "Email, username, or phone number",
   username: "Username",
   password: "Password",
   remember: "Remember this device",
@@ -653,6 +654,7 @@ const tl: Record<Key, string> = {
 
   loginTitle: "Pag-sign in ng Kawani ng Barangay",
   staffOnly: "Para sa mga opisyal at kawani lamang",
+  loginIdentifier: "Email, username, o numero ng telepono",
   username: "Username",
   password: "Password",
   remember: "Alalahanin ang device na ito",

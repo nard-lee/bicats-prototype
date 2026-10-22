@@ -1,5 +1,10 @@
 import { lazy, Suspense, type ComponentType } from "react";
 
+export const AdminLayout = lazy(() => import("@/layouts/admin/layout"));
+export const Home = lazy(() => import("@/features/guest/welcome"));
+export const Login = lazy(() => import("@/features/auth/login/form"));
+export const FileComplaint = lazy(() => import("@/features/complaint/file/form"));
+export const Track = lazy(() => import("@/features/complaint/track/form"));
 export const AdminOverview = lazy(() => import("@/features/admin/overview/overview"));
 export const AdminReport = lazy(() => import("@/features/admin/analytics/report"));
 export const ComplaintsList = lazy(() => import("@/features/admin/complaint/list/table"));

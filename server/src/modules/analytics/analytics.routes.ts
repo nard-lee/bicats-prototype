@@ -8,6 +8,7 @@ const staffOnly = requireAuth(...INTERNAL_ROLES);
 
 router.get("/report", staffOnly, analyticsController.getReport);
 router.get("/digest", staffOnly, analyticsController.getDigest);
+router.get("/stats", staffOnly, analyticsController.getStats);
 router.get("/overview", staffOnly, analyticsController.getOverview);
 
 export default router;

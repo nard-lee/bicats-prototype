@@ -11,14 +11,9 @@ import { AuditLoader } from "@/features/admin/audit/list/loader";
 import { SettingsLoader } from "@/features/admin/setting/loader";
 import { settingsAction } from "@/features/admin/setting/action";
 import { loginAction } from "@/features/auth/login/action";
-import Login from "@/features/auth/login/form";
 import { fileComplaintAction } from "@/features/complaint/file/action";
-import FileComplaint from "@/features/complaint/file/form";
-import Track from "@/features/complaint/track/form";
 import { trackAction } from "@/features/complaint/track/action";
-import Home from "@/features/guest/welcome";
 import NotFound from "@/features/errors/not-found";
-import AdminLayout from "@/layouts/admin/layout";
 import { AdminLoader, AdminOnlyLoader } from "@/layouts/admin/loader";
 import AdminError from "@/layouts/admin/error";
 import RootError from "@/layouts/root/error";
@@ -32,6 +27,7 @@ import { OverviewLoader } from "@/features/admin/overview/loader";
 import { HomeLoader } from "@/features/guest/loader";
 import { api } from "@/lib/api";
 import {
+  AdminLayout,
   AdminOverview,
   AdminReport,
   AuditLog,
@@ -41,11 +37,15 @@ import {
   ComplaintView,
   CreateNotice,
   CreateUser,
+  FileComplaint,
   HearingsPage,
+  Home,
   LazyRoute,
+  Login,
   NoticesList,
   Profile,
   StaffAccounts,
+  Track,
 } from "./lazy-routes";
 
 const router = createBrowserRouter([
@@ -57,10 +57,14 @@ const router = createBrowserRouter([
     shouldRevalidate: () => true,
     errorElement: <RootError />,
     children: [
-      { index: true, element: <Home />, loader: HomeLoader },
-      { path: 'login', element: <Login />, action: loginAction },
-      { path: 'file-complaint', element: <FileComplaint />, action: fileComplaintAction },
-      { path: 'track-complaint', element: <Track />, action: trackAction },
+      { index: true, element: <LazyRoute Component={Home} />, loader: HomeLoader },
+      { path: 'login', element: <LazyRoute Component={Login} />, action: loginAction },
+      {
+        path: 'file-complaint',
+        element: <LazyRoute Component={FileComplaint} />,
+        action: fileComplaintAction,
+      },
+      { path: 'track-complaint', element: <LazyRoute Component={Track} />, action: trackAction },
       { path: '*', element: <NotFound /> }
     ]
   },
@@ -68,7 +72,7 @@ const router = createBrowserRouter([
   {
     id: "admin",
     path: '/admin',
-    Component: AdminLayout,
+    element: <LazyRoute Component={AdminLayout} />,
     loader: AdminLoader,
     errorElement: <AdminError />,
     handle: { crumb: () => "Admin" },

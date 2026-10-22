@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  server:
+    name: Server
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: bicats
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+      PORT: 3000
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/bicats?schema=public
+      JWT_SECRET: ci-jwt-secret
+      JWT_EXPIRES_IN: 900
+      CSRF_SECRET: ci-csrf-secret
+      CORS_ORIGIN: http://localhost:5173
+      UNISMS_SECRET_KEY: ''
+      BREVO_API_KEY: ''
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: server/pnpm-lock.yaml
+      - name: Install dependencies
+        working-directory: server
+        run: pnpm install --frozen-lockfile
+      - name: Generate Prisma client
+        working-directory: server
+        run: pnpm db:generate
+      - name: Typecheck
+        working-directory: server
+        run: pnpm typecheck
+      - name: Test
+        working-directory: server
+        run: pnpm test
+
+  client:
+    name: Client
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: client/pnpm-lock.yaml
+      - name: Install dependencies
+        working-directory: client
+        run: pnpm install --frozen-lockfile
+      - name: Lint
+        working-directory: client
+        run: pnpm lint
+      - name: Test
+        working-directory: client
+        run: pnpm test
+      - name: Build
+        working-directory: client
+        run: pnpm build

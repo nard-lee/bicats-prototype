@@ -8,6 +8,30 @@ import { config } from "@/utils/env.config.js";
 import userService from "@/modules/user/user.service.js";
 import auditService from "@/modules/audit/audit.service.js";
 
+const isProd = config.nodeEnv === "production";
+
+const AUTH_COOKIE = {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? ("none" as const) : ("lax" as const),
+};
+
+function setSessionCookies(
+    res: Response,
+    tokens: { accessToken: string; refreshToken: string },
+    remember: boolean,
+): void {
+    // The access token is short-lived either way; only the refresh cookie
+    // decides whether the sign-in survives a browser restart.
+    res.cookie("access_token", tokens.accessToken, AUTH_COOKIE);
+    res.cookie("refresh_token", tokens.refreshToken, {
+        ...AUTH_COOKIE,
+        ...(remember
+            ? { maxAge: config.refreshTokenExpiresInDays * 24 * 60 * 60 * 1000 }
+            : {}),
+    });
+}
+
 const authController = {
 
     async me(req: Request, res: Response): Promise<void> {
@@ -22,19 +46,7 @@ const authController = {
         const request = validateRequest(loginSchema, req.body);
         const { accessToken, refreshToken, user } = await authService.login(request);
 
-        res.cookie('access_token', accessToken, {
-            httpOnly: true,
-            secure: config.nodeEnv === 'production',
-            sameSite: config.nodeEnv === 'production' ? 'none' : 'lax',
-            maxAge: 15 * 60 * 1000,
-        });
-
-        res.cookie('refresh_token', refreshToken, {
-            httpOnly: true,
-            secure: config.nodeEnv === 'production',
-            sameSite: config.nodeEnv === 'production' ? 'none' : 'lax',
-            maxAge: config.refreshTokenExpiresInDays * 24 * 60 * 60 * 1000
-        })
+        setSessionCookies(res, { accessToken, refreshToken }, request.remember);
 
         res.status(200).json({ success: true });
 
@@ -57,21 +69,9 @@ const authController = {
             throw new CustomError('No refresh token provided', undefined, 401);
         }
 
-        const { accessToken, refreshToken } = await authService.refresh(oldRefreshToken);
+        const refreshed = await authService.refresh(oldRefreshToken);
 
-        res.cookie('access_token', accessToken, {
-            httpOnly: true,
-            secure: config.nodeEnv === 'production',
-            sameSite: config.nodeEnv === 'production' ? 'none' : 'lax',
-            maxAge: 15 * 60 * 1000,
-        });
-
-        res.cookie('refresh_token', refreshToken, {
-            httpOnly: true,
-            secure: config.nodeEnv === 'production',
-            sameSite: config.nodeEnv === 'production' ? 'none' : 'lax',
-            maxAge: config.refreshTokenExpiresInDays * 24 * 60 * 60 * 1000,
-        });
+        setSessionCookies(res, refreshed, refreshed.remember);
 
         res.status(200).json({ success: true });
     },
@@ -80,17 +80,8 @@ const authController = {
         const refreshToken = req.cookies?.refresh_token;
         if (refreshToken) await authService.logout(refreshToken);
 
-        res.clearCookie('access_token', {
-            httpOnly: true,
-            secure: config.nodeEnv === 'production',
-            sameSite: 'strict',
-        });
-
-        res.clearCookie('refresh_token', {
-            httpOnly: true,
-            secure: config.nodeEnv === 'production',
-            sameSite: 'strict',
-        });
+        res.clearCookie('access_token', AUTH_COOKIE);
+        res.clearCookie('refresh_token', AUTH_COOKIE);
 
 
         if (req.accepts(['html', 'json']) === 'html') {

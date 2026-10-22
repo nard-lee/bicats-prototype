@@ -1,5 +1,6 @@
 import { prisma } from "../../db.js";
 import { complaintRisk } from "../complaint/complaint.schema.js";
+import settingService from "../setting/setting.service.js";
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -142,9 +143,43 @@ export const analyticsService = {
     };
   },
 
+  // Lightweight totals for the complaints list. The overview carries recent
+  // cases, hearings, and attention items the list never renders.
+  async getStats() {
+    const settings = await settingService.get();
+    const windowDays = settings.riskWindowDays;
+    const now = new Date();
+    const soon = new Date(now.getTime() + windowDays * DAY);
+
+    const [statusGroups, overdue, dueSoon] = await Promise.all([
+      prisma.complaint.groupBy({ by: ["status"], _count: { status: true } }),
+      prisma.complaint.count({
+        where: { dueAt: { lt: now }, status: { notIn: TERMINAL_STATUSES } },
+      }),
+      prisma.complaint.count({
+        where: { dueAt: { gte: now, lte: soon }, status: { notIn: TERMINAL_STATUSES } },
+      }),
+    ]);
+
+    const statusCounts: Record<string, number> = {};
+    let total = 0;
+    for (const group of statusGroups) {
+      statusCounts[group.status] = group._count.status;
+      total += group._count.status;
+    }
+
+    return {
+      total,
+      open: OPEN_STATUSES.reduce((sum, status) => sum + (statusCounts[status] ?? 0), 0),
+      overdue,
+      dueSoon,
+      settled: (statusCounts.settled ?? 0) + (statusCounts.certified ?? 0),
+    };
+  },
+
   async getOverview() {
-    const settings = await prisma.barangaySettings.findUnique({ where: { id: 1 } });
-    const windowDays = settings?.riskWindowDays ?? 3;
+    const settings = await settingService.get();
+    const windowDays = settings.riskWindowDays;
     const now = new Date();
     const soon = new Date(now.getTime() + windowDays * DAY);
 

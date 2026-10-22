@@ -20,7 +20,10 @@
     "db:studio": "pnpm --dir server db:studio",
     "typecheck:server": "pnpm --dir server typecheck",
     "typecheck:client": "pnpm --dir client exec tsc -b",
-    "lint:client": "pnpm --dir client lint"
+    "lint:client": "pnpm --dir client lint",
+    "test": "pnpm --dir server test && pnpm --dir client test",
+    "test:server": "pnpm --dir server test",
+    "test:client": "pnpm --dir client test"
   },
   "devDependencies": {
     "concurrently": "^10.0.6"

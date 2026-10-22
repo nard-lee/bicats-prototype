@@ -169,6 +169,13 @@ const hearingService = {
   async cancel(
     id: number,
   ): Promise<{ complaintId: number; kind: string; reference: string }> {
+    const existing = await prisma.hearing.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+
+    if (!existing) throw new CustomError("Mediation not found", undefined, 404);
+
     const updated = await prisma.hearing.update({
       where: { id },
       data: { status: "cancelled" },

@@ -2,7 +2,7 @@ import argon2 from "argon2";
 
 import { prisma } from "@/db.js";
 import { CustomError } from "@/utils/custom.exception.js";
-import type { AuthToken, LoginInput, LoginResult } from "./auth.schema.js";
+import type { LoginInput, LoginResult, RefreshResult } from "./auth.schema.js";
 import { generateRefreshToken, signAccessToken } from "@/utils/jwt.js";
 import { config } from "@/utils/env.config.js";
 
@@ -32,10 +32,18 @@ const authService = {
       },
     });
 
-    if (!user) throw new CustomError("Invalid credentials", { identifier: "not found" });
+    if (!user) throw new CustomError(
+      "Invalid credentials",
+      { identifier: "No account matches this email, username, or phone" },
+      401,
+    );
 
     const passwordMatches = await argon2.verify(user.passwordHash, password,);
-    if (!passwordMatches) throw new CustomError("Invalid credentials", { password: "incorrect" });
+    if (!passwordMatches) throw new CustomError(
+      "Invalid credentials",
+      { password: "Incorrect password" },
+      401,
+    );
 
     const accessToken = signAccessToken({ userId: user.id, role: user.role });
     const refreshToken = generateRefreshToken();
@@ -45,7 +53,8 @@ const authService = {
       data: {
         token: refreshToken,
         userId: user.id,
-        expiresAt
+        expiresAt,
+        remember: request.remember,
       }
     })
 
@@ -56,7 +65,7 @@ const authService = {
     };
   },
 
-  async refresh(oldRefreshToken: string): Promise<AuthToken> {
+  async refresh(oldRefreshToken: string): Promise<RefreshResult> {
     const stored = await prisma.refreshToken.findUnique({
       where: { token: oldRefreshToken },
       include: { user: { select: { id: true, role: true } } },
@@ -80,11 +89,12 @@ const authService = {
         token: newRefreshToken,
         userId: stored.user.id,
         expiresAt,
+        remember: stored.remember,
       },
     });
 
     const accessToken = signAccessToken({ userId: stored.user.id, role: stored.user.role });
-    return { accessToken, refreshToken: newRefreshToken };
+    return { accessToken, refreshToken: newRefreshToken, remember: stored.remember };
   },
 
   async logout(refreshToken: string): Promise<void> {

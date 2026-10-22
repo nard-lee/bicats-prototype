@@ -6,11 +6,15 @@ import { emitNotification } from "./notification.events.js";
 const DAY = 24 * 60 * 60 * 1000;
 const RETENTION_DAYS = 90;
 const MAX_NOTIFICATIONS_PER_USER = 100;
+const PRUNE_INTERVAL_MS = 5 * 60 * 1000;
+
+let lastPrunedAt = 0;
 
 export const notificationService = {
   // Keep the inbox bounded: drop notifications older than the retention
   // window and anything beyond the newest 100 per user.
   async prune(): Promise<void> {
+    lastPrunedAt = Date.now();
     const cutoff = new Date(Date.now() - RETENTION_DAYS * DAY);
     await prisma.$executeRaw`
       DELETE FROM "Notification"
@@ -64,7 +68,9 @@ export const notificationService = {
       emitNotification(userId);
     }
 
-    await this.prune();
+    // Pruning scans the whole table, so it runs at most every few minutes
+    // instead of on every notification batch.
+    if (Date.now() - lastPrunedAt >= PRUNE_INTERVAL_MS) await this.prune();
 
     return result.count;
   },

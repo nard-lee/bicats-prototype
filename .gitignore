@@ -18,6 +18,7 @@ pnpm-debug.log*
 
 # Server: uploaded evidence + generated Prisma client
 server/uploads/
+server/uploads-archive-*/
 server/src/generated/
 
 # Editor / OS

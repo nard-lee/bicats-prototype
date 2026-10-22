@@ -39,6 +39,8 @@ model RefreshToken {
   userId    Int
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
+  // Keep the refresh cookie persistent across browser restarts.
+  remember  Boolean   @default(false)
   createdAt DateTime  @default(now())
   revokedAt DateTime?
 }

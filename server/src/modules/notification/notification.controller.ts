@@ -10,7 +10,7 @@ const notificationController = {
   async list(req: Request, res: Response): Promise<void> {
     const userId = req.user?.userId;
     if (!userId) {
-      throw new CustomError("Unauthorized", undefined, 401);
+      throw new CustomError("Not authenticated", undefined, 401);
     }
 
     res.json(await notificationService.list(userId));
@@ -18,10 +18,13 @@ const notificationController = {
 
   async markRead(req: Request, res: Response): Promise<void> {
     const userId = req.user?.userId;
-    const id = Number(req.params.id);
+    if (!userId) {
+      throw new CustomError("Not authenticated", undefined, 401);
+    }
 
-    if (!userId || !id || Number.isNaN(id)) {
-      throw new CustomError("Invalid request", undefined, 400);
+    const id = Number(req.params.id);
+    if (!id || Number.isNaN(id)) {
+      throw new CustomError("Invalid notification ID", undefined, 400);
     }
 
     await notificationService.markRead(id, userId);
@@ -31,7 +34,7 @@ const notificationController = {
   async markAllRead(req: Request, res: Response): Promise<void> {
     const userId = req.user?.userId;
     if (!userId) {
-      throw new CustomError("Unauthorized", undefined, 401);
+      throw new CustomError("Not authenticated", undefined, 401);
     }
 
     await notificationService.markAllRead(userId);
@@ -43,7 +46,7 @@ const notificationController = {
   async stream(req: Request, res: Response): Promise<void> {
     const userId = req.user?.userId;
     if (!userId) {
-      throw new CustomError("Unauthorized", undefined, 401);
+      throw new CustomError("Not authenticated", undefined, 401);
     }
 
     res.status(200);

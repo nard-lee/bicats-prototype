@@ -304,6 +304,8 @@ export default function ComplaintView() {
                           <img
                             src={file.url}
                             alt={file.originalName}
+                            loading="lazy"
+                            decoding="async"
                             className="h-32 w-full rounded-md bg-muted object-cover"
                           />
                         ) : (

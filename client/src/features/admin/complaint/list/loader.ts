@@ -57,7 +57,7 @@ export async function ComplaintsLoader({ request }: LoaderFunctionArgs): Promise
   const overdue = risk === "overdue";
   const dueSoon = risk === "dueSoon";
 
-  const [result, overview] = await Promise.all([
+  const [result, stats] = await Promise.all([
     api
       .post("/complaints/list", {
         searchParams: {
@@ -73,25 +73,8 @@ export async function ComplaintsLoader({ request }: LoaderFunctionArgs): Promise
         },
       })
       .json<Paginated<ComplaintListItem>>(),
-    api.get("/analytics/overview").json<{
-      totals: {
-        complaints: number;
-        open: number;
-        overdue: number;
-        atRisk: number;
-        settled: number;
-      };
-    }>(),
+    api.get("/analytics/stats").json<ComplaintStats>(),
   ]);
 
-  return {
-    ...result,
-    stats: {
-      total: overview.totals.complaints,
-      open: overview.totals.open,
-      overdue: overview.totals.overdue,
-      dueSoon: overview.totals.atRisk,
-      settled: overview.totals.settled,
-    },
-  };
+  return { ...result, stats };
 }

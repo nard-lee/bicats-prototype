@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "nodemon --watch src --ext ts --exec tsx src/index.ts",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
     "db:migrate": "pnpm exec prisma db migrate",
     "db:push": "pnpm exec prisma db push",
     "db:generate": "pnpm exec prisma generate",
@@ -16,7 +16,9 @@
     "db:seed:complaints": "tsx prisma/complaint-seeder.ts",
     "db:seed:users": "tsx prisma/user-seeder.ts",
     "db:seed:audit": "tsx prisma/audit-seeder.ts",
-    "db:seed:all": "pnpm db:seed:users && pnpm db:seed:complaints && pnpm db:seed:audit"
+    "db:seed:all": "pnpm db:seed:users && pnpm db:seed:complaints && pnpm db:seed:audit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "keywords": [],
   "author": "",
@@ -58,10 +60,13 @@
     "@types/multer": "^2.3.0",
     "@types/node": "^26.6.5",
     "@types/pg": "^8.23.1",
+    "@types/supertest": "^7.2.1",
     "nodemon": "^3.1.14",
     "pino-pretty": "^13.2.0",
     "prisma": "7.10.0",
+    "supertest": "^7.3.1",
     "tsx": "^4.23.15",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
   }
 }

@@ -1,6 +1,7 @@
 
 import { prisma } from "../../db.js";
 import { Prisma } from "../../generated/prisma/client.js";
+import { CustomError } from "../../utils/custom.exception.js";
 
 import { COMPLAINT_STATUSES, COMPLAINT_PRIORITIES, computeNextDueAt, deadlineDaysFrom } from "./complaint.schema.js";
 import type { CreateComplaintInput } from "./complaint.schema.js";
@@ -295,6 +296,10 @@ const complaintService = {
                 select: { reference: true, status: true, priority: true },
             });
 
+            if (!previous) {
+                throw new CustomError("Complaint not found", undefined, 404);
+            }
+
             const TERMINAL_STATUSES = ["settled", "certified", "dismissed"] as const;
 
             await tx.complaint.update({
@@ -354,8 +359,8 @@ const complaintService = {
             });
 
             return {
-                reference: previous?.reference ?? `#${id}`,
-                previousStatus: previous?.status ?? null,
+                reference: previous.reference,
+                previousStatus: previous.status,
                 entry,
             };
         });
@@ -366,13 +371,21 @@ const complaintService = {
         const dueAt = computeNextDueAt(status, new Date(), deadlineDaysFrom(settings));
 
         return prisma.$transaction(async (tx) => {
-            const { count } = await tx.complaint.updateMany({
+            const existing = await tx.complaint.findMany({
                 where: { id: { in: ids } },
+                select: { id: true },
+            });
+            const targetIds = existing.map((row) => row.id);
+
+            if (targetIds.length === 0) return 0;
+
+            const { count } = await tx.complaint.updateMany({
+                where: { id: { in: targetIds } },
                 data: { status, dueAt },
             });
 
             await tx.statusUpdate.createMany({
-                data: ids.map((id) => ({
+                data: targetIds.map((id) => ({
                     complaintId: id,
                     status,
                     createdById: userId ?? null,
@@ -408,6 +421,15 @@ const complaintService = {
         const dueAt = computeNextDueAt("received", new Date(), deadlineDaysFrom(settings));
 
         return prisma.$transaction(async (tx) => {
+            const existing = await tx.complaint.findUnique({
+                where: { id },
+                select: { id: true },
+            });
+
+            if (!existing) {
+                throw new CustomError("Complaint not found", undefined, 404);
+            }
+
             const updated = await tx.complaint.update({
                 where: { id },
                 data: { status: "received", dueAt, priority: "normal" },

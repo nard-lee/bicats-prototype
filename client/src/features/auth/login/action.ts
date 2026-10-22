@@ -21,7 +21,8 @@ export async function loginAction({ request, }: ActionFunctionArgs): Promise<Act
         await api.post("auth/log-in", {
             json: {
                 identifier: form.get("identifier"),
-                password: form.get("password")
+                password: form.get("password"),
+                remember: form.get("remember") === "on",
             },
         });
         toast.success("Logged in successfully...");
