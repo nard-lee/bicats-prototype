@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
+import { HTTPError } from "ky";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -54,7 +55,8 @@ export default function StatusUpdateModal({ complaintId, currentStatus, currentP
   // Logic Flags
   const allowedNextStatuses = ALLOWED_TRANSITIONS[currentStatus] || [];
   const canChangeStatus = allowedNextStatuses.length > 0;
-  const canScheduleHearing = !["settled", "certified", "dismissed"].includes(currentStatus);
+  const targetIsClosed = ["settled", "certified", "dismissed"].includes(newStatus);
+  const canScheduleHearing = canChangeStatus && !targetIsClosed;
   const canChangePriority = canScheduleHearing;
 
   // Check if any field in the main form has been modified
@@ -106,7 +108,11 @@ export default function StatusUpdateModal({ complaintId, currentStatus, currentP
       onSuccess();
     } catch (error) {
       console.error("Failed to update status", error);
-      toast.error("Failed to update status.");
+      const body =
+        error instanceof HTTPError
+          ? (error.data as { message?: string } | undefined)
+          : undefined;
+      toast.error(body?.message ?? "Failed to update status.");
     } finally {
       setIsSubmitting(false);
     }
@@ -184,11 +190,11 @@ export default function StatusUpdateModal({ complaintId, currentStatus, currentP
               </Select>
             </div>
           </div>
-          {(!canChangeStatus || !canScheduleHearing) && (
+          {(!canChangeStatus || targetIsClosed) && (
             <p className="text-xs text-muted-foreground">
               {!canChangeStatus
                 ? "This case is closed. You can only add notes."
-                : "Priority and mediation date are locked for closed cases."}
+                : "Closing the case cancels its scheduled sessions and clears its deadline."}
             </p>
           )}
 

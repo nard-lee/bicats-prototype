@@ -31,3 +31,4 @@ server/src/generated/
 *.njsproj
 *.sln
 *.sw?
+.neon

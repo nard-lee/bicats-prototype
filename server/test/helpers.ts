@@ -62,7 +62,7 @@ export function complaintFields(
   return {
     complainantName: "Juan Dela Cruz",
     complainantAge: "34",
-    complainantPurok: "Purok 2",
+    complainantPurok: "Session Road",
     complainantContact: "0917 123 4567",
     complainantAddress: "12 Mabini Street",
     respondentName: "Pedro Reyes",
@@ -72,6 +72,10 @@ export function complaintFields(
     incidentAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
     incidentPlace: "Purok 2 covered court",
     narrative: "Loud videoke until past midnight, disturbing the neighborhood.",
+    eligResidency: "same_barangay",
+    eligGovernment: "no",
+    eligOffense: "no",
+    eligProperty: "not_applicable",
     consent: "on",
     ...overrides,
   };

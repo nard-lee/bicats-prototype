@@ -25,11 +25,15 @@ import {
   AlertTriangle,
   ChevronLeft,
   ChevronRight,
+  ShieldAlert,
+  MailCheck,
 } from "lucide-react";
 import { useT, type Key } from "@/lib/I18n";
 import type { ComplaintDetail } from "./loader";
 import StatusUpdateModal from "./update";
 import ReopenCaseModal from "./reopen";
+import EligibilityCard from "./eligibility";
+import ServiceRecordCard from "./service";
 import { PRIORITY_STYLE, type ComplaintPriority } from "../priority";
 import { DOCUMENT_TYPES } from "../documents/loader";
 import { complaintTypeLabel } from "../type-label";
@@ -88,8 +92,18 @@ export default function ComplaintView() {
   const availableDocs = DOCUMENT_TYPES.filter((doc) => {
     if (doc === "settlement") return complaint.status === "settled";
     if (doc === "cfa") return complaint.status === "certified";
-    return true;
+    if (doc === "notice") {
+      return (
+        ["mediation", "conciliation"].includes(complaint.status) ||
+        !!complaint.nextHearingAt
+      );
+    }
+    return ["received", "summoned"].includes(complaint.status);
   });
+
+  const showServiceCard =
+    (complaint.serviceRecords?.length ?? 0) > 0 ||
+    !["received", "dismissed"].includes(complaint.status);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -105,6 +119,20 @@ export default function ComplaintView() {
   };
 
   const isClosed = ["settled", "certified", "dismissed"].includes(complaint.status);
+
+  const eligibilityHold =
+    !isClosed &&
+    (complaint.eligibilityStatus === "unreviewed" ||
+      complaint.eligibilityStatus === "needs_review");
+
+  const eligibilityHintKey: Key =
+    complaint.eligibilityStatus === "unreviewed"
+      ? "eligUnscreenedHint"
+      : "eligPendingHint";
+  const eligibilityFlagKey: Key =
+    complaint.eligibilityStatus === "unreviewed"
+      ? "eligUnscreenedFlag"
+      : "eligPendingFlag";
 
   const isOverdue =
     !!complaint.dueAt &&
@@ -130,13 +158,20 @@ export default function ComplaintView() {
         <div className="flex flex-wrap items-center gap-2">
           {canWrite && (
             <>
-              <StatusUpdateModal
-                complaintId={complaint.id}
-                currentStatus={complaint.status}
-                currentPriority={complaint.priority}
-                currentHearingAt={complaint.nextHearingAt}
-                onSuccess={() => revalidator.revalidate()}
-              />
+              {eligibilityHold ? (
+                <p className="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300">
+                  <ShieldAlert className="h-4 w-4 shrink-0" />
+                  {t(eligibilityHintKey)}
+                </p>
+              ) : (
+                <StatusUpdateModal
+                  complaintId={complaint.id}
+                  currentStatus={complaint.status}
+                  currentPriority={complaint.priority}
+                  currentHearingAt={complaint.nextHearingAt}
+                  onSuccess={() => revalidator.revalidate()}
+                />
+              )}
               {isClosed && (
                 <ReopenCaseModal
                   complaintId={complaint.id}
@@ -155,6 +190,15 @@ export default function ComplaintView() {
             <div className="flex flex-wrap items-center gap-3">
               <h1 className="text-2xl font-semibold">{complaint.reference}</h1>
               <Badge>{t(`st_${complaint.status}` as Key)}</Badge>
+              {eligibilityHold && (
+                <Badge
+                  variant="outline"
+                  className="gap-1 border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                >
+                  <ShieldAlert className="h-3 w-3" />
+                  {t(eligibilityFlagKey)}
+                </Badge>
+              )}
               {complaint.priority !== "none" && (
                 <Badge className={cn("border", PRIORITY_STYLE[complaint.priority])}>
                   {t(PRIORITY_FULL_KEY[complaint.priority])}
@@ -191,7 +235,9 @@ export default function ComplaintView() {
                 )}
               </div>
             ) : (
-              <p className="text-muted-foreground">{t("noDeadline")}</p>
+              <p className="text-muted-foreground">
+                {isClosed ? t("caseClosed") : t("noDeadline")}
+              </p>
             )}
           </div>
         </div>
@@ -205,25 +251,41 @@ export default function ComplaintView() {
           )}
         >
           <div className="flex flex-col gap-6">
+            <EligibilityCard
+              complaint={complaint}
+              canWrite={canWrite}
+              onSuccess={() => revalidator.revalidate()}
+            />
+
             {/* Documents */}
-            <Card>
-              <CardHeader>
-                <CardTitle>{t("documents")}</CardTitle>
-                <CardDescription>{t("documentsDesc")}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {availableDocs.map((doc) => (
-                    <Button key={doc} asChild variant="outline">
-                      <Link to={`/admin/complaints/${complaint.id}/documents/${doc}`}>
-                        <FileText className="mr-2 h-4 w-4" />
-                        {t(`doc_${doc}` as Key)}
-                      </Link>
-                    </Button>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+            {availableDocs.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>{t("documents")}</CardTitle>
+                  <CardDescription>{t("documentsDesc")}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    {availableDocs.map((doc) => (
+                      <Button key={doc} asChild variant="outline">
+                        <Link to={`/admin/complaints/${complaint.id}/documents/${doc}`}>
+                          <FileText className="mr-2 h-4 w-4" />
+                          {t(`doc_${doc}` as Key)}
+                        </Link>
+                      </Button>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {showServiceCard && (
+              <ServiceRecordCard
+                complaint={complaint}
+                canWrite={canWrite}
+                onSuccess={() => revalidator.revalidate()}
+              />
+            )}
 
             {/* People */}
             <div className="grid gap-6 md:grid-cols-2">
@@ -360,14 +422,20 @@ export default function ComplaintView() {
 
                       {/* Icon Bubble */}
                       <div className="relative z-10 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-background">
-                        {getStatusIcon(event.status)}
+                        {event.kind === "service" ? (
+                          <MailCheck className="h-6 w-6" />
+                        ) : (
+                          getStatusIcon(event.status)
+                        )}
                       </div>
 
                       <div className="flex-1 space-y-2 pt-0.5">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div className="flex flex-col gap-2">
                             <Badge variant="outline" className="font-bold">
-                              {t(`st_${event.status}` as Key)}
+                              {event.kind === "service"
+                                ? t("serviceHistoryLabel")
+                                : t(`st_${event.status}` as Key)}
                             </Badge>
                             <p className="text-md text-muted-primary">
                               {formatDateTime(event.date)}

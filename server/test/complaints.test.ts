@@ -188,6 +188,15 @@ describe("staff case workflow", () => {
       .patch(`/api/complaints/${complaintId}/status`)
       .set("x-csrf-token", token)
       .send({
+        status: "summoned",
+        publicNote: "Summons issued.",
+      })
+      .expect(200);
+
+    await agent
+      .patch(`/api/complaints/${complaintId}/status`)
+      .set("x-csrf-token", token)
+      .send({
         status: "mediation",
         publicNote: "First mediation scheduled.",
         hearingAt: hearingAt.toISOString(),
@@ -203,9 +212,9 @@ describe("staff case workflow", () => {
     });
 
     expect(updated!.status).toBe("mediation");
-    expect(updated!.updates).toHaveLength(2);
-    expect(updated!.updates[1]!.status).toBe("mediation");
-    expect(updated!.updates[1]!.createdById).toBe(admin.id);
+    expect(updated!.updates).toHaveLength(3);
+    expect(updated!.updates[2]!.status).toBe("mediation");
+    expect(updated!.updates[2]!.createdById).toBe(admin.id);
     expect(updated!.hearings).toHaveLength(1);
     expect(updated!.hearings[0]!.kind).toBe("mediation");
     expect(updated!.hearings[0]!.status).toBe("scheduled");
@@ -230,14 +239,14 @@ describe("staff case workflow", () => {
       .expect(200);
 
     expect(tracked.body.status).toBe("mediation");
-    expect(tracked.body.updates).toHaveLength(2);
-    expect(tracked.body.updates[1].hearingAt).toBe(hearingAt.toISOString());
+    expect(tracked.body.updates).toHaveLength(3);
+    expect(tracked.body.updates[2].hearingAt).toBe(hearingAt.toISOString());
 
     const detail = await agent
       .get(`/api/complaints/${complaintId}`)
       .expect(200);
     expect(detail.body.status).toBe("mediation");
-    expect(detail.body.history).toHaveLength(2);
+    expect(detail.body.history).toHaveLength(3);
     expect(detail.body.nextHearingAt).toBe(hearingAt.toISOString());
 
     await agent

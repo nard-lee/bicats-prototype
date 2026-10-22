@@ -1,10 +1,14 @@
-import { Clock } from "lucide-react";
+import { useState } from "react";
+import { Clock, Plus, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useT } from "@/lib/I18n";
@@ -16,7 +20,27 @@ export default function DeadlinesSection({
   fields,
   update,
 }: SectionProps) {
-  const { t } = useT();
+  const { t, lang } = useT();
+  const [holiday, setHoliday] = useState("");
+
+  const formatHoliday = (date: string) =>
+    new Date(`${date}T00:00:00`).toLocaleDateString(
+      lang === "tl" ? "fil-PH" : "en-PH",
+      { dateStyle: "medium" },
+    );
+
+  function addHoliday() {
+    if (!holiday || values.holidays.includes(holiday)) return;
+    update("holidays", [...values.holidays, holiday].sort());
+    setHoliday("");
+  }
+
+  function removeHoliday(date: string) {
+    update(
+      "holidays",
+      values.holidays.filter((entry) => entry !== date),
+    );
+  }
 
   return (
     <Card>
@@ -123,6 +147,68 @@ export default function DeadlinesSection({
             aria-invalid={!!fields.riskWindowDays}
           />
           <FieldError message={fields.riskWindowDays} />
+        </div>
+
+        <div className="space-y-2 border-t pt-6 sm:col-span-2">
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="workingDaysOnly"
+              checked={values.workingDaysOnly}
+              onCheckedChange={(checked) =>
+                update("workingDaysOnly", checked === true)
+              }
+            />
+            <Label htmlFor="workingDaysOnly">{t("workingDaysLabel")}</Label>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {t("workingDaysHint")}
+          </p>
+
+          <div className="space-y-3 pt-2">
+            <Label>{t("holidaysLabel")}</Label>
+            {values.holidays.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                {t("noHolidays")}
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {values.holidays.map((date) => (
+                  <Badge key={date} variant="secondary" className="gap-1 pr-1">
+                    {formatHoliday(date)}
+                    <button
+                      type="button"
+                      onClick={() => removeHoliday(date)}
+                      aria-label={`${t("removeHoliday")} ${formatHoliday(date)}`}
+                      className="rounded-full p-0.5 hover:bg-muted-foreground/20"
+                    >
+                      <X className="size-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            )}
+            <div className="flex flex-wrap items-center gap-2">
+              <Input
+                type="date"
+                value={holiday}
+                onChange={(event) => setHoliday(event.target.value)}
+                className="h-11 w-full sm:w-[200px]"
+                aria-label={t("holidaysLabel")}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={addHoliday}
+                disabled={!holiday}
+              >
+                <Plus className="mr-2 size-4" />
+                {t("addHoliday")}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {t("holidaysHint")}
+            </p>
+          </div>
         </div>
       </CardContent>
     </Card>

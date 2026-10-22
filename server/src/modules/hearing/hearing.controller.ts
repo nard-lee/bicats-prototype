@@ -8,6 +8,7 @@ import hearingService from "./hearing.service.js";
 import {
   createHearingSchema,
   listHearingsSchema,
+  recordAttendanceSchema,
   updateHearingSchema,
 } from "./hearing.schema.js";
 
@@ -90,6 +91,36 @@ const hearingController = {
         kind: updated.kind,
       });
     }
+  },
+
+  async recordAttendance(req: Request, res: Response): Promise<void> {
+    const id = Number(req.params.id);
+
+    if (!id || Number.isNaN(id)) {
+      throw new CustomError("Invalid mediation ID", undefined, 400);
+    }
+
+    const input = validateRequest(recordAttendanceSchema, req.body);
+    const recorded = await hearingService.recordAttendance(id, input);
+    res.json({
+      success: true,
+      status: recorded.status,
+      statusChanged: recorded.statusChanged,
+    });
+
+    await auditFromRequest(req, {
+      action: "hearing.attendance",
+      entityType: "hearing",
+      entityId: id,
+      summary: `Recorded attendance for ${KIND_LABEL[recorded.kind] ?? "mediation"} on ${recorded.reference}: complainant ${input.complainant}, respondent ${input.respondent}`,
+      meta: {
+        reference: recorded.reference,
+        complainant: input.complainant,
+        respondent: input.respondent,
+        status: recorded.status,
+        statusChanged: recorded.statusChanged,
+      },
+    });
   },
 
   async cancel(req: Request, res: Response): Promise<void> {

@@ -1,11 +1,10 @@
 import { useMemo, useState } from "react";
 import { useLoaderData, useRevalidator, useSearchParams } from "react-router";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useT } from "@/lib/I18n";
-import { api } from "@/lib/api";
+import AttendanceDialog from "./attendance-dialog";
 import MonthCalendar from "./components/month-calendar";
 import SessionsTable from "./components/sessions-table";
 import ViewSwitch from "./components/view-switch";
@@ -23,8 +22,8 @@ export default function HearingsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [dialog, setDialog] = useState<HearingDialogMode | null>(null);
+  const [attendanceFor, setAttendanceFor] = useState<HearingItem | null>(null);
   const [hoveredDay, setHoveredDay] = useState<string | null>(null);
-  const [resolvingId, setResolvingId] = useState<number | null>(null);
   const [page, setPage] = useState(1);
 
   const locale = lang === "tl" ? "fil-PH" : "en-PH";
@@ -140,23 +139,6 @@ export default function HearingsPage() {
 
   const refresh = () => revalidator.revalidate();
 
-  const resolve = async (hearing: HearingItem, status: "completed" | "no_show") => {
-    setResolvingId(hearing.id);
-    try {
-      await api.patch(`/hearings/${hearing.id}`, { json: { status } });
-      toast.success(
-        status === "completed"
-          ? "Mediation marked completed."
-          : "Mediation marked as no-show.",
-      );
-      refresh();
-    } catch {
-      toast.error("Could not update this mediation.");
-    } finally {
-      setResolvingId(null);
-    }
-  };
-
   const createOn = (date: Date) => {
     if (data.complaints.length === 0) return;
     setDialog({ type: "create", date });
@@ -228,9 +210,10 @@ export default function HearingsPage() {
       <SessionsTable
         activeView={activeView} rows={rows}
         visibleRows={visibleRows} currentPage={currentPage}
-        totalPages={totalPages} resolvingId={resolvingId}
+        totalPages={totalPages}
         fmtDate={fmtDate} fmtTime={fmtTime}
-        onResolve={resolve} onEdit={(hearing) => setDialog({ type: "edit", hearing })}
+        onAttendance={setAttendanceFor}
+        onEdit={(hearing) => setDialog({ type: "edit", hearing })}
         onPageChange={setPage}
       />
 
@@ -239,9 +222,22 @@ export default function HearingsPage() {
           key={dialog.type === "edit" ? `e-${dialog.hearing.id}` : `c-${dialog.date.toISOString()}`}
           mode={dialog}
           complaints={data.complaints}
+          settings={data.settings}
           onClose={() => setDialog(null)}
           onSaved={() => {
             setDialog(null);
+            refresh();
+          }}
+        />
+      )}
+
+      {attendanceFor && (
+        <AttendanceDialog
+          key={attendanceFor.id}
+          hearing={attendanceFor}
+          onClose={() => setAttendanceFor(null)}
+          onSaved={() => {
+            setAttendanceFor(null);
             refresh();
           }}
         />

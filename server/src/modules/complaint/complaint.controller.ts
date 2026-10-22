@@ -7,6 +7,8 @@ import complainantNotifier from "../notify/complainant.notifier.js";
 import { auditFromRequest } from "../audit/audit.service.js";
 import { CustomError } from "../../utils/custom.exception.js";
 import { COMPLAINT_STATUSES, createComplaintSchema, trackComplaintSchema, updatePrioritySchema } from "./complaint.schema.js";
+import { updateEligibilitySchema } from "./complaint.eligibility.js";
+import { createServiceRecordSchema } from "./complaint.service-record.js";
 import { removeUploadedFiles } from "../../utils/upload.js";
 
 const complaintController = {
@@ -180,6 +182,80 @@ const complaintController = {
             entityId: id,
             summary: `${result.reference}: priority changed from "${result.previousPriority}" to "${priority}"`,
             meta: { priority, previousPriority: result.previousPriority },
+        });
+    },
+
+    async reviewEligibility(req: Request, res: Response): Promise<void> {
+        const id = Number(req.params.id);
+
+        if (!id || isNaN(id)) {
+            throw new CustomError("Invalid complaint ID", undefined, 400);
+        }
+
+        const input = validateRequest(updateEligibilitySchema, req.body);
+        const updated = await complaintService.reviewEligibility(
+            id,
+            input,
+            req.user?.userId,
+        );
+
+        res.json({ success: true });
+
+        await auditFromRequest(req, {
+            action: "complaint.eligibility.update",
+            entityType: "complaint",
+            entityId: id,
+            summary: `${updated.reference}: eligibility changed from "${updated.previousStatus}" to "${input.eligibilityStatus}"${updated.dismissed ? " (case auto-dismissed)" : ""}`,
+            meta: {
+                eligibilityStatus: input.eligibilityStatus,
+                previousStatus: updated.previousStatus,
+                previousComplaintStatus: updated.previousComplaintStatus,
+                dismissed: updated.dismissed,
+                hasNotes: !!input.eligibilityNotes,
+                hasReason: !!input.eligibilityReason,
+            },
+        });
+
+        if (updated.dismissed && updated.dismissalNote) {
+            void complainantNotifier.statusUpdate(id, {
+                status: "dismissed",
+                publicNote: updated.dismissalNote,
+                hearingAt: null,
+            });
+        }
+    },
+
+    async addServiceRecord(req: Request, res: Response): Promise<void> {
+        const id = Number(req.params.id);
+
+        if (!id || isNaN(id)) {
+            throw new CustomError("Invalid complaint ID", undefined, 400);
+        }
+
+        const input = validateRequest(createServiceRecordSchema, req.body);
+        const result = await complaintService.addServiceRecord(
+            id,
+            input,
+            req.user?.userId,
+        );
+
+        res.status(201).json({
+            success: true,
+            dueAt: result.dueAt ? result.dueAt.toISOString() : null,
+            deadlineUpdated: result.deadlineUpdated,
+        });
+
+        await auditFromRequest(req, {
+            action: "complaint.service.record",
+            entityType: "complaint",
+            entityId: id,
+            summary: `${result.reference}: proof of service recorded (${input.result}) by ${input.serverName}`,
+            meta: {
+                result: input.result,
+                serverName: input.serverName,
+                deadlineUpdated: result.deadlineUpdated,
+                dueAt: result.dueAt ? result.dueAt.toISOString() : null,
+            },
         });
     },
 

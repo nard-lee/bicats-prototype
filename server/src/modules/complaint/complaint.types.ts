@@ -1,3 +1,8 @@
+import type {
+    EligibilityAnswers,
+    EligibilityStatus,
+} from "./complaint.eligibility.js";
+import type { ServiceResult } from "./complaint.service-record.js";
 import type { COMPLAINT_PRIORITIES, COMPLAINT_STATUSES } from "./complaint.schema.js";
 
 export type ComplaintStatus = (typeof COMPLAINT_STATUSES)[number];
@@ -68,18 +73,35 @@ export type ComplaintDetail = {
     nextHearingAt: string | null;
     nextHearingKind: string | null;
     description: string;
+    eligibilityStatus: EligibilityStatus;
+    eligibilityAnswers: EligibilityAnswers | null;
+    eligibilityNotes: string | null;
+    eligibilityReason: string | null;
+    eligibilityReviewedAt: string | null;
     evidence: Array<{
         originalName: string;
         url: string;
         mimeType: string;
         size: number;
     }>;
+    serviceRecords: Array<{
+        id: number;
+        servedAt: string;
+        serverName: string;
+        result: ServiceResult;
+        notes: string | null;
+        createdBy: string | null;
+        createdAt: string;
+    }>;
     history: Array<{
+        kind: "status" | "service";
         status: string;
         date: string;
         note?: string;
         by: string;
         hearingAt?: string;
+        serviceResult?: ServiceResult;
+        serverName?: string;
     }>;
     complainantAge: number;
     complainantPurok: string;

@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 
 import { validateRequest } from "../../utils/custom.validator.js";
 import { CustomError } from "../../utils/custom.exception.js";
+import { storageEnabled } from "../../utils/storage.js";
 import settingService from "./setting.service.js";
 import { updateSettingsSchema } from "./setting.schema.js";
 import { auditFromRequest } from "../audit/audit.service.js";
@@ -37,7 +38,10 @@ const settingController = {
       throw new CustomError("No image uploaded", undefined, 400);
     }
 
-    res.json({ url: `/uploads/${req.file.filename}` });
+    const url = storageEnabled()
+      ? `/api/assets/${req.file.filename}`
+      : `/uploads/${req.file.filename}`;
+    res.json({ url });
   },
 };
 

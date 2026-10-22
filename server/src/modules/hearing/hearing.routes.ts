@@ -11,6 +11,7 @@ router.get("/", canManage, hearingController.list);
 router.get("/complaints", canManage, hearingController.complaintOptions);
 router.post("/", canManage, hearingController.create);
 router.patch("/:id", canManage, hearingController.update);
+router.put("/:id/attendance", canManage, hearingController.recordAttendance);
 router.delete("/:id", canManage, hearingController.cancel);
 
 export default router;

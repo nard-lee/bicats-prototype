@@ -3,10 +3,20 @@ import {
   Form,
   Link,
   useActionData,
+  useLoaderData,
   useNavigate,
   useNavigation,
 } from "react-router";
-import { AlertCircle, CheckCircle2, Eye, Paperclip, Upload } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  Eye,
+  Paperclip,
+  ShieldAlert,
+  ShieldCheck,
+  Upload,
+} from "lucide-react";
+import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -22,15 +32,13 @@ import { Textarea } from "@/components/ui/textarea";
 import DateTimePicker from "@/components/ui/date-time-picker";
 import { complaintTypeKeys, useT } from "@/lib/I18n";
 import type { ActionResult } from "./action";
+import type { FileComplaintLoaderData } from "./loader";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-
-const puroks = [
-  "Session Road",
-  "Assumption Road",
-  "Mabini Street",
-  "General Luna Road",
-  "Fr. Carlu Street"
-];
+import {
+  EMPTY_ELIGIBILITY,
+  evaluateIntakeEligibility,
+  type EligibilityFormState,
+} from "./eligibility";
 
 const MAX_FILES = 5;
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -46,6 +54,60 @@ function formatSize(bytes: number): string {
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
   return (<p className="text-sm font-medium text-destructive">{message}</p>);
+}
+
+function Choice({
+  name,
+  value,
+  checked,
+  onChange,
+  children,
+}: {
+  name: keyof EligibilityFormState;
+  value: string;
+  checked: boolean;
+  onChange: (value: string) => void;
+  children: ReactNode;
+}) {
+  return (
+    <label
+      className={cn(
+        "inline-flex cursor-pointer items-center rounded-full border px-3 py-1.5 text-sm transition-colors",
+        checked
+          ? "border-primary bg-primary/10 font-medium text-primary"
+          : "bg-background text-muted-foreground hover:bg-muted",
+      )}
+    >
+      <input
+        type="radio"
+        name={name}
+        value={value}
+        checked={checked}
+        onChange={() => onChange(value)}
+        className="sr-only"
+        required
+      />
+      {children}
+    </label>
+  );
+}
+
+function ScreeningQuestion({
+  label,
+  error,
+  children,
+}: {
+  label: string;
+  error?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="space-y-2 sm:col-span-2">
+      <p className="text-sm font-medium">{label}</p>
+      <div className="flex flex-wrap gap-2">{children}</div>
+      <FieldError message={error} />
+    </div>
+  );
 }
 
 function Section({
@@ -103,6 +165,21 @@ export default function FileComplaint() {
   const [fileError, setFileError] = useState<string | null>(null);
   const [incidentAt, setIncidentAt] = useState("");
   const [complaintType, setComplaintType] = useState("");
+  const [eligibility, setEligibility] =
+    useState<EligibilityFormState>(EMPTY_ELIGIBILITY);
+
+  const screening = evaluateIntakeEligibility(eligibility);
+  const blocked = screening === "outside_kp";
+
+  function updateEligibility(patch: Partial<EligibilityFormState>) {
+    setEligibility((prev) => {
+      const next = { ...prev, ...patch };
+      // Conditional answers must not linger after their trigger changes.
+      if (next.eligResidency !== "different_city") next.eligAdjoining = "";
+      if (next.eligProperty !== "yes") next.eligPropertyAgreement = "";
+      return next;
+    });
+  }
 
   function resetInput() {
     if (inputRef.current) inputRef.current.value = "";
@@ -146,6 +223,7 @@ export default function FileComplaint() {
 
   const actionData = useActionData() as ActionResult | undefined;
   const submitting = useNavigation().state === "submitting";
+  const { puroks } = useLoaderData() as FileComplaintLoaderData;
   const fields = actionData?.fields ?? {};
 
   const reference = actionData?.reference;
@@ -175,6 +253,12 @@ export default function FileComplaint() {
           <p className="mt-4 text-xs text-muted-foreground">
             {t("fcSuccessNote")}
           </p>
+
+          {screening === "needs_review" && (
+            <p className="mt-3 rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-300">
+              {t("eligSuccessReview")}
+            </p>
+          )}
 
           <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
             <Button asChild size="lg">
@@ -232,7 +316,215 @@ export default function FileComplaint() {
         method="post"
         encType="multipart/form-data"
         className="mt-8 space-y-6"
+        onSubmit={(event) => {
+          if (blocked) event.preventDefault();
+        }}
       >
+
+        {/* 00 Eligibility screening */}
+        <section className="overflow-hidden rounded-xl border bg-card shadow-sm">
+          <div className="flex items-start gap-3 border-b bg-muted/40 px-5 py-4">
+            <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+              <ShieldCheck className="size-4" />
+            </span>
+            <div>
+              <h2 className="font-semibold">{t("eligTitle")}</h2>
+              <p className="text-xs text-muted-foreground">{t("eligIntro")}</p>
+            </div>
+          </div>
+
+          <div className="grid gap-5 p-5 sm:grid-cols-2 sm:p-6">
+            <ScreeningQuestion
+              label={t("eligResidencyQ")}
+              error={fields.eligResidency}
+            >
+              {(
+                [
+                  ["same_barangay", "eligResSameBarangay"],
+                  ["same_city", "eligResSameCity"],
+                  ["different_city", "eligResDifferentCity"],
+                  ["unsure", "eligUnsure"],
+                ] as const
+              ).map(([value, key]) => (
+                <Choice
+                  key={value}
+                  name="eligResidency"
+                  value={value}
+                  checked={eligibility.eligResidency === value}
+                  onChange={(next) =>
+                    updateEligibility({
+                      eligResidency: next as EligibilityFormState["eligResidency"],
+                    })
+                  }
+                >
+                  {t(key)}
+                </Choice>
+              ))}
+            </ScreeningQuestion>
+
+            {eligibility.eligResidency === "different_city" && (
+              <ScreeningQuestion
+                label={t("eligAdjoiningQ")}
+                error={fields.eligAdjoining}
+              >
+                {(
+                  [
+                    ["yes", "eligYes"],
+                    ["no", "eligNo"],
+                    ["unsure", "eligUnsure"],
+                  ] as const
+                ).map(([value, key]) => (
+                  <Choice
+                    key={value}
+                    name="eligAdjoining"
+                    value={value}
+                    checked={eligibility.eligAdjoining === value}
+                    onChange={(next) =>
+                      updateEligibility({
+                        eligAdjoining: next as EligibilityFormState["eligAdjoining"],
+                      })
+                    }
+                  >
+                    {t(key)}
+                  </Choice>
+                ))}
+              </ScreeningQuestion>
+            )}
+
+            <ScreeningQuestion
+              label={t("eligGovernmentQ")}
+              error={fields.eligGovernment}
+            >
+              {(
+                [
+                  ["yes", "eligYes"],
+                  ["no", "eligNo"],
+                  ["unsure", "eligUnsure"],
+                ] as const
+              ).map(([value, key]) => (
+                <Choice
+                  key={value}
+                  name="eligGovernment"
+                  value={value}
+                  checked={eligibility.eligGovernment === value}
+                  onChange={(next) =>
+                    updateEligibility({
+                      eligGovernment: next as EligibilityFormState["eligGovernment"],
+                    })
+                  }
+                >
+                  {t(key)}
+                </Choice>
+              ))}
+            </ScreeningQuestion>
+
+            <ScreeningQuestion
+              label={t("eligOffenseQ")}
+              error={fields.eligOffense}
+            >
+              {(
+                [
+                  ["yes", "eligYes"],
+                  ["no", "eligNo"],
+                  ["unsure", "eligUnsure"],
+                ] as const
+              ).map(([value, key]) => (
+                <Choice
+                  key={value}
+                  name="eligOffense"
+                  value={value}
+                  checked={eligibility.eligOffense === value}
+                  onChange={(next) =>
+                    updateEligibility({
+                      eligOffense: next as EligibilityFormState["eligOffense"],
+                    })
+                  }
+                >
+                  {t(key)}
+                </Choice>
+              ))}
+            </ScreeningQuestion>
+
+            <ScreeningQuestion
+              label={t("eligPropertyQ")}
+              error={fields.eligProperty}
+            >
+              {(
+                [
+                  ["yes", "eligYes"],
+                  ["no", "eligNo"],
+                  ["not_applicable", "eligNa"],
+                  ["unsure", "eligUnsure"],
+                ] as const
+              ).map(([value, key]) => (
+                <Choice
+                  key={value}
+                  name="eligProperty"
+                  value={value}
+                  checked={eligibility.eligProperty === value}
+                  onChange={(next) =>
+                    updateEligibility({
+                      eligProperty: next as EligibilityFormState["eligProperty"],
+                    })
+                  }
+                >
+                  {t(key)}
+                </Choice>
+              ))}
+            </ScreeningQuestion>
+
+            {eligibility.eligProperty === "yes" && (
+              <ScreeningQuestion
+                label={t("eligPropertyAgreementQ")}
+                error={fields.eligPropertyAgreement}
+              >
+                {(
+                  [
+                    ["yes", "eligYes"],
+                    ["no", "eligNo"],
+                    ["unsure", "eligUnsure"],
+                  ] as const
+                ).map(([value, key]) => (
+                  <Choice
+                    key={value}
+                    name="eligPropertyAgreement"
+                    value={value}
+                    checked={eligibility.eligPropertyAgreement === value}
+                    onChange={(next) =>
+                      updateEligibility({
+                        eligPropertyAgreement:
+                          next as EligibilityFormState["eligPropertyAgreement"],
+                      })
+                    }
+                  >
+                    {t(key)}
+                  </Choice>
+                ))}
+              </ScreeningQuestion>
+            )}
+
+            {screening === "eligible" && (
+              <div className="flex items-start gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-700 sm:col-span-2 dark:text-emerald-300">
+                <ShieldCheck className="mt-0.5 size-5 shrink-0" />
+                <p>{t("eligEligible")}</p>
+              </div>
+            )}
+
+            {screening === "needs_review" && (
+              <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-700 sm:col-span-2 dark:text-amber-300">
+                <ShieldAlert className="mt-0.5 size-5 shrink-0" />
+                <p>{t("eligNeedsReview")}</p>
+              </div>
+            )}
+
+            {screening === "outside_kp" && (
+              <div className="flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive sm:col-span-2">
+                <ShieldAlert className="mt-0.5 size-5 shrink-0" />
+                <p>{t("eligOutside")}</p>
+              </div>
+            )}
+          </div>
+        </section>
 
         {/* 01 Complainant */}
         <Section number="01" title={t("s1Title")} subtitle={t("s1Sub")}>
@@ -455,7 +747,12 @@ export default function FileComplaint() {
 
         <div className="sticky bottom-3 flex flex-col gap-3 rounded-xl border bg-background/95 p-4 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-muted-foreground">{t("refNote")}</p>
-          <Button type="submit" size="lg" disabled={submitting} className="sm:min-w-48">
+          <Button
+            type="submit"
+            size="lg"
+            disabled={submitting || blocked}
+            className="sm:min-w-48"
+          >
             {submitting ? t("submitting") : t("submitComplaint")}
           </Button>
         </div>

@@ -1,4 +1,5 @@
-import { lazy, Suspense, type ComponentType } from "react";
+import { lazy, Suspense, type ComponentType, type ReactNode } from "react";
+import { TablePageSkeleton } from "./route-skeletons";
 
 export const AdminLayout = lazy(() => import("@/layouts/admin/layout"));
 export const Home = lazy(() => import("@/features/guest/welcome"));
@@ -19,9 +20,15 @@ export const BarangaySettingsPage = lazy(() => import("@/features/admin/setting/
 export const NoticesList = lazy(() => import("@/features/admin/notice/list/table"));
 export const CreateNotice = lazy(() => import("@/features/admin/notice/create/form"));
 
-export function LazyRoute({ Component }: { Component: ComponentType }) {
+export function LazyRoute({
+  Component,
+  fallback = <TablePageSkeleton />,
+}: {
+  Component: ComponentType;
+  fallback?: ReactNode;
+}) {
   return (
-    <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Loading…</div>}>
+    <Suspense fallback={fallback}>
       <Component />
     </Suspense>
   );

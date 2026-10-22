@@ -89,6 +89,25 @@ export default function IdentitySection({
           />
           <FieldError message={fields.address} />
         </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="documentOfficeLine">
+            {t("officeLineLabel")}
+          </Label>
+          <Input
+            id="documentOfficeLine"
+            name="documentOfficeLine"
+            value={values.documentOfficeLine}
+            onChange={(e) => update("documentOfficeLine", e.target.value)}
+            maxLength={120}
+            className="h-11"
+            aria-invalid={!!fields.documentOfficeLine}
+          />
+          <FieldError message={fields.documentOfficeLine} />
+          <p className="text-xs text-muted-foreground">
+            {t("officeLineHint")}
+          </p>
+        </div>
       </CardContent>
     </Card>
   );

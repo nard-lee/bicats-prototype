@@ -24,6 +24,14 @@ await prisma.barangaySettings.upsert({
     deadlineMediation: 15,
     deadlineConciliation: 15,
     riskWindowDays: 3,
+    puroks: [
+      "Session Road",
+      "Assumption Road",
+      "Mabini Street",
+      "General Luna Road",
+      "Fr. Carlu Street",
+    ],
+    documentOfficeLine: "Office of the Punong Barangay",
   },
   create: { id: 1, deadlineReceived: 1 },
 });
@@ -34,6 +42,7 @@ const TABLES = [
   '"Complaint"',
   '"Evidence"',
   '"StatusUpdate"',
+  '"ServiceRecord"',
   '"Hearing"',
   '"Notice"',
   '"Notification"',

@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+import {
+    eligibilityIssueField,
+    evaluateEligibility,
+    intakeEligibilitySchema,
+    toEligibilityAnswers,
+} from "./complaint.eligibility.js";
 import type {
     ComplaintPriority,
     ComplaintRisk,
@@ -44,6 +50,8 @@ export const createComplaintSchema = z
         incidentPlace: z.string().trim().min(2).max(200),
         narrative: z.string().trim().min(10).max(5000),
 
+        ...intakeEligibilitySchema.shape,
+
         consent: z.literal("on", { error: "You must agree before submitting" }),
     })
     .refine((d) => /^09\d{9}$/.test(normalizePhone(d.complainantContact)), {
@@ -59,12 +67,60 @@ export const createComplaintSchema = z
             message: "Please describe the complaint type",
         },
     )
-    .transform(({ consent: _consent, ...d }) => ({
-        ...d,
-        contactNormalized: normalizePhone(d.complainantContact),
-        complaintTypeOther:
-            d.complaintType === "type12" ? d.complaintTypeOther : null,
-    }));
+    .superRefine((d, ctx) => {
+        if (d.eligResidency === "different_city" && !d.eligAdjoining) {
+            ctx.addIssue({
+                code: "custom",
+                path: ["eligAdjoining"],
+                message: "Answer this question",
+            });
+        }
+        if (d.eligProperty === "yes" && !d.eligPropertyAgreement) {
+            ctx.addIssue({
+                code: "custom",
+                path: ["eligPropertyAgreement"],
+                message: "Answer this question",
+            });
+        }
+
+        const evaluation = evaluateEligibility(toEligibilityAnswers(d));
+        if (evaluation.status === "outside_kp" && evaluation.reason) {
+            ctx.addIssue({
+                code: "custom",
+                path: [eligibilityIssueField(evaluation.reason)],
+                message:
+                    "This complaint appears to be outside the barangay's authority",
+            });
+        }
+    })
+    .transform(({
+        consent: _consent,
+        eligResidency,
+        eligAdjoining,
+        eligGovernment,
+        eligOffense,
+        eligProperty,
+        eligPropertyAgreement,
+        ...d
+    }) => {
+        const eligibilityAnswers = toEligibilityAnswers({
+            eligResidency,
+            eligAdjoining,
+            eligGovernment,
+            eligOffense,
+            eligProperty,
+            eligPropertyAgreement,
+        });
+
+        return {
+            ...d,
+            contactNormalized: normalizePhone(d.complainantContact),
+            complaintTypeOther:
+                d.complaintType === "type12" ? d.complaintTypeOther : null,
+            eligibilityAnswers,
+            eligibilityStatus: evaluateEligibility(eligibilityAnswers).status,
+        };
+    });
 
 export const trackComplaintSchema = z.object({
     reference: z.string().trim().min(1).max(50).transform((v) => v.toUpperCase()),
@@ -87,6 +143,25 @@ export const TERMINAL_STATUSES: readonly ComplaintStatus[] = [
   "certified",
   "dismissed",
 ];
+
+// The KP stage graph. Closed cases have no forward moves; they must be reopened.
+export const COMPLAINT_TRANSITIONS: Record<
+  ComplaintStatus,
+  readonly ComplaintStatus[]
+> = {
+  received: ["summoned", "dismissed"],
+  summoned: ["mediation", "dismissed"],
+  mediation: ["settled", "conciliation", "dismissed"],
+  conciliation: ["settled", "certified", "dismissed"],
+  settled: [],
+  certified: [],
+  dismissed: [],
+};
+
+export function canTransition(from: string, to: string): boolean {
+  const allowed = COMPLAINT_TRANSITIONS[from as ComplaintStatus];
+  return !!allowed && allowed.includes(to as ComplaintStatus);
+}
 
 // ---- Priority triage ----
 export const COMPLAINT_PRIORITIES = ["none", "low", "normal", "high", "urgent"] as const;
@@ -126,30 +201,67 @@ export const KP_DEADLINE_DAYS: DeadlineDays = {
   conciliation: 15, // conclude the Pangkat conciliation
 };
 
-// Build a deadline map from the admin-configurable barangay settings.
-export function deadlineDaysFrom(settings: {
+// Build the deadline rules from the admin-configurable barangay settings.
+export type DeadlineConfig = {
+  days: DeadlineDays;
+  workingDaysOnly?: boolean;
+  holidays?: string[];
+};
+
+export function deadlineConfigFrom(settings: {
   deadlineReceived: number;
   deadlineSummoned: number;
   deadlineMediation: number;
   deadlineConciliation: number;
-}): DeadlineDays {
+  workingDaysOnly?: boolean;
+  holidays?: string[];
+}): DeadlineConfig {
   return {
-    received: settings.deadlineReceived,
-    summoned: settings.deadlineSummoned,
-    mediation: settings.deadlineMediation,
-    conciliation: settings.deadlineConciliation,
+    days: {
+      received: settings.deadlineReceived,
+      summoned: settings.deadlineSummoned,
+      mediation: settings.deadlineMediation,
+      conciliation: settings.deadlineConciliation,
+    },
+    workingDaysOnly: settings.workingDaysOnly ?? false,
+    holidays: settings.holidays ?? [],
   };
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+const PH_OFFSET_MS = 8 * 60 * 60 * 1000;
+
+function phDayKey(date: Date): string {
+  return new Date(date.getTime() + PH_OFFSET_MS).toISOString().slice(0, 10);
+}
+
+function isWorkingDay(date: Date, holidays: Set<string>): boolean {
+  const weekday = new Date(date.getTime() + PH_OFFSET_MS).getUTCDay();
+  return weekday !== 0 && weekday !== 6 && !holidays.has(phDayKey(date));
+}
+
 // Deadline for the step required by the given status, measured from `from`.
+// Working-day mode keeps the time of day and skips weekends and holidays.
 export function computeNextDueAt(
   status: string,
   from: Date = new Date(),
-  days: DeadlineDays = KP_DEADLINE_DAYS,
+  config: DeadlineConfig = { days: KP_DEADLINE_DAYS },
 ): Date | null {
-  const value = days[status as ComplaintStatus];
+  const value = config.days[status as ComplaintStatus];
   if (value === undefined) return null;
-  return new Date(from.getTime() + value * 24 * 60 * 60 * 1000);
+
+  if (!config.workingDaysOnly) {
+    return new Date(from.getTime() + value * DAY_MS);
+  }
+
+  const holidays = new Set(config.holidays ?? []);
+  const cursor = new Date(from);
+  let remaining = value;
+  while (remaining > 0) {
+    cursor.setTime(cursor.getTime() + DAY_MS);
+    if (isWorkingDay(cursor, holidays)) remaining -= 1;
+  }
+  return cursor;
 }
 
 // A case is "due soon" when its deadline falls within this window.

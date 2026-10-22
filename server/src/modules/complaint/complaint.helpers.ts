@@ -1,6 +1,7 @@
 import { randomInt } from "node:crypto";
 
 import type { Prisma } from "../../generated/prisma/client.js";
+import { storageEnabled } from "../../utils/storage.js";
 
 export { normalizePhone } from "./complaint.schema.js";
 
@@ -34,6 +35,13 @@ export async function nextReference(tx: Prisma.TransactionClient, year: number):
 }
 
 export function getEvidenceUrl(storedName: string): string {
+    // Bucket objects stream through the API so stored names stay stable
+    // (the same-origin client resolves the relative path either directly
+    // or through the Vite dev proxy).
+    if (storageEnabled()) {
+        return `/api/assets/${encodeURIComponent(storedName)}`;
+    }
+
     const baseUrl = (
         process.env.PUBLIC_API_URL ?? "http://localhost:3000"
     ).replace(/\/+$/, "");

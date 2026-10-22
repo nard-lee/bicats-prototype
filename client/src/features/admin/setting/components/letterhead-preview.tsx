@@ -34,7 +34,7 @@ export default function LetterheadPreview({ values }: { values: Values }) {
             {values.barangayName || "—"}
           </p>
           <p className="mt-1 text-[10px] tracking-wide uppercase">
-            {values.punongTitle || t("lblPunongBarangay")}
+            {values.documentOfficeLine || "—"}
           </p>
         </div>
 

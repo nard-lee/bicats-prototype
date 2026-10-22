@@ -23,6 +23,7 @@ model User {
 
   refreshTokens RefreshToken[]
   statusUpdates StatusUpdate[]
+  serviceRecords ServiceRecord[]
   notices       Notice[]
   notifications Notification[]
   hearings      Hearing[]
@@ -86,11 +87,20 @@ model Complaint {
   dueAt     DateTime?
   consentAt DateTime
   viewedAt  DateTime? // first time staff opened the case; null = unopened
+
+  // KP eligibility screening captured at intake, plus the staff decision
+  eligibilityStatus     String    @default("unreviewed") // unreviewed | eligible | needs_review | outside_kp | rejected
+  eligibilityAnswers    Json?
+  eligibilityNotes      String?
+  eligibilityReason     String?
+  eligibilityReviewedAt DateTime?
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
   evidence Evidence[]
   updates  StatusUpdate[]
+  serviceRecords ServiceRecord[]
   notifications Notification[]
   hearings Hearing[]
 
@@ -147,6 +157,25 @@ model StatusUpdate {
   @@index([hearingAt])
 }
 
+// ---- Proof of service for the summons / notices ----
+model ServiceRecord {
+  id          Int       @id @default(autoincrement())
+  complaintId Int
+  complaint   Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  servedAt    DateTime
+  serverName  String
+  // received | refused | not_found
+  result      String
+  notes       String?
+  createdById Int?
+  createdBy   User?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now())
+
+  // A case's service attempts, newest first
+  @@index([complaintId, servedAt])
+  @@index([createdById])
+}
+
 // ---- Scheduled hearings / mediation sessions ----
 model Hearing {
   id          Int       @id @default(autoincrement())
@@ -160,6 +189,11 @@ model Hearing {
   location    String?
   notes       String?
   outcome     String?
+  // present | absent | excused (null = not yet recorded)
+  complainantAttendance String?
+  respondentAttendance  String?
+  attendanceNotes       String?
+  attendanceRecordedAt  DateTime?
   createdById Int?
   createdBy   User?     @relation(fields: [createdById], references: [id], onDelete: SetNull)
   createdAt   DateTime  @default(now())
@@ -258,16 +292,34 @@ model BarangaySettings {
   punongTitle String @default("Punong Barangay")
   luponTitle  String @default("Lupong Tagapamayapa Chairman")
 
+  // Purok choices offered by the public filing form
+  puroks String[] @default(["Session Road", "Assumption Road", "Mabini Street", "General Luna Road", "Fr. Carlu Street"])
+
+  // Line printed under the barangay name on KP documents
+  documentOfficeLine String @default("Office of the Punong Barangay")
+
   // Public contact channels shown on the website
   hotline     String @default("")
   tanodNumber String @default("")
 
-// KP deadlines (days) and the "due soon" warning window
-deadlineReceived     Int @default(1)  // issue the summons by the next working day
-deadlineSummoned     Int @default(15) // hold/complete mediation from the first meeting
-deadlineMediation    Int @default(15) // conclude mediation before constituting the Pangkat
-deadlineConciliation Int @default(15) // conclude Pangkat conciliation (extendable +15)
+  // Session scheduling defaults and guardrails
+  defaultHearingLocation String  @default("Barangay Hall Session Room")
+  hearingDurationMinutes Int     @default(60)
+  officeStartHour        Int     @default(8)
+  officeEndHour          Int     @default(17)
+  enforceOfficeHours     Boolean @default(false)
+  hearingGraceHours      Int     @default(2)
+
+  // KP deadlines (days) and the "due soon" warning window
+  deadlineReceived     Int @default(1)  // issue the summons by the next working day
+  deadlineSummoned     Int @default(15) // hold/complete mediation from the first meeting
+  deadlineMediation    Int @default(15) // conclude mediation before constituting the Pangkat
+  deadlineConciliation Int @default(15) // conclude Pangkat conciliation (extendable +15)
   riskWindowDays       Int @default(3)
+
+  // Count deadline days on working days only, skipping weekends and holidays
+  workingDaysOnly Boolean  @default(false)
+  holidays        String[] @default([])
 
   // Complainant notifications per event and channel
   notifyStatusSms      Boolean @default(true)
@@ -276,6 +328,7 @@ deadlineConciliation Int @default(15) // conclude Pangkat conciliation (extendab
   notifyMediationEmail Boolean @default(true)
   notifyCancelledSms   Boolean @default(true)
   notifyCancelledEmail Boolean @default(true)
+  reminderLeadHours    Int     @default(24)
 
   updatedAt DateTime @updatedAt
 }

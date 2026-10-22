@@ -6,12 +6,15 @@ import type { NextFunction, Request, Response } from "express";
 import multer from "multer";
 
 import { ApiError } from "@/utils/api.error.js";
+import { deleteStoredObject, putStoredObject, storageEnabled } from "@/utils/storage.js";
 // Local upload folder.
 const UPLOAD_DIR = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "../../uploads",
 );
-fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+if (!storageEnabled()) {
+  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+}
 
 export const MAX_FILES = 5;
 export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
@@ -85,10 +88,14 @@ async function persistFile(file: Express.Multer.File): Promise<void> {
     EXTENSIONS[file.mimetype] ?? IMAGE_EXTENSIONS[file.mimetype] ?? ".bin";
   const storedName = randomUUID() + extension;
 
-  await fs.promises.writeFile(path.join(UPLOAD_DIR, storedName), file.buffer);
+  if (storageEnabled()) {
+    await putStoredObject(storedName, file.buffer, file.mimetype);
+  } else {
+    await fs.promises.writeFile(path.join(UPLOAD_DIR, storedName), file.buffer);
+    file.destination = UPLOAD_DIR;
+    file.path = path.join(UPLOAD_DIR, storedName);
+  }
   file.filename = storedName;
-  file.destination = UPLOAD_DIR;
-  file.path = path.join(UPLOAD_DIR, storedName);
 }
 
 async function persistFiles(files?: Express.Multer.File[]): Promise<void> {
@@ -102,7 +109,12 @@ export async function removeUploadedFiles(files?: Express.Multer.File[]): Promis
 
   await Promise.all(
     files.map(async (file) => {
-      if (file.path) {
+      // filename is set only after a successful persist, so cleanup removes
+      // exactly what landed and skips files that were never stored.
+      if (!file.filename) return;
+      if (storageEnabled()) {
+        await deleteStoredObject(file.filename).catch(() => undefined);
+      } else if (file.path) {
         await fs.promises.unlink(file.path).catch(() => undefined);
       }
     }),

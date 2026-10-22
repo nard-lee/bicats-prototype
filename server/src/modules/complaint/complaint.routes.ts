@@ -19,6 +19,8 @@ router.get("/:id", requireAuth(...CASE_VIEW_ROLES), complaintController.getById)
 router.post("/:id/view", requireAuth(...CASE_VIEW_ROLES), complaintController.markViewed);
 router.patch("/:id/status", requireAuth(...CASE_WRITE_ROLES), complaintController.updateStatus);
 router.patch("/:id/priority", requireAuth(...CASE_WRITE_ROLES), complaintController.updatePriority);
+router.patch("/:id/eligibility", requireAuth(...CASE_WRITE_ROLES), complaintController.reviewEligibility);
+router.post("/:id/service-records", requireAuth(...CASE_WRITE_ROLES), complaintController.addServiceRecord);
 router.post("/:id/reopen", requireAuth(...CASE_WRITE_ROLES), complaintController.reopenCase); 
 
 export default router;

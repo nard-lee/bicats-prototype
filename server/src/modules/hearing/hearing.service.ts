@@ -2,8 +2,13 @@ import { prisma } from "../../db.js";
 import { Prisma } from "../../generated/prisma/client.js";
 import { CustomError } from "../../utils/custom.exception.js";
 import notificationService from "../notification/notification.service.js";
+import settingService from "../setting/setting.service.js";
 
-import type { CreateHearingInput, UpdateHearingInput } from "./hearing.schema.js";
+import type {
+  CreateHearingInput,
+  RecordAttendanceInput,
+  UpdateHearingInput,
+} from "./hearing.schema.js";
 import type {
   HearingComplaintOption,
   HearingListFilters,
@@ -12,6 +17,7 @@ import type {
 import {
   assertNoConflict,
   assertNoDuplicateForComplaint,
+  assertSchedulingAllowed,
   mapHearing,
 } from "./hearing.helpers.js";
 
@@ -26,8 +32,17 @@ const hearingSelect = {
   location: true,
   notes: true,
   outcome: true,
+  complainantAttendance: true,
+  respondentAttendance: true,
+  attendanceNotes: true,
+  attendanceRecordedAt: true,
   complaint: {
-    select: { reference: true, complainantName: true, respondentName: true },
+    select: {
+      reference: true,
+      complainantName: true,
+      respondentName: true,
+      status: true,
+    },
   },
 } satisfies Prisma.HearingSelect;
 
@@ -52,7 +67,8 @@ const hearingService = {
     });
 
     const now = new Date();
-    return rows.map((row) => mapHearing(row, now));
+    const settings = await settingService.get();
+    return rows.map((row) => mapHearing(row, now, settings.hearingGraceHours));
   },
 
   async complaintOptions(): Promise<HearingComplaintOption[]> {
@@ -76,20 +92,34 @@ const hearingService = {
   ): Promise<{ id: number; reference: string }> {
     const complaint = await prisma.complaint.findUnique({
       where: { id: input.complaintId },
-      select: { id: true, reference: true },
+      select: { id: true, reference: true, status: true },
     });
 
     if (!complaint) throw new CustomError("Complaint not found", undefined, 404);
 
+    if (TERMINAL_STATUSES.includes(complaint.status)) {
+      throw new CustomError(
+        "This case is closed. Reopen it before scheduling a session.",
+        undefined,
+        409,
+      );
+    }
+
+    const settings = await settingService.get();
+    assertSchedulingAllowed(input.scheduledAt, settings);
+
     await assertNoDuplicateForComplaint(input.complaintId, input.scheduledAt);
-    await assertNoConflict(input.scheduledAt);
+    await assertNoConflict(
+      input.scheduledAt,
+      settings.hearingDurationMinutes,
+    );
 
     const hearing = await prisma.hearing.create({
       data: {
         complaintId: input.complaintId,
         scheduledAt: input.scheduledAt,
         kind: input.kind,
-        location: input.location,
+        location: input.location ?? (settings.defaultHearingLocation || null),
         notes: input.notes,
         createdById: userId ?? null,
       },
@@ -134,8 +164,10 @@ const hearingService = {
     // Only check when it will occupy a slot, and either it moved or it's
     // coming back from cancelled.
     if (finalStatus !== "cancelled" && (timeChanged || reopening)) {
+      const settings = await settingService.get();
+      assertSchedulingAllowed(finalTime, settings);
       await assertNoDuplicateForComplaint(existing.complaintId, finalTime, id);
-      await assertNoConflict(finalTime, id);
+      await assertNoConflict(finalTime, settings.hearingDurationMinutes, id);
     }
 
     const data: Prisma.HearingUpdateInput = {};
@@ -163,6 +195,83 @@ const hearingService = {
       rescheduled,
       reference: existing.complaint.reference,
       previousStatus: existing.status,
+    };
+  },
+
+  async recordAttendance(
+    id: number,
+    input: RecordAttendanceInput,
+  ): Promise<{
+    complaintId: number;
+    kind: string;
+    reference: string;
+    previousStatus: string;
+    status: string;
+    statusChanged: boolean;
+  }> {
+    const existing = await prisma.hearing.findUnique({
+      where: { id },
+      select: {
+        complaintId: true,
+        kind: true,
+        status: true,
+        scheduledAt: true,
+        complaint: { select: { reference: true, status: true } },
+      },
+    });
+
+    if (!existing) throw new CustomError("Mediation not found", undefined, 404);
+
+    if (TERMINAL_STATUSES.includes(existing.complaint.status)) {
+      throw new CustomError(
+        "Attendance can't be recorded because the case is already closed.",
+        undefined,
+        409,
+      );
+    }
+
+    if (existing.status === "cancelled") {
+      throw new CustomError(
+        "Attendance can't be recorded for a cancelled session.",
+        undefined,
+        409,
+      );
+    }
+
+    if (existing.scheduledAt.getTime() > Date.now()) {
+      throw new CustomError(
+        "Attendance can only be recorded after the session's scheduled time.",
+        undefined,
+        409,
+      );
+    }
+
+    // Attendance decides the session outcome; re-recording it corrects the
+    // outcome too. Staff can still override the status from the edit dialog.
+    const nobodyPresent =
+      input.complainant !== "present" && input.respondent !== "present";
+    const status = nobodyPresent ? "no_show" : "completed";
+
+    await prisma.hearing.update({
+      where: { id },
+      data: {
+        complainantAttendance: input.complainant,
+        respondentAttendance: input.respondent,
+        attendanceNotes: input.notes,
+        attendanceRecordedAt: new Date(),
+        ...(status !== existing.status ? { status } : {}),
+      },
+    });
+
+    await notificationService.clearByDedupePrefix(`hearing_overdue:${id}:`);
+
+    return {
+      complaintId: existing.complaintId,
+      kind: existing.kind,
+      reference: existing.complaint.reference,
+      previousStatus: existing.status,
+      status,
+      statusChanged: status !== existing.status,
     };
   },
 

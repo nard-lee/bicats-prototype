@@ -3,6 +3,7 @@ import express, {
   type Request,
   type Response,
 } from "express";
+import fs from "node:fs";
 import helmet from "helmet";
 import compression from "compression";
 import cookieParser from "cookie-parser";
@@ -22,9 +23,15 @@ import hearingRouter from "@/modules/hearing/hearing.routes.js";
 import auditRouter from "@/modules/audit/audit.routes.js";
 import settingRouter from "@/modules/setting/setting.routes.js";
 import { config } from "@/utils/env.config.js";
+import {
+  getStoredObject,
+  storageEnabled,
+  STORED_KEY_PATTERN,
+} from "@/utils/storage.js";
 import { doubleCsrfProtection, ensureCsrfSession, generateCsrfToken } from "@/utils/csrf.js";
 import path from "path";
 import { fileURLToPath } from "url";
+import type { Readable } from "node:stream";
 
 const isProd = config.nodeEnv === "production";
 const isTest = config.nodeEnv === "test";
@@ -64,6 +71,37 @@ app.use(cors({ origin: config.corsOrigin, credentials: true }));
 app.use(express.json({ limit: "100kb" }));
 app.use(cookieParser());
 
+// Side-effect-free ping for hosts and uptime checks (no session cookies).
+app.get("/api/health", (_req: Request, res: Response) => {
+  res.json({ ok: true });
+});
+
+// Stream privately-stored bucket objects. Keys are random UUIDs whose content
+// never changes, so responses are immutable and cacheable. The same security
+// posture as the local /uploads folder: unguessable names, no enumeration.
+if (storageEnabled()) {
+  app.get("/api/assets/:key", async (req: Request, res: Response) => {
+    const key = req.params.key;
+    if (typeof key !== "string" || !STORED_KEY_PATTERN.test(key)) {
+      res.status(404).json({ message: "Not found" });
+      return;
+    }
+    const object = await getStoredObject(key);
+    const body = object?.Body as Readable | undefined;
+    if (!object || !body) {
+      res.status(404).json({ message: "Not found" });
+      return;
+    }
+    if (object.ContentType) res.type(object.ContentType);
+    if (object.ETag) res.setHeader("ETag", object.ETag);
+    if (object.ContentLength !== undefined) {
+      res.setHeader("Content-Length", String(object.ContentLength));
+    }
+    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    body.pipe(res);
+  });
+}
+
 app.use(ensureCsrfSession);
 app.get("/api/csrf-token", (req: Request, res: Response) => {
   res.json({ csrfToken: generateCsrfToken(req, res) });
@@ -86,6 +124,16 @@ app.use("/api/settings", settingRouter);
 app.use("/api", (_req, res) => {
   res.status(404).json({ message: "Not found" });
 });
+
+// ---- Single-service deploys: serve the built client from the API origin ----
+const clientDist = path.resolve(__dirname, "../../client/dist");
+if (isProd && fs.existsSync(clientDist)) {
+  app.use(express.static(clientDist, { index: false, maxAge: "1h" }));
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    if (req.method !== "GET" || req.path.startsWith("/uploads")) return next();
+    res.sendFile(path.join(clientDist, "index.html"));
+  });
+}
 
 app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
   if (err instanceof CustomError) {

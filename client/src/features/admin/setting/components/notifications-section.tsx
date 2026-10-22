@@ -6,16 +6,21 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useT } from "@/lib/I18n";
 import ChannelRow from "./channel-row";
-import type { Update, Values } from "./types";
+import FieldError from "./field-error";
+import type { FieldErrors, Update, Values } from "./types";
 
 export default function NotificationsSection({
   values,
+  fields,
   update,
   canEdit,
 }: {
   values: Values;
+  fields: FieldErrors;
   update: Update;
   canEdit: boolean;
 }) {
@@ -61,6 +66,29 @@ export default function NotificationsSection({
           onEmail={(value) => update("notifyCancelledEmail", value)}
           disabled={!canEdit}
         />
+
+        <div className="space-y-2 border-t pt-4 sm:max-w-xs">
+          <Label htmlFor="reminderLeadHours">
+            {t("reminderLeadLabel")}
+          </Label>
+          <Input
+            id="reminderLeadHours"
+            name="reminderLeadHours"
+            type="number"
+            min={1}
+            max={168}
+            value={values.reminderLeadHours}
+            onChange={(event) =>
+              update("reminderLeadHours", Number(event.target.value))
+            }
+            className="h-11"
+            aria-invalid={!!fields.reminderLeadHours}
+          />
+          <p className="text-xs text-muted-foreground">
+            {t("reminderLeadHint")}
+          </p>
+          <FieldError message={fields.reminderLeadHours} />
+        </div>
       </CardContent>
     </Card>
   );

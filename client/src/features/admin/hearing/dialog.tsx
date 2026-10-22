@@ -25,6 +25,7 @@ import { toLocalInput } from "@/lib/datetime";
 import { KIND_LABEL, STATUS_LABEL } from "./labels";
 import ComplaintPicker from "./complaint-picker";
 import type { ComplaintOption, HearingItem, HearingKind, HearingStatus } from "./loader";
+import type { BarangaySettings } from "@/features/admin/setting/loader";
 
 export type HearingDialogMode =
   | { type: "create"; date: Date }
@@ -33,11 +34,11 @@ export type HearingDialogMode =
 type Props = {
   mode: HearingDialogMode;
   complaints: ComplaintOption[];
+  settings: BarangaySettings;
   onClose: () => void;
   onSaved: () => void;
 };
 
-const DEFAULT_LOCATION = "Barangay Hall Session Room";
 const KINDS: HearingKind[] = ["mediation", "conciliation", "hearing"];
 const STATUSES: HearingStatus[] = [
   "scheduled",
@@ -54,8 +55,29 @@ function isoToLocalInput(iso: string): string {
   return toLocalInput(new Date(iso));
 }
 
-function defaultInput(date: Date): string {
-  return toLocalInput(new Date(date.getFullYear(), date.getMonth(), date.getDate(), 9, 0));
+function defaultInput(date: Date, settings: BarangaySettings): string {
+  const hour = settings.enforceOfficeHours ? settings.officeStartHour : 9;
+  return toLocalInput(
+    new Date(date.getFullYear(), date.getMonth(), date.getDate(), hour, 0),
+  );
+}
+
+function hourLabel(hour: number): string {
+  return `${String(hour).padStart(2, "0")}:00`;
+}
+
+function outsideOfficeHours(
+  value: string,
+  settings: BarangaySettings,
+): boolean {
+  if (!settings.enforceOfficeHours || !value) return false;
+
+  const date = new Date(value);
+  const start = date.getHours() * 60 + date.getMinutes();
+  return (
+    start < settings.officeStartHour * 60 ||
+    start + settings.hearingDurationMinutes > settings.officeEndHour * 60
+  );
 }
 
 async function readError(err: unknown): Promise<string> {
@@ -88,19 +110,27 @@ async function readError(err: unknown): Promise<string> {
   return "Something went wrong.";
 }
 
-export default function HearingDialog({ mode, complaints, onClose, onSaved }: Props) {
+export default function HearingDialog({
+  mode,
+  complaints,
+  settings,
+  onClose,
+  onSaved,
+}: Props) {
   const editing = mode.type === "edit" ? mode.hearing : null;
 
   const [complaintId, setComplaintId] = useState(
     editing ? String(editing.complaintId) : complaints[0] ? String(complaints[0].id) : "",
   );
   const [scheduled, setScheduled] = useState(
-    editing ? isoToLocalInput(editing.scheduledAt) : defaultInput(mode.type === "create" ? mode.date : NOW),
+    editing
+      ? isoToLocalInput(editing.scheduledAt)
+      : defaultInput(mode.type === "create" ? mode.date : NOW, settings),
   );
   const [kind, setKind] = useState<HearingKind>(editing?.kind ?? "mediation");
   const [status, setStatus] = useState<HearingStatus>(editing?.status ?? "scheduled");
   const [location, setLocation] = useState(
-    editing ? (editing.location ?? "") : DEFAULT_LOCATION,
+    editing ? (editing.location ?? "") : settings.defaultHearingLocation,
   );
   const [notes, setNotes] = useState(editing?.notes ?? "");
   const [outcome, setOutcome] = useState(editing?.outcome ?? "");
@@ -109,6 +139,13 @@ export default function HearingDialog({ mode, complaints, onClose, onSaved }: Pr
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!scheduled || !complaintId) return;
+
+    if (outsideOfficeHours(scheduled, settings)) {
+      toast.error(
+        `Sessions must fit within office hours (${hourLabel(settings.officeStartHour)}–${hourLabel(settings.officeEndHour)}).`,
+      );
+      return;
+    }
 
     setSaving(true);
     try {
@@ -197,6 +234,11 @@ export default function HearingDialog({ mode, complaints, onClose, onSaved }: Pr
               onChange={setScheduled}
               placeholder="Select date & time"
             />
+            <p className="text-xs text-muted-foreground">
+              {settings.enforceOfficeHours
+                ? `Office hours: ${hourLabel(settings.officeStartHour)}–${hourLabel(settings.officeEndHour)} · ${settings.hearingDurationMinutes}-minute sessions`
+                : `${settings.hearingDurationMinutes}-minute sessions`}
+            </p>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">

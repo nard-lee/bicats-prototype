@@ -12,6 +12,7 @@ import { SettingsLoader } from "@/features/admin/setting/loader";
 import { settingsAction } from "@/features/admin/setting/action";
 import { loginAction } from "@/features/auth/login/action";
 import { fileComplaintAction } from "@/features/complaint/file/action";
+import { fileComplaintLoader } from "@/features/complaint/file/loader";
 import { trackAction } from "@/features/complaint/track/action";
 import NotFound from "@/features/errors/not-found";
 import { AdminLoader, AdminOnlyLoader } from "@/layouts/admin/loader";
@@ -26,6 +27,15 @@ import { noticesAction } from "@/features/admin/notice/list/action";
 import { OverviewLoader } from "@/features/admin/overview/loader";
 import { HomeLoader } from "@/features/guest/loader";
 import { api } from "@/lib/api";
+import {
+  AdminShellSkeleton,
+  CardsPageSkeleton,
+  CenteredCardSkeleton,
+  DetailPageSkeleton,
+  DocumentSkeleton,
+  FormPageSkeleton,
+  LandingSkeleton,
+} from "./route-skeletons";
 import {
   AdminLayout,
   AdminOverview,
@@ -57,14 +67,15 @@ const router = createBrowserRouter([
     shouldRevalidate: () => true,
     errorElement: <RootError />,
     children: [
-      { index: true, element: <LazyRoute Component={Home} />, loader: HomeLoader },
-      { path: 'login', element: <LazyRoute Component={Login} />, action: loginAction },
+      { index: true, element: <LazyRoute Component={Home} fallback={<LandingSkeleton />} />, loader: HomeLoader },
+      { path: 'login', element: <LazyRoute Component={Login} fallback={<CenteredCardSkeleton />} />, action: loginAction },
       {
         path: 'file-complaint',
-        element: <LazyRoute Component={FileComplaint} />,
+        element: <LazyRoute Component={FileComplaint} fallback={<FormPageSkeleton />} />,
+        loader: fileComplaintLoader,
         action: fileComplaintAction,
       },
-      { path: 'track-complaint', element: <LazyRoute Component={Track} />, action: trackAction },
+      { path: 'track-complaint', element: <LazyRoute Component={Track} fallback={<CenteredCardSkeleton />} />, action: trackAction },
       { path: '*', element: <NotFound /> }
     ]
   },
@@ -72,26 +83,26 @@ const router = createBrowserRouter([
   {
     id: "admin",
     path: '/admin',
-    element: <LazyRoute Component={AdminLayout} />,
+    element: <LazyRoute Component={AdminLayout} fallback={<AdminShellSkeleton />} />,
     loader: AdminLoader,
     errorElement: <AdminError />,
     handle: { crumb: () => "Admin" },
     children: [
       {
         index: true,
-        element: <LazyRoute Component={AdminOverview} />,
+        element: <LazyRoute Component={AdminOverview} fallback={<CardsPageSkeleton />} />,
         loader: OverviewLoader,
         handle: { crumb: () => "Overview" }
       },
       {
         path: 'analytics',
-        element: <LazyRoute Component={AdminReport} />,
+        element: <LazyRoute Component={AdminReport} fallback={<CardsPageSkeleton />} />,
         loader: () => api.get("/analytics/report").json(),
         handle: { crumb: () => "Analytics" }
       },
       {
         path: 'create',
-        element: <LazyRoute Component={CreateUser} />,
+        element: <LazyRoute Component={CreateUser} fallback={<FormPageSkeleton />} />,
         loader: AdminOnlyLoader,
         action: createUserAction,
         handle: { crumb: () => "Create Account" }
@@ -105,7 +116,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'profile',
-        element: <LazyRoute Component={Profile} />,
+        element: <LazyRoute Component={Profile} fallback={<FormPageSkeleton />} />,
         loader: ProfileLoader,
         action: profileAction,
         handle: { crumb: () => "My Profile" }
@@ -118,7 +129,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'settings',
-        element: <LazyRoute Component={BarangaySettingsPage} />,
+        element: <LazyRoute Component={BarangaySettingsPage} fallback={<FormPageSkeleton />} />,
         loader: SettingsLoader,
         action: settingsAction,
         handle: { crumb: () => "Settings" }
@@ -137,7 +148,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'complaints/:id',
-        element: <LazyRoute Component={ComplaintView} />,
+        element: <LazyRoute Component={ComplaintView} fallback={<DetailPageSkeleton />} />,
         loader: ComplaintDetailLoader,
         handle: { crumb: (data: any) => data?.reference ? `Ref: ${data.reference}` : "View Complaint" }
       },
@@ -150,7 +161,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'notices/create',
-        element: <LazyRoute Component={CreateNotice} />,
+        element: <LazyRoute Component={CreateNotice} fallback={<FormPageSkeleton />} />,
         action: createNoticeAction,
         handle: { crumb: (data: any) => data?.reference ? `Ref: ${data.reference}` : "Create Notice" }
       },
@@ -160,7 +171,7 @@ const router = createBrowserRouter([
   // printable KP documents render on their own (no app chrome)
   {
     path: '/admin/complaints/:id/documents/:doc',
-    element: <LazyRoute Component={ComplaintDocument} />,
+    element: <LazyRoute Component={ComplaintDocument} fallback={<DocumentSkeleton />} />,
     loader: ComplaintDocumentLoader,
     errorElement: <AdminError />,
   },

@@ -11,6 +11,34 @@ export type ComplaintStatus =
   | "certified"
   | "dismissed";
 
+export type EligibilityStatus =
+  | "unreviewed"
+  | "eligible"
+  | "needs_review"
+  | "outside_kp"
+  | "rejected";
+
+export type ServiceResult = "received" | "refused" | "not_found";
+
+export type ServiceRecord = {
+  id: number;
+  servedAt: string;
+  serverName: string;
+  result: ServiceResult;
+  notes: string | null;
+  createdBy: string | null;
+  createdAt: string;
+};
+
+export type EligibilityAnswers = {
+  respondentResidency: "same_barangay" | "same_city" | "different_city" | "unsure";
+  adjoiningAgreement: "yes" | "no" | "unsure" | null;
+  againstGovernment: "yes" | "no" | "unsure";
+  seriousOffenseOrVawc: "yes" | "no" | "unsure";
+  propertyOutsideCity: "yes" | "no" | "not_applicable" | "unsure";
+  propertyAgreement: "yes" | "no" | "unsure" | null;
+};
+
 export type ComplaintDetail = {
   id: number;
   reference: string;
@@ -25,18 +53,27 @@ export type ComplaintDetail = {
   nextHearingAt: string | null;
   nextHearingKind: string | null;
   description: string;
+  eligibilityStatus: EligibilityStatus;
+  eligibilityAnswers: EligibilityAnswers | null;
+  eligibilityNotes: string | null;
+  eligibilityReason: string | null;
+  eligibilityReviewedAt: string | null;
   evidence: Array<{
     originalName: string;
     url: string;
     mimeType: string;
     size: number;
   }>;
+  serviceRecords: ServiceRecord[];
   history: Array<{
-    status: ComplaintStatus;
+    kind: "status" | "service";
+    status: ComplaintStatus | "service";
     date: string;
     note?: string;
     by: string;
     hearingAt?: string;
+    serviceResult?: ServiceResult;
+    serverName?: string;
   }>;
   complainantAge: number;
   complainantPurok: string;

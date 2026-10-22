@@ -35,7 +35,7 @@ function Letterhead({ settings }: { settings: BarangaySettings }) {
       <p className="text-base font-bold tracking-wide uppercase">
         {settings.barangayName}
       </p>
-      <p className="text-xs tracking-wide uppercase">Office of the Punong Barangay</p>
+      <p className="text-xs tracking-wide uppercase">{settings.documentOfficeLine}</p>
     </header>
   );
 }

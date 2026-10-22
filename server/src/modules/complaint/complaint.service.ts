@@ -3,8 +3,10 @@ import { prisma } from "../../db.js";
 import { Prisma } from "../../generated/prisma/client.js";
 import { CustomError } from "../../utils/custom.exception.js";
 
-import { COMPLAINT_STATUSES, COMPLAINT_PRIORITIES, computeNextDueAt, deadlineDaysFrom } from "./complaint.schema.js";
+import { COMPLAINT_STATUSES, COMPLAINT_PRIORITIES, TERMINAL_STATUSES, canTransition, computeNextDueAt, deadlineConfigFrom } from "./complaint.schema.js";
 import type { CreateComplaintInput } from "./complaint.schema.js";
+import type { UpdateEligibilityInput } from "./complaint.eligibility.js";
+import type { CreateServiceRecordInput, ServiceResult } from "./complaint.service-record.js";
 import type {
     ComplaintDetail,
     ComplaintListFilters,
@@ -14,12 +16,53 @@ import type {
 } from "./complaint.types.js";
 import { getEvidenceUrl, nextReference, normalizePhone } from "./complaint.helpers.js";
 import settingService from "../setting/setting.service.js";
+import notificationService from "../notification/notification.service.js";
+import {
+    assertNoConflict,
+    assertNoDuplicateForComplaint,
+    assertSchedulingAllowed,
+} from "../hearing/hearing.helpers.js";
+
+async function cancelScheduledHearings(
+    tx: Prisma.TransactionClient,
+    complaintId: number,
+): Promise<number[]> {
+    const hearings = await tx.hearing.findMany({
+        where: { complaintId, status: "scheduled" },
+        select: { id: true },
+    });
+
+    if (hearings.length === 0) return [];
+
+    await tx.hearing.updateMany({
+        where: { id: { in: hearings.map((hearing) => hearing.id) } },
+        data: { status: "cancelled" },
+    });
+
+    return hearings.map((hearing) => hearing.id);
+}
+
+async function clearHearingNotifications(hearingIds: number[]): Promise<void> {
+    for (const id of hearingIds) {
+        await notificationService.clearByDedupePrefix(`hearing_overdue:${id}:`);
+        await notificationService.clearByDedupePrefix(`hearing_upcoming:${id}:`);
+    }
+}
 
 const complaintService = {
 
     async create(input: CreateComplaintInput, files: Express.Multer.File[]): Promise<{ id: number; reference: string }> {
         const settings = await settingService.get();
-        const deadlineDays = deadlineDaysFrom(settings);
+
+        if (!settings.puroks.includes(input.complainantPurok)) {
+            throw new CustomError(
+                "Choose a purok from the barangay's list",
+                { complainantPurok: "Select a purok from the list" },
+                400,
+            );
+        }
+
+        const deadlines = deadlineConfigFrom(settings);
 
         return prisma.$transaction(async (tx) => {
             const reference = await nextReference(tx, new Date().getFullYear());
@@ -47,8 +90,11 @@ const complaintService = {
                     narrative: input.narrative,
 
                     // KP clock starts at filing: summon the respondent within the configured days.
-                    dueAt: computeNextDueAt("received", new Date(), deadlineDays),
+                    dueAt: computeNextDueAt("received", new Date(), deadlines),
                     consentAt: new Date(),
+
+                    eligibilityStatus: input.eligibilityStatus,
+                    eligibilityAnswers: input.eligibilityAnswers as Prisma.InputJsonValue,
 
                     evidence: {
                         create: files.map((file) => ({
@@ -187,6 +233,12 @@ const complaintService = {
                     take: 1,
                     select: { scheduledAt: true, kind: true },
                 },
+                serviceRecords: {
+                    orderBy: { servedAt: "desc" },
+                    include: {
+                        createdBy: { select: { fullName: true } },
+                    },
+                },
             },
         });
 
@@ -196,6 +248,48 @@ const complaintService = {
 
         const latestUpdate = complaint.updates[0];
         const currentStatus = latestUpdate?.status ?? complaint.status;
+
+        const serviceResultLabel: Record<ServiceResult, string> = {
+            received: "Summons received",
+            refused: "Summons refused",
+            not_found: "Respondent not found at the given address",
+        };
+
+        const statusHistory = complaint.updates.map((update) => ({
+            kind: "status" as const,
+            status: update.status,
+            date: update.createdAt.toISOString(),
+            by: update.createdBy?.fullName ?? "System",
+            ...(update.publicNote || update.internalNote
+                ? {
+                    note: update.publicNote ?? update.internalNote!,
+                }
+                : {}),
+            ...(update.hearingAt
+                ? {
+                    hearingAt: update.hearingAt.toISOString(),
+                }
+                : {}),
+        }));
+
+        const serviceHistory = complaint.serviceRecords.map((record) => {
+            const result = record.result as ServiceResult;
+            const note = `${serviceResultLabel[result]} by ${record.serverName}.`;
+
+            return {
+                kind: "service" as const,
+                status: "service",
+                date: record.servedAt.toISOString(),
+                by: record.createdBy?.fullName ?? "System",
+                note: record.notes ? `${note} ${record.notes}` : note,
+                serviceResult: result,
+                serverName: record.serverName,
+            };
+        });
+
+        const history = [...statusHistory, ...serviceHistory].sort(
+            (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+        );
 
         return {
             id: complaint.id,
@@ -212,6 +306,13 @@ const complaintService = {
             nextHearingKind: complaint.hearings[0]?.kind ?? null,
             description: complaint.narrative,
 
+            eligibilityStatus: complaint.eligibilityStatus as ComplaintDetail["eligibilityStatus"],
+            eligibilityAnswers: complaint.eligibilityAnswers as ComplaintDetail["eligibilityAnswers"],
+            eligibilityNotes: complaint.eligibilityNotes,
+            eligibilityReason: complaint.eligibilityReason,
+            eligibilityReviewedAt:
+                complaint.eligibilityReviewedAt?.toISOString() ?? null,
+
             evidence: complaint.evidence.map((evidence) => ({
                 originalName: evidence.originalName,
                 url: getEvidenceUrl(evidence.storedName),
@@ -219,21 +320,17 @@ const complaintService = {
                 size: evidence.size,
             })),
 
-            history: complaint.updates.map((update) => ({
-                status: update.status,
-                date: update.createdAt.toISOString(),
-                by: update.createdBy?.fullName ?? "System",
-                ...(update.publicNote || update.internalNote
-                    ? {
-                        note: update.publicNote ?? update.internalNote!,
-                    }
-                    : {}),
-                ...(update.hearingAt
-                    ? {
-                        hearingAt: update.hearingAt.toISOString(),
-                    }
-                    : {}),
+            serviceRecords: complaint.serviceRecords.map((record) => ({
+                id: record.id,
+                servedAt: record.servedAt.toISOString(),
+                serverName: record.serverName,
+                result: record.result as ServiceResult,
+                notes: record.notes,
+                createdBy: record.createdBy?.fullName ?? null,
+                createdAt: record.createdAt.toISOString(),
             })),
+
+            history,
 
             complainantAge: complaint.complainantAge,
             complainantPurok: complaint.complainantPurok,
@@ -286,36 +383,75 @@ const complaintService = {
     },
 
     async updateStatus(id: number, status: string, publicNote?: string, internalNote?: string, hearingAt?: Date, userId?: number) {
-        // Advance the KP clock whenever a case moves to a new step.
         const settings = await settingService.get();
-        const dueAt = computeNextDueAt(status, new Date(), deadlineDaysFrom(settings));
+        const deadlines = deadlineConfigFrom(settings);
 
-        return prisma.$transaction(async (tx) => {
+        const result = await prisma.$transaction(async (tx) => {
             const previous = await tx.complaint.findUnique({
                 where: { id },
-                select: { reference: true, status: true, priority: true },
+                select: { reference: true, status: true, dueAt: true, priority: true, eligibilityStatus: true },
             });
 
             if (!previous) {
                 throw new CustomError("Complaint not found", undefined, 404);
             }
 
-            const TERMINAL_STATUSES = ["settled", "certified", "dismissed"] as const;
+            if (previous.eligibilityStatus === "needs_review") {
+                throw new CustomError(
+                    "This case is pending an eligibility review. Resolve the review before changing its status.",
+                    undefined,
+                    409,
+                );
+            }
+
+            if (previous.eligibilityStatus === "unreviewed") {
+                throw new CustomError(
+                    "This case has not been screened for KP eligibility. Complete the eligibility review before changing its status.",
+                    undefined,
+                    409,
+                );
+            }
+
+            const changingStatus = status !== previous.status;
+
+            if (changingStatus && !canTransition(previous.status, status)) {
+                throw new CustomError(
+                    TERMINAL_STATUSES.includes(
+                        previous.status as (typeof TERMINAL_STATUSES)[number],
+                    )
+                        ? "This case is closed. Reopen it before changing its status."
+                        : `A case can't move from "${previous.status}" to "${status}".`,
+                    undefined,
+                    409,
+                );
+            }
+
+            // A note-only save keeps the current step's clock running.
+            const dueAt = changingStatus
+                ? computeNextDueAt(status, new Date(), deadlines)
+                : previous.dueAt;
+            const closing =
+                changingStatus &&
+                TERMINAL_STATUSES.includes(
+                    status as (typeof TERMINAL_STATUSES)[number],
+                );
+            const hearingDate = closing ? null : hearingAt ?? null;
 
             await tx.complaint.update({
                 where: { id },
                 data: {
                     status,
                     dueAt,
-                    ...(TERMINAL_STATUSES.includes(
-                        status as (typeof TERMINAL_STATUSES)[number],
-                    )
-                        ? { priority: "none" }
-                        : {}),
+                    ...(closing ? { priority: "none" } : {}),
                 },
             });
 
-            if (hearingAt) {
+            const cancelledHearingIds = closing
+                ? await cancelScheduledHearings(tx, id)
+                : [];
+            let hearingChanged = false;
+
+            if (hearingDate) {
                 const kind = status === "conciliation" ? "conciliation" : "mediation";
 
                 const existing = await tx.hearing.findFirst({
@@ -329,59 +465,182 @@ const complaintService = {
                 });
 
                 if (existing) {
-                    if (existing.scheduledAt.getTime() !== hearingAt.getTime()) {
+                    if (existing.scheduledAt.getTime() !== hearingDate.getTime()) {
+                        assertSchedulingAllowed(hearingDate, settings);
+                        await assertNoDuplicateForComplaint(
+                            id,
+                            hearingDate,
+                            existing.id,
+                            tx,
+                        );
+                        await assertNoConflict(
+                            hearingDate,
+                            settings.hearingDurationMinutes,
+                            existing.id,
+                            tx,
+                        );
                         await tx.hearing.update({
                             where: { id: existing.id },
-                            data: { scheduledAt: hearingAt, kind },
+                            data: { scheduledAt: hearingDate, kind },
                         });
+                        hearingChanged = true;
                     }
                 } else {
+                    assertSchedulingAllowed(hearingDate, settings);
+                    await assertNoDuplicateForComplaint(id, hearingDate, undefined, tx);
+                    await assertNoConflict(
+                        hearingDate,
+                        settings.hearingDurationMinutes,
+                        undefined,
+                        tx,
+                    );
                     await tx.hearing.create({
                         data: {
                             complaintId: id,
-                            scheduledAt: hearingAt,
+                            scheduledAt: hearingDate,
                             kind,
+                            location: settings.defaultHearingLocation || null,
                             createdById: userId ?? null,
                         },
                     });
+                    hearingChanged = true;
                 }
             }
 
-            const entry = await tx.statusUpdate.create({
-                data: {
-                    complaintId: id,
-                    status,
-                    publicNote: publicNote ?? null,
-                    internalNote: internalNote ?? null,
-                    hearingAt: hearingAt ?? null,
-                    createdById: userId ?? null,
-                },
-            });
+            const hasNotes = !!publicNote || !!internalNote;
+            const entry =
+                changingStatus || hasNotes || hearingChanged
+                    ? await tx.statusUpdate.create({
+                          data: {
+                              complaintId: id,
+                              status,
+                              publicNote: publicNote ?? null,
+                              internalNote: internalNote ?? null,
+                              hearingAt: hearingDate,
+                              createdById: userId ?? null,
+                          },
+                      })
+                    : null;
 
             return {
                 reference: previous.reference,
                 previousStatus: previous.status,
                 entry,
+                cancelledHearingIds,
             };
+        });
+
+        await clearHearingNotifications(result.cancelledHearingIds);
+        return result;
+    },
+
+    async addServiceRecord(id: number, input: CreateServiceRecordInput, userId?: number) {
+        const settings = await settingService.get();
+        const deadlines = deadlineConfigFrom(settings);
+
+        return prisma.$transaction(async (tx) => {
+            const complaint = await tx.complaint.findUnique({
+                where: { id },
+                select: { reference: true, status: true, dueAt: true },
+            });
+
+            if (!complaint) {
+                throw new CustomError("Complaint not found", undefined, 404);
+            }
+
+            if (
+                TERMINAL_STATUSES.includes(
+                    complaint.status as (typeof TERMINAL_STATUSES)[number],
+                )
+            ) {
+                throw new CustomError(
+                    "This case is closed. Proof of service can no longer be recorded.",
+                    undefined,
+                    409,
+                );
+            }
+
+            const record = await tx.serviceRecord.create({
+                data: {
+                    complaintId: id,
+                    servedAt: input.servedAt,
+                    serverName: input.serverName,
+                    result: input.result,
+                    notes: input.notes,
+                    createdById: userId ?? null,
+                },
+            });
+
+            let dueAt = complaint.dueAt;
+            let deadlineUpdated = false;
+
+            // A received summons starts the mediation clock from the service date.
+            if (input.result === "received" && complaint.status === "summoned") {
+                dueAt = computeNextDueAt("summoned", input.servedAt, deadlines);
+                await tx.complaint.update({ where: { id }, data: { dueAt } });
+                deadlineUpdated = true;
+            }
+
+            return { reference: complaint.reference, record, dueAt, deadlineUpdated };
         });
     },
 
     async bulkUpdateStatus(ids: number[], status: string, userId?: number): Promise<number> {
         const settings = await settingService.get();
-        const dueAt = computeNextDueAt(status, new Date(), deadlineDaysFrom(settings));
+        const deadlines = deadlineConfigFrom(settings);
 
-        return prisma.$transaction(async (tx) => {
+        const result = await prisma.$transaction(async (tx) => {
             const existing = await tx.complaint.findMany({
                 where: { id: { in: ids } },
-                select: { id: true },
+                select: { id: true, reference: true, status: true, eligibilityStatus: true },
             });
-            const targetIds = existing.map((row) => row.id);
 
-            if (targetIds.length === 0) return 0;
+            const held = existing.filter(
+                (row) =>
+                    row.eligibilityStatus === "needs_review" ||
+                    row.eligibilityStatus === "unreviewed",
+            );
 
-            const { count } = await tx.complaint.updateMany({
+            if (held.length > 0) {
+                const refs = held.slice(0, 3).map((row) => row.reference).join(", ");
+                const more = held.length > 3 ? ` and ${held.length - 3} more` : "";
+                throw new CustomError(
+                    `Eligibility has not been resolved for ${refs}${more}. Complete the eligibility review before changing status.`,
+                    undefined,
+                    409,
+                );
+            }
+
+            const changing = existing.filter((row) => row.status !== status);
+            const invalid = changing.filter((row) => !canTransition(row.status, status));
+
+            if (invalid.length > 0) {
+                const refs = invalid.slice(0, 3).map((row) => row.reference).join(", ");
+                const more = invalid.length > 3 ? ` and ${invalid.length - 3} more` : "";
+                throw new CustomError(
+                    `Can't move ${refs}${more} to "${status}" from their current stage.`,
+                    undefined,
+                    409,
+                );
+            }
+
+            if (changing.length === 0) {
+                return { count: 0, cancelledHearingIds: [] as number[] };
+            }
+
+            const targetIds = changing.map((row) => row.id);
+            const dueAt = computeNextDueAt(status, new Date(), deadlines);
+            const closing = TERMINAL_STATUSES.includes(
+                status as (typeof TERMINAL_STATUSES)[number],
+            );
+
+            await tx.complaint.updateMany({
                 where: { id: { in: targetIds } },
-                data: { status, dueAt },
+                data: {
+                    status,
+                    dueAt,
+                    ...(closing ? { priority: "none" } : {}),
+                },
             });
 
             await tx.statusUpdate.createMany({
@@ -392,8 +651,20 @@ const complaintService = {
                 })),
             });
 
-            return count;
+            const cancelledHearingIds: number[] = [];
+            if (closing) {
+                for (const row of changing) {
+                    cancelledHearingIds.push(
+                        ...(await cancelScheduledHearings(tx, row.id)),
+                    );
+                }
+            }
+
+            return { count: targetIds.length, cancelledHearingIds };
         });
+
+        await clearHearingNotifications(result.cancelledHearingIds);
+        return result.count;
     },
 
     async setPriority(id: number, priority: string) {
@@ -418,16 +689,28 @@ const complaintService = {
 
     async reopenCase(id: number, reason: string, userId?: number) {
         const settings = await settingService.get();
-        const dueAt = computeNextDueAt("received", new Date(), deadlineDaysFrom(settings));
+        const dueAt = computeNextDueAt("received", new Date(), deadlineConfigFrom(settings));
 
         return prisma.$transaction(async (tx) => {
             const existing = await tx.complaint.findUnique({
                 where: { id },
-                select: { id: true },
+                select: { id: true, status: true },
             });
 
             if (!existing) {
                 throw new CustomError("Complaint not found", undefined, 404);
+            }
+
+            if (
+                !TERMINAL_STATUSES.includes(
+                    existing.status as (typeof TERMINAL_STATUSES)[number],
+                )
+            ) {
+                throw new CustomError(
+                    "Only closed cases can be reopened.",
+                    undefined,
+                    409,
+                );
             }
 
             const updated = await tx.complaint.update({
@@ -450,6 +733,84 @@ const complaintService = {
 
             return { reference: updated.reference };
         });
+    },
+
+    async reviewEligibility(id: number, input: UpdateEligibilityInput, userId?: number) {
+        const result = await prisma.$transaction(async (tx) => {
+            const existing = await tx.complaint.findUnique({
+                where: { id },
+                select: { reference: true, status: true, eligibilityStatus: true },
+            });
+
+            if (!existing) {
+                throw new CustomError("Complaint not found", undefined, 404);
+            }
+
+            if (
+                TERMINAL_STATUSES.includes(
+                    existing.status as (typeof TERMINAL_STATUSES)[number],
+                )
+            ) {
+                throw new CustomError(
+                    "This case is closed. Reopen it before changing its eligibility.",
+                    undefined,
+                    409,
+                );
+            }
+
+            const dismiss =
+                input.eligibilityStatus === "outside_kp" ||
+                input.eligibilityStatus === "rejected";
+
+            const dismissalNote = !dismiss
+                ? null
+                : input.eligibilityStatus === "rejected"
+                    ? `Complaint rejected: ${input.eligibilityReason}`
+                    : "Case dismissed: the complaint falls outside the authority of the Katarungang Pambarangay.";
+
+            await tx.complaint.update({
+                where: { id },
+                data: {
+                    eligibilityStatus: input.eligibilityStatus,
+                    eligibilityNotes: input.eligibilityNotes,
+                    eligibilityReason: input.eligibilityReason,
+                    eligibilityReviewedAt: new Date(),
+                    ...(dismiss
+                        ? { status: "dismissed", dueAt: null, priority: "none" }
+                        : {}),
+                },
+            });
+
+            let cancelledHearingIds: number[] = [];
+
+            if (dismiss) {
+                if (dismissalNote) {
+                    await tx.statusUpdate.create({
+                        data: {
+                            complaintId: id,
+                            status: "dismissed",
+                            publicNote: dismissalNote,
+                            internalNote: input.eligibilityNotes ?? null,
+                            createdById: userId ?? null,
+                        },
+                    });
+                }
+
+                cancelledHearingIds = await cancelScheduledHearings(tx, id);
+            }
+
+            return {
+                reference: existing.reference,
+                previousStatus: existing.eligibilityStatus,
+                previousComplaintStatus: existing.status,
+                dismissed: dismiss,
+                dismissalNote,
+                cancelledHearingIds,
+            };
+        });
+
+        await clearHearingNotifications(result.cancelledHearingIds);
+        return result;
     }
 };
 

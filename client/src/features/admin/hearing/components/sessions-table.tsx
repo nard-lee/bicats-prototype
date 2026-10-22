@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/table";
 import { cn } from "cn";
 import {
+  ATTENDANCE_DOT,
+  attendanceSummary,
   KIND_LABEL,
   KIND_STYLE,
   OVERDUE_STYLE,
@@ -29,10 +31,9 @@ type SessionsTableProps = {
   visibleRows: HearingItem[];
   currentPage: number;
   totalPages: number;
-  resolvingId: number | null;
   fmtDate: (iso: string) => string;
   fmtTime: (iso: string) => string;
-  onResolve: (hearing: HearingItem, status: "completed" | "no_show") => void;
+  onAttendance: (hearing: HearingItem) => void;
   onEdit: (hearing: HearingItem) => void;
   onPageChange: (page: number) => void;
 };
@@ -43,10 +44,9 @@ export default function SessionsTable({
   visibleRows,
   currentPage,
   totalPages,
-  resolvingId,
   fmtDate,
   fmtTime,
-  onResolve,
+  onAttendance,
   onEdit,
   onPageChange,
 }: SessionsTableProps) {
@@ -80,73 +80,96 @@ export default function SessionsTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {visibleRows.map((hearing) => (
-                <TableRow key={hearing.id}>
-                  <TableCell className="px-6 tabular-nums">
-                    {fmtDate(hearing.scheduledAt)} · {fmtTime(hearing.scheduledAt)}
-                  </TableCell>
-                  <TableCell>
-                    <Link
-                      to={`/admin/complaints/${hearing.complaintId}`}
-                      className="text-sm font-semibold tracking-wide transition-colors hover:text-primary"
-                    >
-                      {hearing.reference}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="max-w-[16rem] truncate text-muted-foreground">
-                    {hearing.complainantName} and {hearing.respondentName}
-                  </TableCell>
-                  <TableCell className="hidden lg:table-cell">
-                    <Badge className={cn("border", KIND_STYLE[hearing.kind])}>
-                      {KIND_LABEL[hearing.kind]}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      className={cn(
-                        "border",
-                        hearing.overdue ? OVERDUE_STYLE : STATUS_STYLE[hearing.status],
-                      )}
-                    >
-                      {hearing.overdue ? "Overdue" : STATUS_LABEL[hearing.status]}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="hidden text-muted-foreground xl:table-cell">
-                    {hearing.location ?? "—"}
-                  </TableCell>
-                  <TableCell className="px-6 text-right">
-                    <div className="flex justify-end gap-2">
-                      {hearing.overdue && (
-                        <>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            disabled={resolvingId === hearing.id}
-                            onClick={() => void onResolve(hearing, "completed")}
-                          >
-                            Complete
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            disabled={resolvingId === hearing.id}
-                            onClick={() => void onResolve(hearing, "no_show")}
-                          >
-                            No-show
-                          </Button>
-                        </>
-                      )}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onEdit(hearing)}
+              {visibleRows.map((hearing) => {
+                const attendance = attendanceSummary(
+                  hearing.complainantAttendance,
+                  hearing.respondentAttendance,
+                );
+
+                return (
+                  <TableRow key={hearing.id}>
+                    <TableCell className="px-6">
+                      <p className="whitespace-nowrap">
+                        {fmtDate(hearing.scheduledAt)}
+                      </p>
+                      <p className="text-xs text-muted-foreground tabular-nums">
+                        {fmtTime(hearing.scheduledAt)}
+                      </p>
+                    </TableCell>
+                    <TableCell>
+                      <Link
+                        to={`/admin/complaints/${hearing.complaintId}`}
+                        className="text-sm font-semibold tracking-wide transition-colors hover:text-primary"
                       >
-                        Edit
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+                        {hearing.reference}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      <p className="max-w-[16rem] truncate">
+                        {hearing.complainantName} and {hearing.respondentName}
+                      </p>
+                      {attendance && (
+                        <p
+                          className="mt-1 flex items-center gap-1.5 text-xs"
+                          title={`Complainant: ${hearing.complainantAttendance ?? "not recorded"} · Respondent: ${hearing.respondentAttendance ?? "not recorded"}`}
+                        >
+                          <span
+                            className={cn(
+                              "size-1.5 shrink-0 rounded-full",
+                              ATTENDANCE_DOT[attendance.tone],
+                            )}
+                          />
+                          {attendance.text}
+                        </p>
+                      )}
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell">
+                      <Badge className={cn("border", KIND_STYLE[hearing.kind])}>
+                        {KIND_LABEL[hearing.kind]}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        className={cn(
+                          "border",
+                          hearing.overdue
+                            ? OVERDUE_STYLE
+                            : STATUS_STYLE[hearing.status],
+                        )}
+                      >
+                        {hearing.overdue ? "Overdue" : STATUS_LABEL[hearing.status]}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="hidden text-muted-foreground xl:table-cell">
+                      {hearing.location ?? "—"}
+                    </TableCell>
+                    <TableCell className="px-6 text-right">
+                      <div className="flex justify-end gap-2">
+                        {hearing.status !== "cancelled" &&
+                          hearing.started &&
+                          !["settled", "certified", "dismissed"].includes(
+                            hearing.complaintStatus,
+                          ) && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onAttendance(hearing)}
+                          >
+                            Attendance
+                          </Button>
+                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => onEdit(hearing)}
+                        >
+                          Edit
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         )}

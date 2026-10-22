@@ -206,6 +206,36 @@ const en = {
   errComplaint: "Your complaint could not be submitted. Please try again.",
   errUnavailable: "We couldn't reach the server. Check your connection and try again.",
 
+  // eligibility screening at intake
+  eligTitle: "Check if the barangay can handle your complaint",
+  eligIntro:
+    "The barangay can only act on disputes allowed under the Katarungang Pambarangay. Answer these questions first.",
+  eligResidencyQ: "Where does the respondent live?",
+  eligResSameBarangay: "Same barangay",
+  eligResSameCity: "Same city, different barangay",
+  eligResDifferentCity: "Different city or municipality",
+  eligAdjoiningQ:
+    "Do the two barangays share a boundary, and do both of you agree to settle the case at the barangay?",
+  eligGovernmentQ:
+    "Is the complaint against the government, or against a public officer or employee because of their official work?",
+  eligOffenseQ:
+    "Is this a VAWC case or a serious criminal offense that may be punished by more than one year in prison?",
+  eligPropertyQ:
+    "Does the dispute involve land or property located in another city or municipality?",
+  eligPropertyAgreementQ:
+    "Do both of you agree to settle the property dispute at the barangay?",
+  eligYes: "Yes",
+  eligNo: "No",
+  eligUnsure: "Not sure",
+  eligNa: "Not applicable",
+  eligEligible: "This looks covered by the barangay. You can continue below.",
+  eligNeedsReview:
+    "Some answers need staff review. You can still file, and the barangay will check eligibility.",
+  eligOutside:
+    "This complaint appears to be outside the barangay's authority. Please file it with the proper court or agency.",
+  eligSuccessReview:
+    "Some screening answers need staff review. The barangay will contact you if the case must be referred.",
+
   // file complaint success
   fcSuccessTitle: "Complaint submitted",
   fcSuccessText:
@@ -304,6 +334,18 @@ const en = {
   tanodLabel: "Tanod hotline",
   punongTitleLabel: "Punong Barangay title",
   luponTitleLabel: "Lupon chairman title",
+  settingsPuroks: "Puroks",
+  puroksHint:
+    "These are the purok choices offered by the public complaint form.",
+  puroksLabel: "Purok list",
+  noPuroks: "No puroks yet. Add the first one below.",
+  addPurok: "Add purok",
+  removePurok: "Remove purok",
+  puroksNote:
+    "Complaints store the purok name, so renaming an entry only affects new filings.",
+  officeLineLabel: "Office line on documents",
+  officeLineHint:
+    "Printed under the barangay name on summons, notices, and settlements.",
   deadlineReceivedLabel: "Days to summon the respondent",
   deadlineSummonedLabel: "Days to hold mediation",
   deadlineMediationLabel: "Days to conclude mediation",
@@ -326,6 +368,33 @@ const en = {
   imageUploaded: "Image uploaded.",
   notificationsHint:
     "Choose which messages are sent to complainants automatically. Channels without provider keys are skipped.",
+  settingsScheduling: "Session scheduling",
+  settingsSchedulingHint:
+    "Defaults and guardrails applied when staff book mediation, conciliation, or arbitration sessions.",
+  defaultVenueLabel: "Default session venue",
+  defaultVenuePlaceholder: "e.g. Barangay Hall Session Room",
+  sessionLengthLabel: "Session length (minutes)",
+  sessionLengthHint:
+    "Used to check for overlapping bookings and office-hour limits.",
+  hearingGraceLabel: "Missed-session grace period (hours)",
+  hearingGraceHint:
+    "How long after the start time before a session is flagged as missed.",
+  enforceOfficeHoursLabel: "Enforce office hours when scheduling",
+  enforceOfficeHoursHint:
+    "Reject session times that fall outside the opening and closing hours below.",
+  officeOpensLabel: "Office opens",
+  officeClosesLabel: "Office closes",
+  workingDaysLabel: "Count deadlines in working days",
+  workingDaysHint:
+    "Skip weekends and the listed holidays when computing the next KP deadline.",
+  holidaysLabel: "Holidays",
+  noHolidays: "No holidays added.",
+  addHoliday: "Add holiday",
+  removeHoliday: "Remove",
+  holidaysHint: "Only used when deadlines are counted in working days.",
+  reminderLeadLabel: "Pre-session reminder lead time (hours)",
+  reminderLeadHint:
+    "Staff and complainants are reminded when a session is this close. The scan runs every 30 minutes.",
 
   // track
   trackTitle: "Track My Complaint",
@@ -368,6 +437,7 @@ const en = {
   dueSoonOnly: "Due soon only",
   anyDue: "Any due date",
   noDeadline: "No pending deadline",
+  caseClosed: "Case closed",
   needsAttention: "Needs Attention",
   allClear: "All caught up. No cases need attention right now.",
   notifications: "Notifications",
@@ -426,6 +496,85 @@ const en = {
   prevPage: "Prev",
   nextPage: "Next",
   notes: "Notes",
+
+  // eligibility review (staff)
+  eligStaffTitle: "KP Eligibility",
+  eligStaffDesc: "Intake screening and staff decision.",
+  eligNotScreened: "Not screened",
+  eligStatusEligible: "Eligible",
+  eligStatusNeedsReview: "Needs review",
+  eligStatusOutside: "Outside KP",
+  eligStatusRejected: "Rejected",
+  eligReview: "Review eligibility",
+  eligReviewTitle: "Review KP eligibility",
+  eligReviewDesc:
+    "Confirm whether this complaint falls under the barangay's authority.",
+  eligClosed: "This case is closed. Eligibility can no longer be changed.",
+  eligReviewStatus: "Decision",
+  eligNotes: "Review notes",
+  eligNotesHint:
+    "Explain the decision, especially if you are overriding the intake result.",
+  eligSaveReview: "Save review",
+  eligSaving: "Saving...",
+  eligSaved: "Eligibility updated.",
+  eligSaveFailed: "Could not update eligibility.",
+  eligReviewed: "Reviewed",
+  eligIntakeAnswers: "Intake answers",
+  eligAnsResidency: "Respondent's residence",
+  eligAnsAdjoining: "Adjoining barangays agreed",
+  eligAnsGovernment: "Government / public officer",
+  eligAnsOffense: "VAWC / serious offense",
+  eligAnsProperty: "Property in another city",
+  eligAnsPropertyAgreement: "Property settlement agreed",
+  eligNoAnswers: "No intake answers were recorded for this case.",
+  eligPendingFlag: "Pending eligibility review",
+  eligPendingHint:
+    "Status updates are locked until staff resolve the eligibility review below.",
+  eligUnscreenedFlag: "Awaiting eligibility screening",
+  eligUnscreenedHint:
+    "Eligibility has not been screened for this case. Complete the review below before changing its status.",
+  eligDismissWarning:
+    "Saving this decision dismisses the case, clears its deadline, and notifies the complainant. Only do this when the complaint is clearly outside the barangay's authority.",
+  eligSavedDismissed: "Eligibility updated. The case was dismissed.",
+  eligReason: "Reason for rejection",
+  eligReasonHint:
+    "This is shown to the complainant and recorded in the case history.",
+  eligReasonPlaceholder: "e.g., The complaint was withdrawn by the complainant.",
+  eligRejectWarning:
+    "Saving this decision dismisses the case, clears its deadline, and notifies the complainant with this reason.",
+  eligRejectionReason: "Rejection reason",
+
+  // proof of service
+  serviceTitle: "Proof of service",
+  serviceDesc: "Record how and when the summons was served.",
+  serviceRecord: "Record service",
+  serviceHistoryLabel: "Proof of service",
+  serviceEmpty: "No proof of service recorded yet.",
+  serviceClosed: "This case is closed. Proof of service can no longer be recorded.",
+  serviceModalTitle: "Record proof of service",
+  serviceModalDesc: "Log the result of serving the summons.",
+  serviceServer: "Served by",
+  serviceServerPlaceholder: "Name of the server / barangay staff",
+  serviceDate: "Date and time served",
+  serviceDatePlaceholder: "Select date & time",
+  serviceResult: "Result",
+  serviceResultPlaceholder: "Select the result",
+  serviceReceived: "Received",
+  serviceRefused: "Refused",
+  serviceNotFound: "Not found",
+  serviceDateTime: "Served",
+  serviceNotes: "Notes (optional)",
+  serviceNotesPlaceholder:
+    "e.g., Left the summons with the respondent's spouse.",
+  serviceSave: "Save record",
+  serviceSaving: "Saving...",
+  serviceSaved: "Proof of service recorded.",
+  serviceSavedDeadline:
+    "Proof of service recorded. The mediation deadline now starts from the service date.",
+  serviceSaveFailed: "Could not record proof of service.",
+  serviceDeadlineHint:
+    "A received summons restarts the mediation deadline from the date served.",
+  serviceLoggedBy: "Recorded by",
 
   // documents
   documents: "Case Documents",
@@ -643,6 +792,36 @@ const tl: Record<Key, string> = {
   errComplaint: "Hindi naisumite ang reklamo. Subukan muli.",
   errUnavailable: "Hindi maabot ang server. Suriin ang koneksyon at subukang muli.",
 
+  // eligibility screening at intake
+  eligTitle: "Suriin kung kaya ng barangay ang reklamo mo",
+  eligIntro:
+    "Ang barangay ay may kapangyarihan lamang sa mga hindi pagkakaunawaan na sakop ng Katarungang Pambarangay. Sagutin muna ang mga tanong na ito.",
+  eligResidencyQ: "Saan nakatira ang inirereklamo?",
+  eligResSameBarangay: "Kaparehong barangay",
+  eligResSameCity: "Kaparehong lungsod, ibang barangay",
+  eligResDifferentCity: "Ibang lungsod o munisipalidad",
+  eligAdjoiningQ:
+    "Magkadikit ba ang dalawang barangay, at pareho ba kayong pumapayag na dito ayusin ang kaso?",
+  eligGovernmentQ:
+    "Ang reklamo ba ay laban sa gobyerno, o laban sa isang pampublikong opisyal o empleyado dahil sa kanyang tungkulin?",
+  eligOffenseQ:
+    "Ito ba ay kaso ng VAWC o isang mabigat na krimen na maaaring parusahan ng mahigit isang taon sa kulungan?",
+  eligPropertyQ:
+    "May kinalaman ba ang kaso sa lupa o ari-arian na nasa ibang lungsod o munisipalidad?",
+  eligPropertyAgreementQ:
+    "Pareho ba kayong pumapayag na dito sa barangay ayusin ang usapin sa ari-arian?",
+  eligYes: "Oo",
+  eligNo: "Hindi",
+  eligUnsure: "Hindi sigurado",
+  eligNa: "Walang kinalaman",
+  eligEligible: "Mukhang sakop ito ng barangay. Maaari kang magpatuloy sa ibaba.",
+  eligNeedsReview:
+    "May mga sagot na kailangang suriin ng staff. Maaari ka pa ring maghain, at titingnan ng barangay ang pagiging karapat-dapat.",
+  eligOutside:
+    "Mukhang wala ito sa kapangyarihan ng barangay. Mangyaring ihain ito sa tamang hukuman o ahensya.",
+  eligSuccessReview:
+    "May mga sagot sa screening na kailangang suriin ng staff. Kokontakin ka ng barangay kung kailangang i-refer ang kaso.",
+
   // file complaint success
   fcSuccessTitle: "Naisumite ang reklamo",
   fcSuccessText:
@@ -740,6 +919,18 @@ const tl: Record<Key, string> = {
   tanodLabel: "Hotline ng tanod",
   punongTitleLabel: "Titulo ng Punong Barangay",
   luponTitleLabel: "Titulo ng tagapangulo ng lupon",
+  settingsPuroks: "Mga purok",
+  puroksHint:
+    "Ito ang mga pagpipilian na purok sa pampublikong form ng reklamo.",
+  puroksLabel: "Listahan ng mga purok",
+  noPuroks: "Wala pang purok. Magdagdag ng isa sa ibaba.",
+  addPurok: "Magdagdag ng purok",
+  removePurok: "Alisin ang purok",
+  puroksNote:
+    "Naka-imbak ang pangalan ng purok sa bawat reklamo, kaya ang pagpapalit ng entry ay nakakaapekto lamang sa mga bagong filing.",
+  officeLineLabel: "Linya ng tanggapan sa mga dokumento",
+  officeLineHint:
+    "Nakalimbag sa ilalim ng pangalan ng barangay sa summons, abiso, at kasunduan.",
   deadlineReceivedLabel: "Araw para ipatawag ang inirereklamo",
   deadlineSummonedLabel: "Araw para idaos ang mediasyon",
   deadlineMediationLabel: "Araw para tapusin ang mediasyon",
@@ -762,6 +953,34 @@ const tl: Record<Key, string> = {
   imageUploaded: "Na-upload ang larawan.",
   notificationsHint:
     "Piliin kung aling mga mensahe ang awtomatikong ipapadala sa naghain. Nilalaktawan ang channel na walang provider key.",
+  settingsScheduling: "Pag-iskedyul ng sesyon",
+  settingsSchedulingHint:
+    "Mga default at panuntunan kapag nag-iskedyul ang staff ng mediasyon, konsilyasyon, o arbitration.",
+  defaultVenueLabel: "Default na lugar ng sesyon",
+  defaultVenuePlaceholder: "hal. Barangay Hall Session Room",
+  sessionLengthLabel: "Haba ng sesyon (minuto)",
+  sessionLengthHint:
+    "Ginagamit upang suriin ang magkakapatong na booking at hangganan ng oras ng opisina.",
+  hearingGraceLabel: "Grace period bago ituring na napalampas (oras)",
+  hearingGraceHint:
+    "Gaano katagal pagkatapos ng oras ng simula bago markahan na napalampas ang sesyon.",
+  enforceOfficeHoursLabel: "Ipagpatupad ang oras ng opisina sa pag-iskedyul",
+  enforceOfficeHoursHint:
+    "Tanggihan ang oras ng sesyon na labas sa oras ng pagbubukas at pagsasara sa ibaba.",
+  officeOpensLabel: "Pagbubukas ng opisina",
+  officeClosesLabel: "Pagsasara ng opisina",
+  workingDaysLabel: "Bilangin ang mga takda sa araw ng trabaho",
+  workingDaysHint:
+    "Laktawan ang Sabado, Linggo, at mga holiday sa pagkalkula ng susunod na takda ng KP.",
+  holidaysLabel: "Mga holiday",
+  noHolidays: "Walang naidagdag na holiday.",
+  addHoliday: "Magdagdag ng holiday",
+  removeHoliday: "Alisin",
+  holidaysHint:
+    "Ginagamit lamang kapag binibilang ang mga takda sa araw ng trabaho.",
+  reminderLeadLabel: "Oras ng paalala bago ang sesyon (oras)",
+  reminderLeadHint:
+    "Ipinaaalala sa staff at naghain kapag malapit na ang sesyon. Tumatakbo ang scan tuwing 30 minuto.",
 
   // track
   trackTitle: "Subaybayan ang Reklamo Ko",
@@ -804,6 +1023,7 @@ const tl: Record<Key, string> = {
   dueSoonOnly: "Malapit nang mag-takda lang",
   anyDue: "Kahit anong takda",
   noDeadline: "Walang nakabinbing takda",
+  caseClosed: "Sarado na ang kaso",
   needsAttention: "Kailangan ng Pansin",
   allClear: "Wala nang kasong kailangan ng pansin sa ngayon.",
   notifications: "Mga Abiso",
@@ -866,6 +1086,87 @@ const tl: Record<Key, string> = {
   prevPage: "Nakaraan",
   nextPage: "Susunod",
   notes: "Mga Tala",
+
+  // eligibility review (staff)
+  eligStaffTitle: "Pagiging Karapat-dapat sa KP",
+  eligStaffDesc: "Screening sa paghain at desisyon ng staff.",
+  eligNotScreened: "Hindi pa nasuri",
+  eligStatusEligible: "Karapat-dapat",
+  eligStatusNeedsReview: "Kailangang suriin",
+  eligStatusOutside: "Labas sa KP",
+  eligStatusRejected: "Tinanggihan",
+  eligReview: "Suriin ang pagiging karapat-dapat",
+  eligReviewTitle: "Suriin ang pagiging karapat-dapat sa KP",
+  eligReviewDesc:
+    "Kumpirmahin kung ang reklamong ito ay sakop ng kapangyarihan ng barangay.",
+  eligClosed:
+    "Sarado na ang kasong ito. Hindi na mababago ang pagiging karapat-dapat.",
+  eligReviewStatus: "Desisyon",
+  eligNotes: "Mga tala sa pagsusuri",
+  eligNotesHint:
+    "Ipaliwanag ang desisyon, lalo na kung binabago mo ang resulta ng screening.",
+  eligSaveReview: "I-save ang pagsusuri",
+  eligSaving: "Sine-save...",
+  eligSaved: "Na-update ang pagiging karapat-dapat.",
+  eligSaveFailed: "Hindi ma-update ang pagiging karapat-dapat.",
+  eligReviewed: "Sinuri",
+  eligIntakeAnswers: "Mga sagot sa screening",
+  eligAnsResidency: "Tirahan ng inirereklamo",
+  eligAnsAdjoining: "Kasunduan sa magkadikit na barangay",
+  eligAnsGovernment: "Gobyerno / pampublikong opisyal",
+  eligAnsOffense: "VAWC / mabigat na krimen",
+  eligAnsProperty: "Ari-arian sa ibang lungsod",
+  eligAnsPropertyAgreement: "Kasunduan sa usapin ng ari-arian",
+  eligNoAnswers: "Walang naitalang sagot sa screening para sa kasong ito.",
+  eligPendingFlag: "Naghihintay ng pagsusuri",
+  eligPendingHint:
+    "Naka-lock ang pagbabago ng status hanggang maresolba ng staff ang pagsusuri sa ibaba.",
+  eligUnscreenedFlag: "Naghihintay ng screening",
+  eligUnscreenedHint:
+    "Hindi pa nasusuri ang pagiging karapat-dapat para sa kasong ito. Kumpletuhin ang pagsusuri sa ibaba bago baguhin ang status.",
+  eligDismissWarning:
+    "Kapag na-save ito, ma-dismiss ang kaso, matatanggal ang deadline, at maaabisuhan ang nagrereklamo. Gawin lamang ito kapag malinaw na labas sa kapangyarihan ng barangay ang reklamo.",
+  eligSavedDismissed: "Na-update ang pagiging karapat-dapat. Na-dismiss ang kaso.",
+  eligReason: "Dahilan ng pagtanggi",
+  eligReasonHint:
+    "Ipinapakita ito sa nagrereklamo at naitala sa kasaysayan ng kaso.",
+  eligReasonPlaceholder: "Hal., Binawi ng nagrereklamo ang reklamo.",
+  eligRejectWarning:
+    "Kapag na-save ito, ma-dismiss ang kaso, matatanggal ang deadline, at maaabisuhan ang nagrereklamo kasama ang dahilang ito.",
+  eligRejectionReason: "Dahilan ng pagtanggi",
+
+  // proof of service
+  serviceTitle: "Patunay ng paghahatid",
+  serviceDesc: "Itala kung paano at kailan naisilbi ang patawag.",
+  serviceRecord: "Itala ang paghahatid",
+  serviceHistoryLabel: "Patunay ng paghahatid",
+  serviceEmpty: "Wala pang naitalang patunay ng paghahatid.",
+  serviceClosed:
+    "Sarado na ang kasong ito. Hindi na maitala ang patunay ng paghahatid.",
+  serviceModalTitle: "Itala ang patunay ng paghahatid",
+  serviceModalDesc: "Itala ang resulta ng paghahatid ng patawag.",
+  serviceServer: "Naghatid",
+  serviceServerPlaceholder: "Pangalan ng naghatid / kawani ng barangay",
+  serviceDate: "Petsa at oras ng paghahatid",
+  serviceDatePlaceholder: "Pumili ng petsa at oras",
+  serviceResult: "Resulta",
+  serviceResultPlaceholder: "Piliin ang resulta",
+  serviceReceived: "Natanggap",
+  serviceRefused: "Tinanggihan",
+  serviceNotFound: "Hindi natagpuan",
+  serviceDateTime: "Naipadala",
+  serviceNotes: "Mga tala (opsyonal)",
+  serviceNotesPlaceholder:
+    "Hal., Iniwan ang patawag sa asawa ng inirereklamo.",
+  serviceSave: "I-save ang tala",
+  serviceSaving: "Sine-save...",
+  serviceSaved: "Naitala ang patunay ng paghahatid.",
+  serviceSavedDeadline:
+    "Naitala ang patunay. Nagsisimula na ang deadline ng medyasyon sa petsa ng paghahatid.",
+  serviceSaveFailed: "Hindi maitala ang patunay ng paghahatid.",
+  serviceDeadlineHint:
+    "Kapag natanggap ang patawag, nagsisimula muli ang deadline ng medyasyon sa petsa ng paghahatid.",
+  serviceLoggedBy: "Naitala ni",
 
   // documents
   documents: "Mga Dokumento ng Kaso",

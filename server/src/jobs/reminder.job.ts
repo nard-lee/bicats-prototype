@@ -31,7 +31,8 @@ function prettyDate(date: Date): string {
  *  1. auto-escalate overdue cases that are still at a low priority,
  *  2. create one in-app notification per active staff member, per case, per day, and
  *  3. remind staff about mediation sessions whose date has passed without an outcome,
- *  4. remind the parties (and staff) about scheduled sessions happening within 24 hours.
+ *  4. remind the parties (and staff) about scheduled sessions inside the
+ *     configured lead time.
  * Dedupe keys keep the scan idempotent.
  */
 export async function runReminderScan(): Promise<number> {
@@ -53,7 +54,11 @@ export async function runReminderScan(): Promise<number> {
 
   const [overdueHearings, staff] = await Promise.all([
     prisma.hearing.findMany({
-      where: { status: "scheduled", scheduledAt: { lt: now } },
+      where: {
+        status: "scheduled",
+        scheduledAt: { lt: now },
+        complaint: { status: { notIn: [...TERMINAL_STATUSES] } },
+      },
       select: {
         id: true,
         complaintId: true,
@@ -142,7 +147,14 @@ export async function runReminderScan(): Promise<number> {
 
   // ---- Missed sessions that still have no outcome on record ----
   const hearingRows = overdueHearings
-    .filter((hearing) => isHearingOverdue(hearing.scheduledAt, hearing.status, now))
+    .filter((hearing) =>
+      isHearingOverdue(
+        hearing.scheduledAt,
+        hearing.status,
+        now,
+        settings.hearingGraceHours,
+      ),
+    )
     .flatMap((hearing) => {
       const label = HEARING_KIND_LABEL[hearing.kind] ?? "mediation";
       const reference = hearing.complaint.reference;
@@ -160,12 +172,14 @@ export async function runReminderScan(): Promise<number> {
 
   const rows = [...reminderRows, ...escalationRows, ...hearingRows];
 
-  // ---- Daily pre-session reminders to the complainant (and staff) ----
-  const next24 = new Date(now.getTime() + DAY);
+  // ---- Pre-session reminders to the complainant (and staff) ----
+  const leadHours = settings.reminderLeadHours;
+  const leadWindow = new Date(now.getTime() + leadHours * 60 * 60 * 1000);
   const upcoming = await prisma.hearing.findMany({
     where: {
       status: "scheduled",
-      scheduledAt: { gte: now, lte: next24 },
+      scheduledAt: { gte: now, lte: leadWindow },
+      complaint: { status: { notIn: [...TERMINAL_STATUSES] } },
     },
     select: {
       id: true,
@@ -199,7 +213,7 @@ export async function runReminderScan(): Promise<number> {
     return staff.map((member) => ({
       userId: member.id,
       type: "hearing_upcoming",
-      title: `${reference}: ${label} session within 24 hours`,
+      title: `${reference}: ${label} session within ${leadHours} hours`,
       body: `The ${label} session starts ${prettyDate(hearing.scheduledAt)}. Confirm attendance and prepare the venue.`,
       complaintId: hearing.complaintId,
       reference,

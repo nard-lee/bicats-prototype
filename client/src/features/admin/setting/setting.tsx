@@ -20,7 +20,9 @@ import DeadlinesSection from "./components/deadlines-section";
 import IdentitySection from "./components/identity-section";
 import LetterheadPreview from "./components/letterhead-preview";
 import NotificationsSection from "./components/notifications-section";
+import PuroksSection from "./components/puroks-section";
 import SaveBar from "./components/save-bar";
+import SchedulingSection from "./components/scheduling-section";
 import SignatoriesSection from "./components/signatories-section";
 import { toValues, type FieldErrors, type Values } from "./components/types";
 
@@ -97,6 +99,7 @@ export default function BarangaySettingsPage() {
 
               <IdentitySection values={values} fields={fields} update={update} />
               <ContactSection values={values} fields={fields} update={update} />
+              <PuroksSection values={values} fields={fields} update={update} />
               <BrandingSection values={values} update={update} canEdit={canEdit} />
               <SignatoriesSection
                 values={values}
@@ -105,8 +108,10 @@ export default function BarangaySettingsPage() {
                 canEdit={canEdit}
               />
               <DeadlinesSection values={values} fields={fields} update={update} />
+              <SchedulingSection values={values} fields={fields} update={update} />
               <NotificationsSection
                 values={values}
+                fields={fields}
                 update={update}
                 canEdit={canEdit}
               />
@@ -124,8 +129,22 @@ export default function BarangaySettingsPage() {
                 value={values.luponSignatureUrl}
                 readOnly
               />
+              <input
+                type="hidden"
+                name="holidays"
+                value={JSON.stringify(values.holidays)}
+                readOnly
+              />
+              <input
+                type="hidden"
+                name="puroks"
+                value={JSON.stringify(values.puroks)}
+                readOnly
+              />
               {(
                 [
+                  "enforceOfficeHours",
+                  "workingDaysOnly",
                   "notifyStatusSms",
                   "notifyStatusEmail",
                   "notifyMediationSms",

@@ -1,8 +1,10 @@
 import { api } from "@/lib/api";
 import type { LoaderFunctionArgs } from "react-router";
+import type { BarangaySettings } from "@/features/admin/setting/loader";
 
 export type HearingStatus = "scheduled" | "completed" | "cancelled" | "no_show";
 export type HearingKind = "mediation" | "conciliation" | "hearing";
+export type AttendanceStatus = "present" | "absent" | "excused";
 
 export type HearingItem = {
   id: number;
@@ -10,13 +12,19 @@ export type HearingItem = {
   reference: string;
   complainantName: string;
   respondentName: string;
+  complaintStatus: string;
   scheduledAt: string;
   kind: HearingKind;
   status: HearingStatus;
   overdue: boolean;
+  started: boolean;
   location: string | null;
   notes: string | null;
   outcome: string | null;
+  complainantAttendance: AttendanceStatus | null;
+  respondentAttendance: AttendanceStatus | null;
+  attendanceNotes: string | null;
+  attendanceRecordedAt: string | null;
 };
 
 export type ComplaintOption = {
@@ -34,6 +42,7 @@ export type HearingsData = {
   upcoming: HearingItem[];
   week: HearingItem[];
   complaints: ComplaintOption[];
+  settings: BarangaySettings;
 };
 
 function parseMonth(input: string | null): { year: number; month: number } {
@@ -52,7 +61,7 @@ export async function HearingsLoader({ request }: LoaderFunctionArgs) {
   const from = new Date(year, month, 1, 0, 0, 0, 0);
   const to = new Date(year, month + 1, 1, 0, 0, 0, 0);
 
-  const [hearings, scheduled, complaints] = await Promise.all([
+  const [hearings, scheduled, complaints, settings] = await Promise.all([
     api
       .get("/hearings", {
         searchParams: { from: from.toISOString(), to: to.toISOString() },
@@ -62,6 +71,7 @@ export async function HearingsLoader({ request }: LoaderFunctionArgs) {
       .get("/hearings", { searchParams: { status: "scheduled" } })
       .json<{ items: HearingItem[] }>(),
     api.get("/hearings/complaints").json<{ items: ComplaintOption[] }>(),
+    api.get("/settings").json<BarangaySettings>(),
   ]);
 
   const now = new Date();
@@ -77,5 +87,6 @@ export async function HearingsLoader({ request }: LoaderFunctionArgs) {
     upcoming,
     week,
     complaints: complaints.items,
+    settings,
   } satisfies HearingsData;
 }
