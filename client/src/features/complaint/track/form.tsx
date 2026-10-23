@@ -1,3 +1,4 @@
+import { useRef, useState } from "react";
 import {
   Form,
   useActionData,
@@ -7,6 +8,7 @@ import {
 import {
   Calendar,
   CheckCircle2,
+  Download,
   FileCheck2,
   FileText,
   Notebook,
@@ -21,6 +23,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useT, type Key } from "@/lib/I18n";
+import {
+  clearRecentReferences,
+  loadRecentReferences,
+} from "../reference";
 import type { TrackActionData } from "./action";
 
 export default function Track() {
@@ -28,6 +34,9 @@ export default function Track() {
   const data = useActionData() as TrackActionData | undefined;
   const submitting = useNavigation().state === "submitting";
   const [params] = useSearchParams();
+  const [reference, setReference] = useState(() => params.get("ref") ?? "");
+  const [recent, setRecent] = useState<string[]>(() => loadRecentReferences());
+  const phoneRef = useRef<HTMLInputElement>(null);
 
   const statusLabel = (status: string) => {
     const key = `st_${status}` as Key;
@@ -64,6 +73,31 @@ export default function Track() {
   const result = data?.result;
   const filedAt = result?.updates[0]?.createdAt;
 
+  const downloadReference = () => {
+    if (!result) return;
+
+    const trackUrl = `${window.location.origin}/track-complaint?ref=${encodeURIComponent(result.reference)}`;
+    const lines = [
+      `${t("refNumber")}: ${result.reference}`,
+      `${t("currentStatus")}: ${statusLabel(result.status)}`,
+      ...(filedAt ? [`${t("filedDate")}: ${fmt(filedAt)}`] : []),
+      "",
+      t("downloadTrackAt"),
+      trackUrl,
+      "",
+      t("downloadKeep"),
+    ];
+
+    const url = URL.createObjectURL(
+      new Blob([`${lines.join("\n")}\n`], { type: "text/plain;charset=utf-8" }),
+    );
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${result.reference}.txt`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  };
+
   return (
     <div className="mx-auto max-w-2xl px-6 py-12">
       <h1 className="text-3xl font-bold tracking-tight">{t("trackTitle")}</h1>
@@ -75,14 +109,48 @@ export default function Track() {
           <Input
             id="reference"
             name="reference"
-            defaultValue={params.get("ref") ?? ""}
+            value={reference}
+            onChange={(event) => setReference(event.target.value)}
             placeholder="BK-2026-000001-K7"
+            autoComplete="off"
+            spellCheck={false}
             required
           />
+          {recent.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                {t("trackRecent")}:
+              </span>
+              {recent.map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => {
+                    setReference(item);
+                    phoneRef.current?.focus();
+                  }}
+                  className="rounded-full border bg-background px-3 py-1 text-sm font-medium tabular-nums text-primary transition-colors hover:bg-muted"
+                >
+                  {item}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => {
+                  clearRecentReferences();
+                  setRecent([]);
+                }}
+                className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+              >
+                {t("trackClearRecent")}
+              </button>
+            </div>
+          )}
         </div>
         <div className="space-y-2">
           <Label htmlFor="phone">{t("phoneUsed")}</Label>
           <Input
+            ref={phoneRef}
             id="phone"
             name="phone"
             type="tel"
@@ -109,13 +177,27 @@ export default function Track() {
               <CardTitle>{t("complaintDetails")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
                 <label className="text-md font-medium text-muted-foreground">
                   {t("refNumber")}
                 </label>
-                <p className="text-sm text-muted-foreground">
-                  {result.reference}
-                </p>
+                <div className="flex min-w-0 items-center gap-2">
+                  <p className="min-w-0 flex-1 truncate text-sm font-medium tabular-nums sm:flex-none">
+                    {result.reference}
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0"
+                    onClick={downloadReference}
+                    aria-label={t("downloadRef")}
+                    title={t("downloadRef")}
+                  >
+                    <Download className="size-3.5" />
+                    {t("download")}
+                  </Button>
+                </div>
               </div>
               <Separator />
               <div className="flex items-center justify-between">

@@ -2,6 +2,7 @@ import { HTTPError } from "ky";
 import type { ActionFunctionArgs } from "react-router";
 import { api } from "@/lib/api";
 import type { Key } from "@/lib/I18n";
+import { rememberReference } from "../reference";
 
 export type ActionResult = {
   success?: boolean;
@@ -20,6 +21,8 @@ export async function fileComplaintAction({
     const { reference } = await api
       .post("complaints/file-complaint", { body: form })
       .json<{ reference: string }>();
+
+    rememberReference(reference);
 
     return { success: true, reference };
   } catch (err: unknown) {

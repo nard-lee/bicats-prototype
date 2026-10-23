@@ -2,6 +2,7 @@ import type { ActionFunctionArgs } from "react-router";
 import { HTTPError } from "ky";
 import { api } from "@/lib/api";
 import type { Key } from "@/lib/I18n";
+import { rememberReference } from "../reference";
 
 type Update = {
   status: string;
@@ -27,6 +28,8 @@ export async function trackAction({ request }: ActionFunctionArgs): Promise<Trac
         },
       })
       .json<Result>();
+
+    rememberReference(result.reference);
 
     return { result };
   } catch (err: unknown) {
