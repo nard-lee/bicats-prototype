@@ -36,6 +36,18 @@ import type { Readable } from "node:stream";
 const isProd = config.nodeEnv === "production";
 const isTest = config.nodeEnv === "test";
 
+// Public pages load AdSense, so its loader, frames, and beacons need explicit
+// allow-listing; Helmet otherwise blocks them with script-src 'self'.
+const ADS_DOMAINS = [
+  "https://pagead2.googlesyndication.com",
+  "https://*.googlesyndication.com",
+  "https://*.doubleclick.net",
+  "https://*.google.com",
+  "https://*.googleadservices.com",
+  "https://*.gstatic.com",
+  "https://*.adtrafficquality.google",
+];
+
 const logger = pino({
   level: isTest ? "silent" : isProd ? "info" : "debug",
   ...(!isProd && !isTest && {
@@ -65,7 +77,18 @@ if (config.nodeEnv === "production") app.set("trust proxy", 1);
 
 // ---- Middleware (order matters) ----
 app.use(pinoHttp({ logger }));
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        "script-src": ["'self'", ...ADS_DOMAINS],
+        "frame-src": ["'self'", ...ADS_DOMAINS],
+        "img-src": ["'self'", "data:", ...ADS_DOMAINS],
+        "connect-src": ["'self'", ...ADS_DOMAINS],
+      },
+    },
+  })
+);
 app.use(compression());
 app.use(cors({ origin: config.corsOrigin, credentials: true }));
 app.use(express.json({ limit: "100kb" }));
