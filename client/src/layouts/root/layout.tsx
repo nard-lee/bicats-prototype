@@ -1,5 +1,6 @@
 import { Link, NavLink, Outlet, useRouteLoaderData } from "react-router";
 import { Button } from "@/components/ui/button";
+import AdSense from "@/components/adsense";
 import TopLoader from "@/components/top-loader";
 import LanguageToggle from "@/components/language-toggle";
 import ModeToggle from "@/components/mode-toggle";
@@ -20,47 +21,57 @@ export default function RootLayout() {
 
   return (
     <div className="flex min-h-screen flex-col">
+      {/* Public-only: the admin panel must not load AdSense. */}
+      <AdSense />
       <TopLoader />
       <header className="sticky top-0 z-50 border-b bg-background">
-        <div className="mx-auto flex max-w-6xl items-center gap-4 px-6 py-4">
-          <div className="flex size-24 items-center justify-center rounded-full border font-semibold">
+        <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3 sm:gap-4 sm:px-6 sm:py-4">
+          <div className="flex size-12 shrink-0 items-center justify-center rounded-full border font-semibold sm:size-24">
             <img
               className="h-full w-full object-contain"
               src={settings?.logoUrl || "/seal.png"}
               alt="Barangay seal"
             />
           </div>
-          <div className="leading-tight">
-            <p className="text-xs text-muted-foreground">{t("republic")}</p>
-            <p className="text-xs text-muted-foreground">
+          <div className="hidden min-w-0 leading-tight sm:block">
+            <p className="hidden text-xs text-muted-foreground sm:block">
+              {t("republic")}
+            </p>
+            <p className="truncate text-xs text-muted-foreground">
               {settings?.city || t("city")}
             </p>
-            <Link to="/" className="text-lg font-semibold">
+            <Link to="/" className="block truncate text-base font-semibold sm:text-lg">
               {settings?.barangayName || "Barangay Kabayanihan"}
             </Link>
           </div>
 
-          <div className="ml-auto flex items-center gap-4">
-            <Button asChild variant="ghost">
+          <div className="ml-auto flex min-w-0 items-center gap-1 sm:gap-4">
+            <Button asChild variant="ghost" className="min-w-0 shrink px-1 sm:px-4">
               {user ? (
-                <Link to="/admin">{t("navStaff")}</Link>
+                <Link to="/admin" aria-label={t("navStaff")}>
+                  <span className="truncate">{t("navStaff")}</span>
+                </Link>
               ) : (
-                <Link to="/login">{t("login")}</Link>
+                <Link to="/login" aria-label={t("login")}>
+                  <span className="truncate">{t("login")}</span>
+                </Link>
               )}
             </Button>
-            <ModeToggle />
-            <LanguageToggle />
+            <div className="flex shrink-0 items-center gap-1 sm:gap-4">
+              <ModeToggle />
+              <LanguageToggle />
+            </div>
           </div>
         </div>
 
-        <nav className="mx-auto flex max-w-6xl gap-1 px-6">
+        <nav className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4 sm:px-6">
           {links.map((l) => (
             <NavLink
               key={l.to}
               to={l.to}
               end={l.end}
               className={({ isActive }) =>
-                `border-b-2 px-4 py-3 text-sm font-medium ${isActive
+                `border-b-2 px-3 py-3 text-sm font-medium whitespace-nowrap sm:px-4 ${isActive
                   ? "border-primary text-foreground"
                   : "border-transparent text-muted-foreground hover:text-foreground"
                 }`

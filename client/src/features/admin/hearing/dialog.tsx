@@ -211,7 +211,7 @@ export default function HearingDialog({
 
         <form onSubmit={submit} className="space-y-4 py-2">
           {!editing && (
-            <div className="grid gap-2">
+            <div className="grid grid-cols-1 gap-2">
               <Label htmlFor="complaint">Complaint</Label>
               <ComplaintPicker
                 options={complaints}

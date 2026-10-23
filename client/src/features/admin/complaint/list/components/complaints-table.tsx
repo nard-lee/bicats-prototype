@@ -71,11 +71,76 @@ export default function ComplaintsTable({
   };
 
   return (
-    <div className="-mx-6 min-h-0 flex-1 overflow-auto border-y [&>[data-slot=table-container]]:overflow-visible">
+    <div className="-mx-4 border-y sm:-mx-6 md:min-h-0 md:flex-1 md:overflow-auto [&>[data-slot=table-container]]:overflow-visible">
       {items.length === 0 ? (
         <EmptyState hasFilters={hasFilters} />
       ) : (
-        <Table className="[&_td]:px-4 [&_td]:py-3 [&_td]:whitespace-normal [&_th]:px-4 [&_th]:whitespace-normal">
+        <>
+          <div className="divide-y md:hidden">
+            {items.map((c) => (
+              <div
+                key={c.id}
+                className={cn(
+                  "flex cursor-pointer items-start gap-3 px-4 py-3 transition-colors hover:bg-muted/50",
+                  selected.includes(c.id) && "bg-muted/50",
+                )}
+                onClick={() => onRowClick(c.id)}
+              >
+                {canWrite && (
+                  <span className="pt-0.5" onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                      className={CHECKBOX}
+                      checked={selected.includes(c.id)}
+                      onCheckedChange={() => onToggleOne(c.id)}
+                      aria-label={`${t("clSelectRow")} ${c.reference}`}
+                    />
+                  </span>
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-semibold tracking-wide">
+                      {c.reference}
+                    </span>
+                    {!c.viewedAt && (
+                      <Badge className="h-5 px-1.5 text-[10px] uppercase tracking-wide">
+                        {t("notifNew")}
+                      </Badge>
+                    )}
+                    <Badge variant="secondary" className="ml-auto">
+                      {t(`st_${c.status}` as Key)}
+                    </Badge>
+                  </div>
+                  <p className="mt-1 truncate text-sm">
+                    {c.complainantName}
+                    <span className="text-muted-foreground"> → </span>
+                    {c.respondentName}
+                  </p>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                    {c.priority !== "none" && (
+                      <Badge className={cn("border", PRIORITY_STYLE[c.priority])}>
+                        {t(`pr_${c.priority}` as Key)}
+                      </Badge>
+                    )}
+                    <span className="text-xs text-muted-foreground">
+                      {t("dueDate")}: {c.dueAt ? date(c.dueAt) : "—"}
+                    </span>
+                    {isOverdue(c) && (
+                      <Badge variant="destructive" className="h-5 px-1.5 text-[10px] uppercase tracking-wide">
+                        {t("overdue")}
+                      </Badge>
+                    )}
+                    {isDueSoon(c) && (
+                      <Badge className="h-5 border-transparent bg-amber-500 px-1.5 text-[10px] tracking-wide text-white uppercase hover:bg-amber-500">
+                        {t("dueSoon")}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <Table className="hidden [&_td]:px-4 [&_td]:py-3 [&_td]:whitespace-normal [&_th]:px-4 [&_th]:whitespace-normal md:table">
           <TableHeader className="sticky top-0 z-10 bg-background">
             <TableRow>
               {canWrite && (
@@ -169,6 +234,7 @@ export default function ComplaintsTable({
             ))}
           </TableBody>
         </Table>
+        </>
       )}
     </div>
   );

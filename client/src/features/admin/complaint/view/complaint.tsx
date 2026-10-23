@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { useLoaderData, useRevalidator, useRouteLoaderData, Link } from "react-router";
 import { cn } from "cn";
+import { CASE_WRITE_ROLES, type Role } from "@/lib/roles";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -67,7 +68,7 @@ export default function ComplaintView() {
   const complaint = useLoaderData() as ComplaintDetail;
   const revalidator = useRevalidator();
   const { user } = useRouteLoaderData("admin") as AdminLoaderData;
-  const canWrite = user?.role !== "secretary";
+  const canWrite = !!user && CASE_WRITE_ROLES.includes(user.role as Role);
 
   const formatDateTime = (iso: string) =>
     new Date(iso).toLocaleString(lang === "tl" ? "fil-PH" : "en-PH", {
@@ -140,9 +141,9 @@ export default function ComplaintView() {
     !isClosed;
 
   return (
-    <div className="-mx-6 -my-6">
+    <div className="-mx-4 -my-4 sm:-mx-6 sm:-my-6">
       {/* Sticky actions */}
-      <div className="sticky -top-6 z-20 flex flex-wrap items-center justify-between gap-4 bg-background px-6 py-3">
+      <div className="sticky -top-4 z-20 flex flex-wrap items-center justify-between gap-4 bg-background px-4 py-3 sm:-top-6 sm:px-6">
         <Button
           asChild
           variant="ghost"
@@ -183,7 +184,7 @@ export default function ComplaintView() {
         </div>
       </div>
 
-      <div className="space-y-10 p-6 pt-10">
+      <div className="space-y-10 p-4 pt-8 sm:p-6 sm:pt-10">
         {/* Title */}
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-2">

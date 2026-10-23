@@ -36,7 +36,7 @@ export default function MonthCalendar({
   onEdit,
 }: MonthCalendarProps) {
   return (
-    <Card>
+    <Card className="[--card-spacing:--spacing(3)] sm:[--card-spacing:--spacing(6)]">
       <CardHeader>
         <CardTitle>{monthLabel}</CardTitle>
         <CardAction>
@@ -55,7 +55,7 @@ export default function MonthCalendar({
           {WEEKDAYS.map((day) => (
             <div
               key={day}
-              className="px-1 pb-1 text-center text-xs font-medium text-muted-foreground"
+              className="px-1 pb-1 text-center text-[10px] font-medium text-muted-foreground sm:text-xs"
             >
               {day}
             </div>
@@ -66,7 +66,7 @@ export default function MonthCalendar({
               return (
                 <div
                   key={`empty-${index}`}
-                  className="min-h-24 rounded-md border border-dashed border-transparent"
+                  className="min-h-14 rounded-md border border-dashed border-transparent sm:min-h-24"
                 />
               );
             }
@@ -87,7 +87,7 @@ export default function MonthCalendar({
                 onMouseLeave={() => setHoveredDay((current) => (current === key ? null : current))}
                 disabled={!complaintsAvailable}
                 className={cn(
-                  "relative flex min-h-24 flex-col items-stretch gap-1 rounded-md border p-1.5 text-left align-top transition-all",
+                  "relative flex min-h-14 flex-col items-stretch gap-1 rounded-md border p-1 text-left align-top transition-all sm:min-h-24 sm:p-1.5",
                   "hover:border-primary/40 hover:bg-muted/40 disabled:cursor-default",
                   isToday ? "border-primary/50 bg-primary/5" : "border-border",
                   isBusy &&
@@ -106,7 +106,7 @@ export default function MonthCalendar({
                 </span>
 
                 {isBusy && (
-                  <span className="pointer-events-none absolute top-1.5 right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+                  <span className="pointer-events-none absolute top-1 right-1 hidden h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground sm:flex">
                     {items.length}
                   </span>
                 )}
@@ -128,7 +128,7 @@ export default function MonthCalendar({
                       }
                     }}
                     className={cn(
-                      "cursor-pointer truncate rounded border px-1.5 py-0.5 text-[11px] font-medium transition-colors hover:ring-1 hover:ring-foreground/25",
+                      "hidden cursor-pointer truncate rounded border px-1.5 py-0.5 text-[11px] font-medium transition-colors hover:ring-1 hover:ring-foreground/25 sm:block",
                       KIND_STYLE[hearing.kind],
                       hearing.status === "cancelled" && "line-through opacity-60",
                       hearing.overdue && "border-amber-500/60 ring-1 ring-amber-500/40",
@@ -151,8 +151,23 @@ export default function MonthCalendar({
                   </span>
                 ))}
 
+                {items.length > 0 && (
+                  <span className="mt-auto flex flex-wrap gap-0.5 sm:hidden" aria-hidden>
+                    {items.map((hearing) => (
+                      <span
+                        key={hearing.id}
+                        className={cn(
+                          "h-1.5 w-1.5 rounded-full",
+                          hearing.overdue ? "bg-amber-500" : STATUS_DOT[hearing.status],
+                          hearing.status === "cancelled" && "opacity-50",
+                        )}
+                      />
+                    ))}
+                  </span>
+                )}
+
                 {!isHovered && items.length > 2 && (
-                  <span className="px-1 text-[11px] text-muted-foreground">
+                  <span className="hidden px-1 text-[11px] text-muted-foreground sm:block">
                     +{items.length - 2} more
                   </span>
                 )}

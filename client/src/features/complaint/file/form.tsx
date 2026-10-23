@@ -722,9 +722,11 @@ export default function FileComplaint() {
         <div className="flex items-start gap-3 rounded-md border bg-muted/50 p-5">
           <Checkbox id="consent" name="consent" className="mt-1" aria-invalid={!!fields.consent} />
           <Label htmlFor="consent" className="text-sm font-normal leading-relaxed">
-            {t("consentA")}
-            <strong>Katarungang Pambarangay</strong>
-            {t("consentC")}
+            <span>
+              {t("consentA")}
+              <strong>Katarungang Pambarangay</strong>
+              {t("consentC")}
+            </span>
           </Label>
           <FieldError message={fields.consent} />
         </div>

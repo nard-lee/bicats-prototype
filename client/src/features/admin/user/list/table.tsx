@@ -110,18 +110,58 @@ export default function StaffAccounts() {
         <p className="text-sm font-medium text-destructive">{actionData.error}</p>
       )}
 
-      <div className="-mx-6 min-h-0 flex-1 overflow-x-hidden overflow-y-auto border-y [&>[data-slot=table-container]]:overflow-visible">
-        <Table className="[&_td]:px-4 [&_td]:py-3 [&_td]:whitespace-normal [&_th]:px-4 [&_th]:whitespace-normal">
+      <div className="-mx-4 divide-y border-y sm:-mx-6 md:hidden">
+        {items.length === 0 && (
+          <p className="px-4 py-10 text-center text-sm text-muted-foreground">
+            {hasFilters ? "No accounts match your filters." : "No accounts yet."}
+          </p>
+        )}
+        {items.map((user) => (
+          <div key={user.id} className="flex items-start justify-between gap-3 px-4 py-3">
+            <div className="min-w-0">
+              <p className="truncate font-bold">{user.fullName}</p>
+              <p className="truncate text-sm text-muted-foreground">@{user.username}</p>
+              <p className="truncate text-sm text-muted-foreground">{user.email}</p>
+              {user.phone && (
+                <p className="truncate text-sm text-muted-foreground">{user.phone}</p>
+              )}
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <Badge variant={user.role === "admin" ? "default" : "secondary"}>
+                  {t(ROLE_LABEL[user.role])}
+                </Badge>
+                <Badge variant={user.isActive ? "default" : "secondary"}>
+                  {user.isActive ? "Active" : "Inactive"}
+                </Badge>
+              </div>
+            </div>
+            <Form method="post" className="shrink-0">
+              <input type="hidden" name="intent" value="toggleActive" />
+              <input type="hidden" name="id" value={user.id} />
+              <input
+                type="hidden"
+                name="isActive"
+                value={user.isActive ? "false" : "true"}
+              />
+              <Button type="submit" variant="outline" size="sm" disabled={submitting}>
+                {user.isActive ? "Deactivate" : "Activate"}
+              </Button>
+            </Form>
+          </div>
+        ))}
+      </div>
+
+      <div className="-mx-4 border-y sm:-mx-6 md:min-h-0 md:flex-1 md:overflow-auto [&>[data-slot=table-container]]:overflow-visible">
+        <Table className="hidden [&_td]:px-4 [&_td]:py-3 [&_th]:px-4 md:table">
           <TableHeader className="sticky top-0 z-10 bg-background">
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Username</TableHead>
-              <TableHead>Position</TableHead>
-              <TableHead>{t("email")}</TableHead>
-              <TableHead>{t("phone")}</TableHead>
+              <TableHead className="hidden md:table-cell">Position</TableHead>
+              <TableHead className="hidden md:table-cell">{t("email")}</TableHead>
+              <TableHead className="hidden lg:table-cell">{t("phone")}</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Created</TableHead>
+              <TableHead className="hidden xl:table-cell">Created</TableHead>
               <TableHead className="text-right">Action</TableHead>
             </TableRow>
           </TableHeader>
@@ -137,9 +177,9 @@ export default function StaffAccounts() {
               <TableRow key={user.id} className="transition-colors hover:bg-muted/50">
                 <TableCell className="font-bold">{user.fullName}</TableCell>
                 <TableCell className="text-muted-foreground">@{user.username}</TableCell>
-                <TableCell>{user.position}</TableCell>
-                <TableCell className="text-muted-foreground">{user.email}</TableCell>
-                <TableCell className="text-muted-foreground">{user.phone}</TableCell>
+                <TableCell className="hidden md:table-cell">{user.position}</TableCell>
+                <TableCell className="hidden text-muted-foreground md:table-cell">{user.email}</TableCell>
+                <TableCell className="hidden text-muted-foreground lg:table-cell">{user.phone}</TableCell>
                 <TableCell>
                   <Badge variant={user.role === "admin" ? "default" : "secondary"}>
                     {t(ROLE_LABEL[user.role])}
@@ -150,7 +190,7 @@ export default function StaffAccounts() {
                     {user.isActive ? "Active" : "Inactive"}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-muted-foreground">{date(user.createdAt)}</TableCell>
+                <TableCell className="hidden text-muted-foreground xl:table-cell">{date(user.createdAt)}</TableCell>
                 <TableCell className="text-right">
                   <Form method="post">
                     <input type="hidden" name="intent" value="toggleActive" />

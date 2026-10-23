@@ -9,6 +9,7 @@ import {
 import { toast } from "sonner";
 import DataPagination from "@/components/data-pagination";
 import { api } from "@/lib/api";
+import { CASE_WRITE_ROLES, type Role } from "@/lib/roles";
 import { useT, type Key } from "@/lib/I18n";
 import { complaintTypeLabel } from "../type-label";
 import type { ComplaintStatus, ComplaintsPage } from "./loader";
@@ -26,7 +27,7 @@ export default function ComplaintsList() {
 
   // Secretaries keep the register but cannot change it.
   const { user } = useRouteLoaderData("admin") as AdminLoaderData;
-  const canWrite = user?.role !== "secretary";
+  const canWrite = !!user && CASE_WRITE_ROLES.includes(user.role as Role);
 
   const q = params.get("q") ?? "";
   const status = params.get("status") ?? "all";

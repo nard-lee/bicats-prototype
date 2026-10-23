@@ -36,7 +36,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { useT, type Key } from "@/lib/I18n";
-import { HEARING_ROLES, NOTICE_ROLES, ADMIN_ROLES, type Role } from "@/lib/roles";
+import { CASE_VIEW_ROLES, HEARING_ROLES, NOTICE_ROLES, ADMIN_ROLES, type Role } from "@/lib/roles";
 import TopLoader from "@/components/top-loader";
 import LanguageToggle from "@/components/language-toggle";
 import ModeToggle from "@/components/mode-toggle";
@@ -56,7 +56,7 @@ type NavLink = {
 const mainLinks: NavLink[] = [
   { to: "/admin", label: "adminOverview", icon: LayoutDashboard, end: true },
   { to: "/admin/analytics", label: "adminAnalytics", icon: ChartColumn },
-  { to: "/admin/complaints", label: "adminComplaints", icon: ClipboardList },
+  { to: "/admin/complaints", label: "adminComplaints", icon: ClipboardList, roles: CASE_VIEW_ROLES },
   { to: "/admin/hearings", label: "adminHearings", icon: CalendarDays, roles: HEARING_ROLES },
   { to: "/admin/notices", label: "adminNotices", icon: Bell, roles: NOTICE_ROLES },
 ];
@@ -109,6 +109,8 @@ export default function AdminLayout() {
       };
     })
     .filter((b): b is { label: string; path: string } => b !== null);
+
+  const currentCrumb = breadcrumbs[breadcrumbs.length - 1];
 
   return (
     <SidebarProvider className="h-svh overflow-hidden">
@@ -185,7 +187,7 @@ export default function AdminLayout() {
             <SidebarTrigger />
             
             {/* Breadcrumbs */}
-            <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1 overflow-hidden text-sm text-muted-foreground">
+            <nav aria-label="Breadcrumb" className="hidden min-w-0 items-center gap-1 overflow-hidden text-sm text-muted-foreground sm:flex">
               <Link to="/admin" className="flex shrink-0 items-center gap-1 hover:text-foreground transition-colors">
                 <Home className="h-4 w-4" />
               </Link>
@@ -202,9 +204,14 @@ export default function AdminLayout() {
                 </div>
               ))}
             </nav>
+            {currentCrumb && (
+              <span className="truncate text-sm font-medium text-foreground sm:hidden">
+                {currentCrumb.label}
+              </span>
+            )}
           </div>
 
-          <div className="flex shrink-0 items-center gap-4">
+          <div className="flex shrink-0 items-center gap-1 sm:gap-4">
             {user && (
               <Link
                 to="/admin/profile"
@@ -219,7 +226,7 @@ export default function AdminLayout() {
           </div>
         </header>
         
-        <main className="min-h-0 flex-1 overflow-auto p-6">
+        <main className="min-h-0 flex-1 overflow-auto p-4 sm:p-6">
           <Outlet />
         </main>
       </SidebarInset>

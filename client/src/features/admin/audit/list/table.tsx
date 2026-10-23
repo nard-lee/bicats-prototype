@@ -170,17 +170,48 @@ export default function AuditLog() {
         </div>
       </Form>
 
-      <div className="-mx-6 min-h-0 flex-1 overflow-x-hidden overflow-y-auto border-y [&>[data-slot=table-container]]:overflow-visible">
-        <Table className="[&_td]:px-4 [&_td]:py-3 [&_td]:whitespace-normal [&_th]:px-4 [&_th]:whitespace-normal">
+      <div className="-mx-4 divide-y border-y sm:-mx-6 md:hidden">
+        {items.length === 0 && (
+          <div className="flex flex-col items-center gap-2 px-4 py-12 text-center text-muted-foreground">
+            <div className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
+              <ScrollText className="size-5" />
+            </div>
+            <span className="text-sm">
+              {hasFilters ? "No activity matches your filters." : t("auditEmpty")}
+            </span>
+          </div>
+        )}
+        {items.map((row) => (
+          <div key={row.id} className="space-y-1 px-4 py-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs text-muted-foreground tabular-nums">
+                {when(row.createdAt)}
+              </span>
+              <Badge variant="secondary" className="shrink-0">
+                {ACTION_LABEL[row.action] ?? row.action}
+              </Badge>
+            </div>
+            <p className="text-sm break-words">{row.summary}</p>
+            <p className="text-xs break-words text-muted-foreground">
+              {row.actorName ?? "System"}
+              {isRole(row.actorRole) && ` · ${t(ROLE_LABEL[row.actorRole])}`}
+              {row.target && ` · ${row.target}`}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      <div className="-mx-4 border-y sm:-mx-6 md:min-h-0 md:flex-1 md:overflow-auto [&>[data-slot=table-container]]:overflow-visible">
+        <Table className="hidden [&_td]:px-4 [&_td]:py-3 [&_th]:px-4 md:table">
           <TableHeader className="sticky top-0 z-10 bg-background">
             <TableRow>
               <TableHead>{t("auditWhen")}</TableHead>
               <TableHead>{t("auditWho")}</TableHead>
-              <TableHead>{t("role")}</TableHead>
+              <TableHead className="hidden md:table-cell">{t("role")}</TableHead>
               <TableHead>{t("auditAction")}</TableHead>
-              <TableHead>{t("auditTarget")}</TableHead>
+              <TableHead className="hidden lg:table-cell">{t("auditTarget")}</TableHead>
               <TableHead>{t("auditDetails")}</TableHead>
-              <TableHead>{t("auditIp")}</TableHead>
+              <TableHead className="hidden xl:table-cell">{t("auditIp")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -203,7 +234,7 @@ export default function AuditLog() {
                   {when(row.createdAt)}
                 </TableCell>
                 <TableCell className="font-bold">{row.actorName ?? "System"}</TableCell>
-                <TableCell>
+                <TableCell className="hidden md:table-cell">
                   {isRole(row.actorRole) ? (
                     <Badge variant="secondary">{t(ROLE_LABEL[row.actorRole])}</Badge>
                   ) : (
@@ -215,7 +246,7 @@ export default function AuditLog() {
                     {ACTION_LABEL[row.action] ?? row.action}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-muted-foreground">
+                <TableCell className="hidden text-muted-foreground lg:table-cell">
                   <span
                     className={
                       row.target.includes("(record deleted)") ? "italic" : undefined
@@ -224,8 +255,8 @@ export default function AuditLog() {
                     {row.target}
                   </span>
                 </TableCell>
-                <TableCell className="max-w-[24rem]">{row.summary}</TableCell>
-                <TableCell className="text-xs text-muted-foreground tabular-nums">
+                <TableCell className="max-w-[24rem] whitespace-normal">{row.summary}</TableCell>
+                <TableCell className="hidden text-xs text-muted-foreground tabular-nums xl:table-cell">
                   {row.ip ?? "—"}
                 </TableCell>
               </TableRow>

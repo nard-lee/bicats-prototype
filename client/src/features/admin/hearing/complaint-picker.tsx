@@ -34,7 +34,7 @@ export default function ComplaintPicker({ options, value, onChange }: Props) {
         onClick={() => setOpen((o) => !o)}
         className="flex h-9 w-full items-center justify-between gap-2 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
       >
-        <span className={cn("truncate text-left", !selected && "text-muted-foreground")}>
+        <span className={cn("min-w-0 truncate text-left", !selected && "text-muted-foreground")}>
           {selected
             ? `${selected.reference} — ${selected.complainantName} and ${selected.respondentName}`
             : "Select a case"}
