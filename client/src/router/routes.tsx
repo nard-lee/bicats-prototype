@@ -53,6 +53,7 @@ import {
   LazyRoute,
   Login,
   NoticesList,
+  Privacy,
   Profile,
   StaffAccounts,
   Track,
@@ -76,6 +77,7 @@ const router = createBrowserRouter([
         action: fileComplaintAction,
       },
       { path: 'track-complaint', element: <LazyRoute Component={Track} fallback={<CenteredCardSkeleton />} />, action: trackAction },
+      { path: 'privacy', element: <LazyRoute Component={Privacy} fallback={<CenteredCardSkeleton />} /> },
       { path: '*', element: <NotFound /> }
     ]
   },

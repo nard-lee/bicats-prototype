@@ -466,6 +466,36 @@ const en = {
     "No settlement was reached, so a Certificate to File Action was issued. The complainant may now bring the case to court.",
   ph_dismissed: "The case was dismissed by the barangay.",
 
+  // privacy policy
+  privacyTitle: "Privacy Policy",
+  privacyUpdated: "Last updated: October 23, 2026",
+  privacyIntro:
+    "This policy explains what personal information the Online Complaint Desk collects, why we collect it, and the choices you have. It follows Republic Act No. 10173, the Data Privacy Act of 2012.",
+  privacyWhoTitle: "Who runs this site",
+  privacyWhoText:
+    "This complaint desk is operated by the barangay named in the header, through the Office of the Punong Barangay and the Lupong Tagapamayapa.",
+  privacyCollectTitle: "Information we collect",
+  privacyCollectText:
+    "When you file a complaint, we collect your name, age, purok or address, contact number, optional email address, the details of the incident, information about the respondent, and any photos, documents, or videos you attach. When you track a complaint, we need the reference number and the contact number you used. Staff accounts include a name, username, email address, phone number, and role.",
+  privacyUseTitle: "How we use it",
+  privacyUseText:
+    "We use this information to record and process your complaint, contact you about summonses, mediation, and the status of your case, prepare official barangay documents, and keep an audit trail for accountability. We do not sell personal information.",
+  privacyShareTitle: "Who can see it",
+  privacyShareText:
+    "Only authorized barangay staff can open complaint records. As part of the Katarungang Pambarangay process, the respondent receives a summons that includes the details needed to answer the complaint. Our hosting, database, and messaging providers process data on our behalf so the service can run.",
+  privacyCookiesTitle: "Cookies and advertising",
+  privacyCookiesText:
+    "Staff sign-in uses essential cookies that keep the session secure; they are not used for advertising. Public pages may show ads served by Google AdSense. Google and its partners may use cookies to show ads based on earlier visits to this or other sites. You can turn off personalized advertising in Google Ads Settings (adssettings.google.com) or learn about opting out at aboutads.info. Blocking cookies does not affect filing a complaint, but staff cannot sign in without them.",
+  privacyRetentionTitle: "How long we keep it",
+  privacyRetentionText:
+    "Complaint records are kept according to barangay records rules and the deadlines of the Katarungang Pambarangay. Sign-in credentials are stored as hashes and access is limited by role. No system is completely secure, but we take reasonable steps to protect what you send us.",
+  privacyRightsTitle: "Your rights",
+  privacyRightsText:
+    "Under the Data Privacy Act you can ask to be informed, to access, correct, or object to the processing of your personal information, and to have it erased or blocked where the law allows. You may also file a complaint with the National Privacy Commission (privacy.gov.ph). To make a request, contact the barangay using the details in the footer.",
+  privacyChangesTitle: "Changes to this policy",
+  privacyChangesText:
+    "We may update this policy when the service or the law changes. The date at the top shows the latest revision.",
+
   // complaints list
   clSubtitle:
     "Every complaint on record. Filter, search, and open a case to work on it.",
@@ -1058,6 +1088,36 @@ const tl: Record<Key, string> = {
   ph_certified:
     "Walang naging kasunduan, kaya binigyan ng Certificate to File Action. Maaari nang dalhin ng nagreklamo ang kaso sa korte.",
   ph_dismissed: "Ibinasura ng barangay ang kaso.",
+
+  // privacy policy
+  privacyTitle: "Patakaran sa Privacy",
+  privacyUpdated: "Huling na-update: Oktubre 23, 2026",
+  privacyIntro:
+    "Ipinaliwanag ng patakarang ito kung anong personal na impormasyon ang kinokolekta ng Online Complaint Desk, bakit namin ito kinokolekta, at ano ang mga pagpipilian mo. Sumusunod ito sa Republic Act No. 10173, ang Data Privacy Act of 2012.",
+  privacyWhoTitle: "Sino ang nagpapatakbo ng site na ito",
+  privacyWhoText:
+    "Ang complaint desk na ito ay pinapatakbo ng barangay na nakasaad sa itaas, sa pamamagitan ng Tanggapan ng Punong Barangay at ng Lupong Tagapamayapa.",
+  privacyCollectTitle: "Impormasyong kinokolekta namin",
+  privacyCollectText:
+    "Kapag naghain ka ng reklamo, kinokolekta namin ang iyong pangalan, edad, purok o address, contact number, opsyonal na email address, mga detalye ng pangyayari, impormasyon tungkol sa inirereklamo, at anumang larawan, dokumento, o video na ikinabit mo. Para subaybayan ang reklamo, kailangan namin ang reference number at ang contact number na ginamit mo. Ang mga account ng staff ay may pangalan, username, email address, numero ng telepono, at tungkulin.",
+  privacyUseTitle: "Paano namin ito ginagamit",
+  privacyUseText:
+    "Ginagamit namin ang impormasyong ito para itala at proseso ang iyong reklamo, makipag-ugnayan tungkol sa patawag, mediasyon, at kalagayan ng iyong kaso, maghanda ng opisyal na dokumento ng barangay, at panatilihin ang audit trail para sa pananagutan. Hindi namin ibinebenta ang personal na impormasyon.",
+  privacyShareTitle: "Sino ang makakakita nito",
+  privacyShareText:
+    "Tanging mga awtorisadong staff ng barangay ang makakabukas ng mga rekord ng reklamo. Bilang bahagi ng proseso ng Katarungang Pambarangay, tumatanggap ang inirereklamo ng patawag na may detalyeng kailangan para sagutin ang reklamo. Pinoproseso ng aming hosting, database, at messaging provider ang datos para mapatakbo ang serbisyo.",
+  privacyCookiesTitle: "Cookies at advertising",
+  privacyCookiesText:
+    "Gumagamit ang pag-sign in ng staff ng mahahalagang cookie para mapanatiling secure ang session; hindi ito ginagamit sa advertising. Maaaring magpakita ng ads mula sa Google AdSense ang mga pampublikong pahina. Maaaring gumamit ang Google at ang mga partner nito ng cookies para magpakita ng ads batay sa dating pagbisita sa site na ito o sa iba. Maaari mong patayin ang personalized na advertising sa Google Ads Settings (adssettings.google.com) o alamin ang pag-opt out sa aboutads.info. Hindi naaapektuhan ng pag-block ng cookies ang paghain ng reklamo, pero hindi makakapasok ang staff kung wala ang mga ito.",
+  privacyRetentionTitle: "Gaano katagal namin ito itinatago",
+  privacyRetentionText:
+    "Ang mga rekord ng reklamo ay itinatago ayon sa mga tuntunin sa rekord ng barangay at sa mga takda ng Katarungang Pambarangay. Ang mga kredensyal sa pag-sign in ay nakaimbak bilang hash at limitado ang pag-access ayon sa tungkulin. Walang sistemang ganap na ligtas, pero gumagawa kami ng makatuwirang hakbang para protektahan ang ipinapadala mo.",
+  privacyRightsTitle: "Ang iyong mga karapatan",
+  privacyRightsText:
+    "Sa ilalim ng Data Privacy Act, maaari kang humiling na maipaalam, ma-access, maitama, o tutulan ang pagpoproseso ng iyong personal na impormasyon, at mapabura o mapahinto ito kung pinapayagan ng batas. Maaari ka ring maghain ng reklamo sa National Privacy Commission (privacy.gov.ph). Para sa hiling, makipag-ugnayan sa barangay gamit ang detalye sa ilalim ng pahina.",
+  privacyChangesTitle: "Mga pagbabago sa patakarang ito",
+  privacyChangesText:
+    "Maaari naming i-update ang patakarang ito kapag nagbago ang serbisyo o ang batas. Makikita sa petsa sa itaas ang pinakabagong rebisyon.",
 
   // complaints list
   clSubtitle:

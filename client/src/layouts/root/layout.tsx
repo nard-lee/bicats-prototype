@@ -118,7 +118,13 @@ export default function RootLayout() {
         </div>
         <div className="border-t py-4 text-center text-sm text-muted-foreground">
           © {YEAR}{" "}
-          {settings?.barangayName || "Barangay Kabayanihan"}. {t("tagline")}
+          {settings?.barangayName || "Barangay Kabayanihan"}. {t("tagline")}{" "}
+          <Link
+            to="/privacy"
+            className="underline-offset-4 hover:text-foreground hover:underline"
+          >
+            {t("privacyTitle")}
+          </Link>
         </div>
       </footer>
     </div>
