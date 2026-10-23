@@ -69,7 +69,7 @@ const authController = {
             throw new CustomError('No refresh token provided', undefined, 401);
         }
 
-        const refreshed = await authService.refresh(oldRefreshToken);
+        const refreshed = await authService.refresh(oldRefreshToken, req.ip ?? null);
 
         setSessionCookies(res, refreshed, refreshed.remember);
 

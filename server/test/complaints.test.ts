@@ -296,6 +296,81 @@ describe("staff case workflow", () => {
     });
   });
 
+  it("filters the register by search, type, priority, and risk", async () => {
+    await createUser("admin");
+
+    const publicAgent = request.agent(app);
+    const publicToken = await csrfToken(publicAgent);
+
+    const soon = await submitComplaint(publicAgent, publicToken, {
+      complainantName: "Maria Santos",
+    }).expect(200);
+    const overdue = await submitComplaint(publicAgent, publicToken, {
+      complainantName: "Josefa Ramos",
+      complaintType: "type2",
+    }).expect(200);
+
+    const rows = await prisma.complaint.findMany({
+      where: {
+        reference: { in: [soon.body.reference, overdue.body.reference] },
+      },
+      select: { id: true, reference: true },
+    });
+    const idOf = (reference: string) =>
+      rows.find((row) => row.reference === reference)!.id;
+
+    await prisma.complaint.update({
+      where: { id: idOf(soon.body.reference) },
+      data: { dueAt: new Date(Date.now() + 2 * 86_400_000) },
+    });
+    await prisma.complaint.update({
+      where: { id: idOf(overdue.body.reference) },
+      data: { dueAt: new Date(Date.now() - 2 * 86_400_000) },
+    });
+
+    const { agent, token } = await loginAgent("admin");
+
+    await agent
+      .patch(`/api/complaints/${idOf(overdue.body.reference)}/priority`)
+      .set("x-csrf-token", token)
+      .send({ priority: "high" })
+      .expect(200);
+
+    const list = (query: string) =>
+      agent
+        .post(`/api/complaints/list${query}`)
+        .set("x-csrf-token", token)
+        .expect(200);
+
+    const search = await list("?q=maria");
+    expect(
+      search.body.items.map((item: { reference: string }) => item.reference),
+    ).toEqual([soon.body.reference]);
+
+    const byType = await list("?type=type2");
+    expect(
+      byType.body.items.map((item: { reference: string }) => item.reference),
+    ).toEqual([overdue.body.reference]);
+
+    const byPriority = await list("?priority=high");
+    expect(
+      byPriority.body.items.map((item: { reference: string }) => item.reference),
+    ).toEqual([overdue.body.reference]);
+
+    const open = await list("?open=1");
+    expect(open.body.total).toBe(2);
+
+    const pastDue = await list("?overdue=1");
+    expect(
+      pastDue.body.items.map((item: { reference: string }) => item.reference),
+    ).toEqual([overdue.body.reference]);
+
+    const dueSoon = await list("?dueSoon=1");
+    expect(
+      dueSoon.body.items.map((item: { reference: string }) => item.reference),
+    ).toEqual([soon.body.reference]);
+  });
+
   it("allows read-only roles to view cases but not change them", async () => {
     await createUser("secretary");
 

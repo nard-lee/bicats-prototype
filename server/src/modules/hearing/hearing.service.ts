@@ -20,8 +20,7 @@ import {
   assertSchedulingAllowed,
   mapHearing,
 } from "./hearing.helpers.js";
-
-const TERMINAL_STATUSES = ["settled", "certified", "dismissed"];
+import { TERMINAL_STATUSES } from "../complaint/complaint.schema.js";
 
 const hearingSelect = {
   id: true,
@@ -73,7 +72,7 @@ const hearingService = {
 
   async complaintOptions(): Promise<HearingComplaintOption[]> {
     return prisma.complaint.findMany({
-      where: { status: { notIn: TERMINAL_STATUSES } },
+      where: { status: { notIn: [...TERMINAL_STATUSES] } },
       orderBy: { createdAt: "desc" },
       take: 200,
       select: {

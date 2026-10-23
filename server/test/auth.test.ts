@@ -2,6 +2,7 @@ import request from "supertest";
 import { describe, expect, it } from "vitest";
 
 import app from "../src/app.js";
+import authService from "../src/modules/auth/auth.service.js";
 import { prisma } from "../src/db.js";
 import {
   PASSWORD,
@@ -121,14 +122,48 @@ describe("authentication", () => {
     const storedOld = await prisma.refreshToken.findUnique({
       where: { token: oldRefreshToken! },
     });
-    expect(storedOld).toBeNull();
+    // Rotation tombstones the old token instead of deleting it, so replays
+    // stay detectable.
+    expect(storedOld!.revokedAt).toBeInstanceOf(Date);
 
     const tokens = await prisma.refreshToken.findMany({
-      where: { userId: user.id },
+      where: { userId: user.id, revokedAt: null },
     });
     expect(tokens).toHaveLength(1);
 
     await agent.get("/api/auth/me").expect(200);
+  });
+
+  it("revokes every session when a rotated token is replayed", async () => {
+    const user = await createUser("admin");
+    const first = await authService.login({
+      identifier: "admin",
+      password: PASSWORD,
+      remember: false,
+    });
+    const second = await authService.refresh(first.refreshToken);
+
+    expect(second.refreshToken).not.toBe(first.refreshToken);
+
+    // The attacker replays the original token after it was rotated: the
+    // request fails and the whole family dies with it.
+    await expect(authService.refresh(first.refreshToken)).rejects.toMatchObject({
+      statusCode: 401,
+    });
+    expect(
+      await prisma.refreshToken.count({ where: { userId: user.id } }),
+    ).toBe(0);
+
+    // The successor token the attacker would have walked away with is dead too.
+    await expect(authService.refresh(second.refreshToken)).rejects.toMatchObject({
+      statusCode: 401,
+    });
+
+    // The compromise is visible in the audit trail, attributed to the victim.
+    const entry = await prisma.auditLog.findFirst({
+      where: { action: "auth.token_reuse", entityId: user.id },
+    });
+    expect(entry?.summary).toContain("all sessions revoked");
   });
 
   it("issues session cookies when remember me is off", async () => {
@@ -158,7 +193,7 @@ describe("authentication", () => {
     expect(isSessionCookie(setCookie(refreshed.headers, "refresh_token"))).toBe(true);
 
     const rotated = await prisma.refreshToken.findFirst({
-      where: { userId: user.id },
+      where: { userId: user.id, revokedAt: null },
     });
     expect(rotated!.remember).toBe(false);
   });
@@ -191,7 +226,7 @@ describe("authentication", () => {
     expect(setCookie(refreshed.headers, "refresh_token")).toMatch(/Max-Age=\d+/i);
 
     const rotated = await prisma.refreshToken.findMany({
-      where: { userId: user.id },
+      where: { userId: user.id, revokedAt: null },
     });
     expect(rotated).toHaveLength(1);
     expect(rotated[0]!.remember).toBe(true);
@@ -204,7 +239,10 @@ describe("authentication", () => {
 
     expect(setCookie(loggedOut.headers, "access_token")).toMatch(/^access_token=;/);
     expect(setCookie(loggedOut.headers, "refresh_token")).toMatch(/^refresh_token=;/);
-    expect(await prisma.refreshToken.count({ where: { userId: user.id } })).toBe(0);
+    // Logout tombstones the token (replay detection) — no active sessions left.
+    expect(
+      await prisma.refreshToken.count({ where: { userId: user.id, revokedAt: null } }),
+    ).toBe(0);
   });
 
   it("reports a missing refresh token with a 401", async () => {

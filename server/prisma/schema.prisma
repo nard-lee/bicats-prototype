@@ -7,6 +7,58 @@ datasource db {
   provider = "postgresql"
 }
 
+// ---- Closed value sets ----
+// Keep these in sync with the TS unions in src/utils/roles.ts,
+// src/modules/complaint/complaint.schema.ts, and complaint.eligibility.ts.
+enum Role {
+  admin
+  staff
+  secretary
+  lupon
+}
+
+enum ComplaintStatus {
+  received
+  summoned
+  mediation
+  conciliation
+  settled
+  certified
+  dismissed
+}
+
+enum ComplaintPriority {
+  none
+  low
+  normal
+  high
+  urgent
+}
+
+// Public intake types; type12 ("Others") carries a free-text description.
+enum ComplaintType {
+  type1
+  type2
+  type3
+  type4
+  type5
+  type6
+  type7
+  type8
+  type9
+  type10
+  type11
+  type12
+}
+
+enum EligibilityStatus {
+  unreviewed
+  eligible
+  needs_review
+  outside_kp
+  rejected
+}
+
 // ---- Staff accounts (created by an admin, no public registration) ----
 model User {
   id           Int      @id @default(autoincrement())
@@ -16,7 +68,7 @@ model User {
   phone        String   @unique
   username     String   @unique
   passwordHash String
-  role         String   @default("staff") // "admin" | "staff" | "secretary" | "lupon"
+  role         Role     @default(staff)
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -73,23 +125,21 @@ model Complaint {
   relationship      String?
 
   // Incident
-  complaintType      String
-  complaintTypeOther String? // free-text description when complaintType = "type12"
+  complaintType      ComplaintType
+  complaintTypeOther String? // free-text description when complaintType = type12
   incidentAt    DateTime
   incidentPlace String
   narrative     String
 
-  // received | summoned | mediation | conciliation | settled | certified | dismissed
-  status    String    @default("received")
-  // low | normal | high | urgent (auto-escalated when a deadline lapses)
-  priority  String    @default("normal")
+  status    ComplaintStatus   @default(received)
+  priority  ComplaintPriority @default(normal)
   // Deadline for the next Katarungang Pambarangay step (null for terminal cases)
   dueAt     DateTime?
   consentAt DateTime
   viewedAt  DateTime? // first time staff opened the case; null = unopened
 
   // KP eligibility screening captured at intake, plus the staff decision
-  eligibilityStatus     String    @default("unreviewed") // unreviewed | eligible | needs_review | outside_kp | rejected
+  eligibilityStatus     EligibilityStatus @default(unreviewed)
   eligibilityAnswers    Json?
   eligibilityNotes      String?
   eligibilityReason     String?
@@ -141,7 +191,7 @@ model StatusUpdate {
   id           Int       @id @default(autoincrement())
   complaintId  Int
   complaint    Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
-  status       String
+  status       ComplaintStatus
   publicNote   String?
   internalNote String?
   hearingAt    DateTime?

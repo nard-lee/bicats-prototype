@@ -3,6 +3,7 @@ import type { Request, Response } from "express";
 import { validateRequest } from "../../utils/custom.validator.js";
 import { CustomError } from "../../utils/custom.exception.js";
 import { auditFromRequest } from "../audit/audit.service.js";
+import { runSideEffect } from "../../utils/side-effect.js";
 import complainantNotifier from "../notify/complainant.notifier.js";
 import hearingService from "./hearing.service.js";
 import {
@@ -42,11 +43,14 @@ const hearingController = {
     });
 
     // Text/email the complainant that their session is booked.
-    void complainantNotifier.mediationScheduled(input.complaintId, {
-      kind: input.kind,
-      scheduledAt: input.scheduledAt,
-      location: input.location ?? null,
-    });
+    runSideEffect(
+      "notifications: mediation scheduled",
+      complainantNotifier.mediationScheduled(input.complaintId, {
+        kind: input.kind,
+        scheduledAt: input.scheduledAt,
+        location: input.location ?? null,
+      }),
+    );
   },
 
   async update(req: Request, res: Response): Promise<void> {
@@ -78,18 +82,24 @@ const hearingController = {
 
     // Text/email the complainant only when the session actually moved.
     if (updated.rescheduled && input.scheduledAt && input.status !== "cancelled") {
-      void complainantNotifier.mediationScheduled(updated.complaintId, {
-        kind: updated.kind,
-        scheduledAt: input.scheduledAt,
-        location: input.location ?? null,
-        rescheduled: true,
-      });
+      runSideEffect(
+        "notifications: mediation rescheduled",
+        complainantNotifier.mediationScheduled(updated.complaintId, {
+          kind: updated.kind,
+          scheduledAt: input.scheduledAt,
+          location: input.location ?? null,
+          rescheduled: true,
+        }),
+      );
     }
 
     if (input.status === "cancelled" && updated.previousStatus !== "cancelled") {
-      void complainantNotifier.mediationCancelled(updated.complaintId, {
-        kind: updated.kind,
-      });
+      runSideEffect(
+        "notifications: mediation cancelled",
+        complainantNotifier.mediationCancelled(updated.complaintId, {
+          kind: updated.kind,
+        }),
+      );
     }
   },
 
@@ -142,9 +152,12 @@ const hearingController = {
     });
 
     // Text/email the complainant their session is cancelled.
-    void complainantNotifier.mediationCancelled(cancelled.complaintId, {
-      kind: cancelled.kind,
-    });
+    runSideEffect(
+      "notifications: mediation cancelled",
+      complainantNotifier.mediationCancelled(cancelled.complaintId, {
+        kind: cancelled.kind,
+      }),
+    );
   },
 };
 

@@ -3,7 +3,7 @@ import { prisma } from "../../db.js";
 import { Prisma } from "../../generated/prisma/client.js";
 import { CustomError } from "../../utils/custom.exception.js";
 
-import { COMPLAINT_STATUSES, COMPLAINT_PRIORITIES, TERMINAL_STATUSES, canTransition, computeNextDueAt, deadlineConfigFrom } from "./complaint.schema.js";
+import { COMPLAINT_STATUSES, TERMINAL_STATUSES, RISK_WINDOW_DAYS, canTransition, computeNextDueAt, deadlineConfigFrom, isComplaintPriority, isComplaintStatus, isComplaintType } from "./complaint.schema.js";
 import type { CreateComplaintInput } from "./complaint.schema.js";
 import type { UpdateEligibilityInput } from "./complaint.eligibility.js";
 import type { CreateServiceRecordInput, ServiceResult } from "./complaint.service-record.js";
@@ -11,6 +11,8 @@ import type {
     ComplaintDetail,
     ComplaintListFilters,
     ComplaintListRow,
+    ComplaintPriority,
+    ComplaintStatus,
     ComplaintTrackResult,
     Paginated,
 } from "./complaint.types.js";
@@ -124,72 +126,88 @@ const complaintService = {
         pageSize: number,
         filters: ComplaintListFilters = {},
     ): Promise<Paginated<ComplaintListRow>> {
-        const conditions: Prisma.Sql[] = [];
+        const conditions: Prisma.ComplaintWhereInput[] = [];
 
         const q = filters.q?.trim();
         if (q) {
-            const like = `%${q}%`;
-            conditions.push(
-                Prisma.sql`("reference" ILIKE ${like} OR "complainantName" ILIKE ${like} OR "respondentName" ILIKE ${like})`,
-            );
+            conditions.push({
+                OR: [
+                    { reference: { contains: q, mode: "insensitive" } },
+                    { complainantName: { contains: q, mode: "insensitive" } },
+                    { respondentName: { contains: q, mode: "insensitive" } },
+                ],
+            });
         }
 
-        if (
-            filters.status &&
-            (COMPLAINT_STATUSES as readonly string[]).includes(filters.status)
-        ) {
-            conditions.push(Prisma.sql`"status" = ${filters.status}`);
+        if (filters.status && isComplaintStatus(filters.status)) {
+            conditions.push({ status: filters.status });
         }
 
-        if (filters.type) conditions.push(Prisma.sql`"complaintType" = ${filters.type}`);
+        if (filters.type && isComplaintType(filters.type)) {
+            conditions.push({ complaintType: filters.type });
+        }
 
-        if (
-            filters.priority &&
-            (COMPLAINT_PRIORITIES as readonly string[]).includes(filters.priority)
-        ) {
-            conditions.push(Prisma.sql`"priority" = ${filters.priority}`);
+        if (filters.priority && isComplaintPriority(filters.priority)) {
+            conditions.push({ priority: filters.priority });
         }
 
         if (filters.open) {
-            conditions.push(
-                Prisma.sql`"status" IN ('received', 'summoned', 'mediation', 'conciliation')`,
-            );
+            conditions.push({
+                status: {
+                    in: COMPLAINT_STATUSES.filter(
+                        (status) => !TERMINAL_STATUSES.includes(status),
+                    ),
+                },
+            });
         }
 
+        const now = new Date();
+
         if (filters.overdue) {
-            conditions.push(
-                Prisma.sql`("dueAt" IS NOT NULL AND "dueAt" < NOW() AND "status" NOT IN ('settled', 'certified', 'dismissed'))`,
-            );
+            conditions.push({
+                dueAt: { not: null, lt: now },
+                status: { notIn: [...TERMINAL_STATUSES] },
+            });
         }
 
         if (filters.dueSoon) {
-            conditions.push(
-                Prisma.sql`("dueAt" IS NOT NULL AND "dueAt" >= NOW() AND "dueAt" <= NOW() + interval '3 days' AND "status" NOT IN ('settled', 'certified', 'dismissed'))`,
-            );
+            conditions.push({
+                dueAt: {
+                    not: null,
+                    gte: now,
+                    lte: new Date(now.getTime() + RISK_WINDOW_DAYS * 24 * 60 * 60 * 1000),
+                },
+                status: { notIn: [...TERMINAL_STATUSES] },
+            });
         }
 
-        const whereSql = conditions.length
-            ? Prisma.sql`WHERE ${Prisma.join(conditions, " AND ")}`
-            : Prisma.empty;
-
+        const where: Prisma.ComplaintWhereInput = conditions.length
+            ? { AND: conditions }
+            : {};
         const offset = (page - 1) * pageSize;
 
-        const [items, countRows] = await Promise.all([
-            // Newest filed first.
-            prisma.$queryRaw<ComplaintListRow[]>`
-                SELECT id, reference, "complainantName", "respondentName",
-                       "complaintType", "complaintTypeOther", status, priority, "createdAt", "viewedAt", "dueAt"
-                FROM "Complaint"
-                ${whereSql}
-                ORDER BY "createdAt" DESC, id DESC
-                LIMIT ${pageSize} OFFSET ${offset}
-            `,
-            prisma.$queryRaw<{ count: number }[]>`
-                SELECT COUNT(*)::int AS count FROM "Complaint" ${whereSql}
-            `,
+        const [items, total] = await Promise.all([
+            prisma.complaint.findMany({
+                where,
+                select: {
+                    id: true,
+                    reference: true,
+                    complainantName: true,
+                    respondentName: true,
+                    complaintType: true,
+                    complaintTypeOther: true,
+                    status: true,
+                    priority: true,
+                    createdAt: true,
+                    viewedAt: true,
+                    dueAt: true,
+                },
+                orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+                skip: offset,
+                take: pageSize,
+            }),
+            prisma.complaint.count({ where }),
         ]);
-
-        const total = countRows[0]?.count ?? 0;
 
         return {
             items,
@@ -382,7 +400,7 @@ const complaintService = {
         };
     },
 
-    async updateStatus(id: number, status: string, publicNote?: string, internalNote?: string, hearingAt?: Date, userId?: number) {
+    async updateStatus(id: number, status: ComplaintStatus, publicNote?: string, internalNote?: string, hearingAt?: Date, userId?: number) {
         const settings = await settingService.get();
         const deadlines = deadlineConfigFrom(settings);
 
@@ -585,7 +603,7 @@ const complaintService = {
         });
     },
 
-    async bulkUpdateStatus(ids: number[], status: string, userId?: number): Promise<number> {
+    async bulkUpdateStatus(ids: number[], status: ComplaintStatus, userId?: number): Promise<number> {
         const settings = await settingService.get();
         const deadlines = deadlineConfigFrom(settings);
 
@@ -667,7 +685,7 @@ const complaintService = {
         return result.count;
     },
 
-    async setPriority(id: number, priority: string) {
+    async setPriority(id: number, priority: ComplaintPriority) {
         const existing = await prisma.complaint.findUnique({
             where: { id },
             select: { reference: true, priority: true },
@@ -768,6 +786,9 @@ const complaintService = {
                     ? `Complaint rejected: ${input.eligibilityReason}`
                     : "Case dismissed: the complaint falls outside the authority of the Katarungang Pambarangay.";
 
+            // Eligibility is a screening gate, not a stage move: a case found
+            // outside KP authority closes from whatever open stage it reached,
+            // so this dismissal deliberately does not consult COMPLAINT_TRANSITIONS.
             await tx.complaint.update({
                 where: { id },
                 data: {

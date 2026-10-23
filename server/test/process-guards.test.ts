@@ -143,6 +143,61 @@ describe("complaint lifecycle guards", () => {
     expect(openReopen.body.message).toBe("Only closed cases can be reopened.");
   });
 
+  it("lets eligibility screening dismiss a case that reached mediation", async () => {
+    await createUser("admin");
+    const complaintId = await filedComplaintId();
+    const { agent, token } = await loginAgent("admin");
+
+    await agent
+      .patch(`/api/complaints/${complaintId}/status`)
+      .set("x-csrf-token", token)
+      .send({ status: "summoned" })
+      .expect(200);
+
+    const hearingId = await schedule(
+      agent,
+      token,
+      complaintId,
+      new Date(Date.now() + DAY_MS),
+    );
+
+    await agent
+      .patch(`/api/complaints/${complaintId}/status`)
+      .set("x-csrf-token", token)
+      .send({ status: "mediation" })
+      .expect(200);
+
+    await agent
+      .patch(`/api/complaints/${complaintId}/eligibility`)
+      .set("x-csrf-token", token)
+      .send({ eligibilityStatus: "outside_kp" })
+      .expect(200);
+
+    const closed = await prisma.complaint.findUnique({
+      where: { id: complaintId },
+      select: {
+        status: true,
+        dueAt: true,
+        priority: true,
+        eligibilityStatus: true,
+      },
+    });
+    expect(closed).toEqual({
+      status: "dismissed",
+      dueAt: null,
+      priority: "none",
+      eligibilityStatus: "outside_kp",
+    });
+
+    const hearing = await prisma.hearing.findUnique({ where: { id: hearingId } });
+    expect(hearing!.status).toBe("cancelled");
+
+    const entry = await prisma.statusUpdate.findFirst({
+      where: { complaintId, status: "dismissed" },
+    });
+    expect(entry!.publicNote).toContain("outside the authority");
+  });
+
   it("cancels scheduled sessions and clears reminders when a case closes", async () => {
     const admin = await createUser("admin");
     const complaintId = await filedComplaintId();

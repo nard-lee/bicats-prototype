@@ -39,3 +39,7 @@ export function getCsrfToken(): Promise<string> {
     }
     return tokenPromise;
 }
+
+export function resetCsrfToken(): void {
+    tokenPromise = null;
+}

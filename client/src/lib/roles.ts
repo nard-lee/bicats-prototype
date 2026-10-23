@@ -5,6 +5,8 @@ export const ROLES = ["admin", "staff", "secretary", "lupon"] as const;
 export type Role = (typeof ROLES)[number];
 
 export const INTERNAL_ROLES: Role[] = ["admin", "staff", "secretary", "lupon"];
+export const CASE_VIEW_ROLES: Role[] = ["admin", "staff", "secretary", "lupon"];
+export const CASE_WRITE_ROLES: Role[] = ["admin", "staff", "lupon"];
 export const HEARING_ROLES: Role[] = ["admin", "staff", "lupon"];
 export const NOTICE_ROLES: Role[] = ["admin", "staff", "secretary"];
 export const ADMIN_ROLES: Role[] = ["admin"];

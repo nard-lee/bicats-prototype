@@ -10,8 +10,25 @@ import type {
     ComplaintPriority,
     ComplaintRisk,
     ComplaintStatus,
+    ComplaintType,
     DeadlineDays,
 } from "./complaint.types.js";
+
+// Public intake types; keep in sync with the client's type1..type12 labels.
+export const COMPLAINT_TYPES = [
+    "type1",
+    "type2",
+    "type3",
+    "type4",
+    "type5",
+    "type6",
+    "type7",
+    "type8",
+    "type9",
+    "type10",
+    "type11",
+    "type12",
+] as const;
 
 export function normalizePhone(input: string) {
     let digits = input.replace(/\D/g, "");
@@ -42,7 +59,7 @@ export const createComplaintSchema = z
             z.string().trim().email().max(150).optional(),
         ).transform((value) => value ?? null),
 
-        complaintType: z.string().min(1),
+        complaintType: z.enum(COMPLAINT_TYPES),
         complaintTypeOther: optionalText(150),
         incidentAt: z.coerce
             .date()
@@ -165,6 +182,18 @@ export function canTransition(from: string, to: string): boolean {
 
 // ---- Priority triage ----
 export const COMPLAINT_PRIORITIES = ["none", "low", "normal", "high", "urgent"] as const;
+
+export function isComplaintStatus(value: string): value is ComplaintStatus {
+  return (COMPLAINT_STATUSES as readonly string[]).includes(value);
+}
+
+export function isComplaintPriority(value: string): value is ComplaintPriority {
+  return (COMPLAINT_PRIORITIES as readonly string[]).includes(value);
+}
+
+export function isComplaintType(value: string): value is ComplaintType {
+  return (COMPLAINT_TYPES as readonly string[]).includes(value);
+}
 
 const PRIORITY_RANK: Record<ComplaintPriority, number> = {
   none: 0,

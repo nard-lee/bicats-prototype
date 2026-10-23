@@ -3,10 +3,11 @@ import type {
     EligibilityStatus,
 } from "./complaint.eligibility.js";
 import type { ServiceResult } from "./complaint.service-record.js";
-import type { COMPLAINT_PRIORITIES, COMPLAINT_STATUSES } from "./complaint.schema.js";
+import type { COMPLAINT_PRIORITIES, COMPLAINT_STATUSES, COMPLAINT_TYPES } from "./complaint.schema.js";
 
 export type ComplaintStatus = (typeof COMPLAINT_STATUSES)[number];
 export type ComplaintPriority = (typeof COMPLAINT_PRIORITIES)[number];
+export type ComplaintType = (typeof COMPLAINT_TYPES)[number];
 
 export type ComplaintTrackUpdate = {
     status: string;

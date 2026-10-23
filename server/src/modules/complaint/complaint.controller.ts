@@ -6,10 +6,11 @@ import notificationService from "../notification/notification.service.js";
 import complainantNotifier from "../notify/complainant.notifier.js";
 import { auditFromRequest } from "../audit/audit.service.js";
 import { CustomError } from "../../utils/custom.exception.js";
-import { COMPLAINT_STATUSES, createComplaintSchema, trackComplaintSchema, updatePrioritySchema } from "./complaint.schema.js";
+import { createComplaintSchema, isComplaintStatus, trackComplaintSchema, updatePrioritySchema } from "./complaint.schema.js";
 import { updateEligibilitySchema } from "./complaint.eligibility.js";
 import { createServiceRecordSchema } from "./complaint.service-record.js";
 import { removeUploadedFiles } from "../../utils/upload.js";
+import { runSideEffect } from "../../utils/side-effect.js";
 
 const complaintController = {
 
@@ -107,7 +108,7 @@ const complaintController = {
             throw new CustomError("Invalid complaint ID", undefined, 400);
         }
 
-        if (!(COMPLAINT_STATUSES as readonly string[]).includes(status)) {
+        if (!isComplaintStatus(status)) {
             throw new CustomError("Invalid complaint status", undefined, 400);
         }
 
@@ -130,11 +131,14 @@ const complaintController = {
         });
 
         // Text/email the complainant about the new step (and any mediation date).
-        void complainantNotifier.statusUpdate(id, {
-            status,
-            publicNote: publicNote ?? null,
-            hearingAt: hearingDate ?? null,
-        });
+        runSideEffect(
+            "notifications: status update",
+            complainantNotifier.statusUpdate(id, {
+                status,
+                publicNote: publicNote ?? null,
+                hearingAt: hearingDate ?? null,
+            }),
+        );
     },
 
     async bulkStatus(req: Request, res: Response): Promise<void> {
@@ -145,7 +149,7 @@ const complaintController = {
 
         const status = typeof req.body?.status === "string" ? req.body.status : "";
 
-        if (ids.length === 0 || !(COMPLAINT_STATUSES as readonly string[]).includes(status)) {
+        if (ids.length === 0 || !isComplaintStatus(status)) {
             throw new CustomError("Select at least one complaint and a valid status", undefined, 400);
         }
 
@@ -217,11 +221,14 @@ const complaintController = {
         });
 
         if (updated.dismissed && updated.dismissalNote) {
-            void complainantNotifier.statusUpdate(id, {
-                status: "dismissed",
-                publicNote: updated.dismissalNote,
-                hearingAt: null,
-            });
+            runSideEffect(
+                "notifications: status update",
+                complainantNotifier.statusUpdate(id, {
+                    status: "dismissed",
+                    publicNote: updated.dismissalNote,
+                    hearingAt: null,
+                }),
+            );
         }
     },
 

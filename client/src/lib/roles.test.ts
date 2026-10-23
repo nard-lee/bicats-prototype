@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { ADMIN_ROLES, HEARING_ROLES, INTERNAL_ROLES, NOTICE_ROLES, ROLE_LABEL, ROLES, isRole } from './roles'
+import { ADMIN_ROLES, CASE_VIEW_ROLES, CASE_WRITE_ROLES, HEARING_ROLES, INTERNAL_ROLES, NOTICE_ROLES, ROLE_LABEL, ROLES, isRole } from './roles'
 
 describe('isRole', () => {
   it('accepts every known role', () => {
@@ -18,12 +18,20 @@ describe('isRole', () => {
 
 describe('role groups', () => {
   it('keeps every staff group inside the internal roles', () => {
-    for (const group of [HEARING_ROLES, NOTICE_ROLES, ADMIN_ROLES]) {
+    for (const group of [
+      CASE_VIEW_ROLES,
+      CASE_WRITE_ROLES,
+      HEARING_ROLES,
+      NOTICE_ROLES,
+      ADMIN_ROLES,
+    ]) {
       for (const role of group) expect(INTERNAL_ROLES).toContain(role)
     }
   })
 
   it('matches the permissions the app relies on', () => {
+    expect(CASE_VIEW_ROLES).toEqual(['admin', 'staff', 'secretary', 'lupon'])
+    expect(CASE_WRITE_ROLES).toEqual(['admin', 'staff', 'lupon'])
     expect(HEARING_ROLES).toEqual(['admin', 'staff', 'lupon'])
     expect(NOTICE_ROLES).toEqual(['admin', 'staff', 'secretary'])
     expect(ADMIN_ROLES).toEqual(['admin'])

@@ -5,6 +5,7 @@ import {
   escalatedPriority,
   TERMINAL_STATUSES,
 } from "../modules/complaint/complaint.schema.js";
+import type { ComplaintPriority } from "../modules/complaint/complaint.types.js";
 import { INTERNAL_ROLES } from "../utils/roles.js";
 import notificationService from "../modules/notification/notification.service.js";
 import settingService from "../modules/setting/setting.service.js";
@@ -79,7 +80,7 @@ export async function runReminderScan(): Promise<number> {
   const stamp = dayKey(now);
 
   // ---- Auto-escalation: overdue cases climb in priority ----
-  const byTargetPriority = new Map<string, { id: number; reference: string }[]>();
+  const byTargetPriority = new Map<ComplaintPriority, { id: number; reference: string }[]>();
 
   for (const complaint of cases) {
     if (!complaint.dueAt) continue;

@@ -1,5 +1,5 @@
 import ky from "ky";
-import { getCsrfToken } from "./csrf";
+import { getCsrfToken, resetCsrfToken } from "./csrf";
 
 let refreshPromise: Promise<unknown> | null = null;
 
@@ -33,6 +33,11 @@ export const api = ky.create({
         ],
         afterResponse: [
             async ({ request, response }) => {
+                // A rejected token must not stay cached; the next call refetches.
+                if (response.status === 403) {
+                    resetCsrfToken();
+                    return;
+                }
                 if (response.status !== 401) return;
                 if (
                     request.url.includes("/auth/refresh") ||
@@ -46,6 +51,8 @@ export const api = ky.create({
                 }
 
                 const retry = pristine.get(request) ?? request;
+                // The retry bypasses the hook chain, so set the token explicitly.
+                retry.headers.set("X-CSRF-Token", await getCsrfToken());
                 return ky(retry, { credentials: "include" });
             },
         ],

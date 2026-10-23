@@ -1,21 +1,16 @@
 import { prisma } from "../../db.js";
-import { complaintRisk } from "../complaint/complaint.schema.js";
+import {
+  COMPLAINT_STATUSES,
+  TERMINAL_STATUSES,
+  complaintRisk,
+} from "../complaint/complaint.schema.js";
 import settingService from "../setting/setting.service.js";
 
 const DAY = 24 * 60 * 60 * 1000;
 
-const COMPLAINT_STATUSES = [
-  "received",
-  "summoned",
-  "mediation",
-  "conciliation",
-  "settled",
-  "certified",
-  "dismissed",
-] as const;
-
-const OPEN_STATUSES = ["received", "summoned", "mediation", "conciliation"];
-const TERMINAL_STATUSES = ["settled", "certified", "dismissed"];
+const OPEN_STATUSES = COMPLAINT_STATUSES.filter(
+  (status) => !TERMINAL_STATUSES.includes(status),
+);
 
 export const analyticsService = {
   async getComplaintTypes() {
@@ -87,7 +82,7 @@ export const analyticsService = {
           by: ["status"],
           where: {
             createdAt: { gte: start, lt: end },
-            status: { in: TERMINAL_STATUSES },
+            status: { in: [...TERMINAL_STATUSES] },
           },
           _count: { status: true },
         }),
@@ -104,7 +99,7 @@ export const analyticsService = {
         Promise.all([
           prisma.complaint.count({ where: { status: { in: OPEN_STATUSES } } }),
           prisma.complaint.count({
-            where: { status: { notIn: TERMINAL_STATUSES }, dueAt: { lt: new Date() } },
+            where: { status: { notIn: [...TERMINAL_STATUSES] }, dueAt: { lt: new Date() } },
           }),
         ]),
         // Average days from filing to reaching a terminal status
@@ -154,10 +149,10 @@ export const analyticsService = {
     const [statusGroups, overdue, dueSoon] = await Promise.all([
       prisma.complaint.groupBy({ by: ["status"], _count: { status: true } }),
       prisma.complaint.count({
-        where: { dueAt: { lt: now }, status: { notIn: TERMINAL_STATUSES } },
+        where: { dueAt: { lt: now }, status: { notIn: [...TERMINAL_STATUSES] } },
       }),
       prisma.complaint.count({
-        where: { dueAt: { gte: now, lte: soon }, status: { notIn: TERMINAL_STATUSES } },
+        where: { dueAt: { gte: now, lte: soon }, status: { notIn: [...TERMINAL_STATUSES] } },
       }),
     ]);
 
@@ -229,21 +224,21 @@ export const analyticsService = {
       prisma.complaint.count({
         where: {
           dueAt: { lt: now },
-          status: { notIn: TERMINAL_STATUSES },
+          status: { notIn: [...TERMINAL_STATUSES] },
         },
       }),
       // Due soon but not yet overdue
       prisma.complaint.count({
         where: {
           dueAt: { gte: now, lte: soon },
-          status: { notIn: TERMINAL_STATUSES },
+          status: { notIn: [...TERMINAL_STATUSES] },
         },
       }),
       // Overdue + due soon, soonest first
       prisma.complaint.findMany({
         where: {
           dueAt: { not: null, lte: soon },
-          status: { notIn: TERMINAL_STATUSES },
+          status: { notIn: [...TERMINAL_STATUSES] },
         },
         orderBy: { dueAt: "asc" },
         take: 6,
