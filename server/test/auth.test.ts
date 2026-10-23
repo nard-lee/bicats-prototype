@@ -245,6 +245,48 @@ describe("authentication", () => {
     ).toBe(0);
   });
 
+  it("bootstraps the profile for anonymous and signed-in visitors", async () => {
+    const anonymous = await request(app).get("/api/auth/bootstrap").expect(200);
+    expect(anonymous.body.user).toBeNull();
+    expect(anonymous.body.settings).toMatchObject({
+      id: 1,
+      documentOfficeLine: "Office of the Punong Barangay",
+    });
+
+    await createUser("admin");
+    const { agent } = await loginAgent("admin");
+
+    const signedIn = await agent.get("/api/auth/bootstrap").expect(200);
+    expect(signedIn.body.user).toMatchObject({
+      email: "admin@bicats.test",
+      role: "admin",
+    });
+    expect(signedIn.body.user.passwordHash).toBeUndefined();
+    expect(signedIn.body.settings).toMatchObject({ id: 1 });
+  });
+
+  it("asks the client to refresh when only the session cookie remains", async () => {
+    await createUser("staff");
+    const agent = request.agent(app);
+    const token = await csrfToken(agent);
+
+    const login = await agent
+      .post("/api/auth/log-in")
+      .set("x-csrf-token", token)
+      .send({ identifier: "staff", password: PASSWORD })
+      .expect(200);
+
+    const refresh = refreshTokenFrom(login.headers);
+    expect(refresh).toBeTruthy();
+
+    const response = await request(app)
+      .get("/api/auth/bootstrap")
+      .set("Cookie", [`refresh_token=${refresh}`])
+      .expect(401);
+
+    expect(response.body).toEqual({ message: "Session needs refresh" });
+  });
+
   it("reports a missing refresh token with a 401", async () => {
     const agent = request.agent(app);
     const token = await csrfToken(agent);

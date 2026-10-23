@@ -1,4 +1,5 @@
 import { api } from "@/lib/api";
+import { clearBootstrap } from "@/lib/bootstrap";
 import { HTTPError } from "ky";
 
 export type CurrentUser = {
@@ -33,4 +34,5 @@ export function getCurrentUser(): Promise<CurrentUser | null> {
 
 export function clearCurrentUser() {
     userPromise = null;
+    clearBootstrap();
 }

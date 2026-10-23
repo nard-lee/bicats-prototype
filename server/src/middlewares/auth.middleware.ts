@@ -11,6 +11,41 @@ declare global {
     }
 }
 
+// Public routes that personalise themselves: resolve the session when it is
+// valid, but never turn a missing or expired token into an error.
+export function optionalAuth() {
+    return async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
+        const token = req.cookies?.access_token;
+        if (!token) {
+            next();
+            return;
+        }
+
+        let payload: JwtPayload;
+        try {
+            payload = verifyAccessToken(token);
+        } catch {
+            next();
+            return;
+        }
+
+        try {
+            const user = await prisma.user.findUnique({
+                where: { id: payload.userId },
+                select: { id: true, fullName: true, role: true, isActive: true },
+            });
+
+            if (user?.isActive) {
+                req.user = { userId: user.id, role: user.role, fullName: user.fullName };
+            }
+
+            next();
+        } catch (err: unknown) {
+            next(err as Error);
+        }
+    };
+}
+
 export function requireAuth(...allowedRoles: JwtPayload["role"][]) {
     return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         const token = req.cookies?.access_token;

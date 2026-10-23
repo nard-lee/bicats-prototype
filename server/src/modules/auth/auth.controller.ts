@@ -6,6 +6,7 @@ import { loginSchema } from "./auth.schema.js";
 import authService from "./auth.service.js";
 import { config } from "@/utils/env.config.js";
 import userService from "@/modules/user/user.service.js";
+import settingService from "@/modules/setting/setting.service.js";
 import auditService from "@/modules/audit/audit.service.js";
 
 const isProd = config.nodeEnv === "production";
@@ -40,6 +41,22 @@ const authController = {
         }
 
         res.status(200).json(await userService.me(req.user.userId));
+    },
+
+    async bootstrap(req: Request, res: Response): Promise<void> {
+        // The access cookie is session-only, so a remembered visitor can arrive
+        // holding just the refresh cookie. Answer 401 so the client rotates the
+        // session and retries instead of rendering a signed-out shell.
+        if (!req.user && req.cookies?.refresh_token) {
+            throw new CustomError("Session needs refresh", undefined, 401);
+        }
+
+        const [user, settings] = await Promise.all([
+            req.user ? userService.me(req.user.userId) : null,
+            settingService.get(),
+        ]);
+
+        res.status(200).json({ user, settings });
     },
 
     async login(req: Request, res: Response): Promise<void> {

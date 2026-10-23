@@ -1,6 +1,7 @@
 import { HTTPError } from "ky";
 import type { ActionFunctionArgs } from "react-router";
 import { api } from "@/lib/api";
+import { clearBootstrap } from "@/lib/bootstrap";
 import type { BarangaySettings } from "./loader";
 
 export type SettingsActionResult = {
@@ -82,6 +83,7 @@ export async function settingsAction({
     const settings = await api
       .patch("settings", { json: payload })
       .json<BarangaySettings>();
+    clearBootstrap();
     return { success: true, settings };
   } catch (err: unknown) {
     if (err instanceof HTTPError) {

@@ -1,20 +1,7 @@
-import { api } from "@/lib/api";
-import { getCurrentUser } from "@/hooks/use-auth";
-import type { BarangaySettings } from "@/features/admin/setting/loader";
+import { getBootstrap, type Bootstrap } from "@/lib/bootstrap";
 
-export type RootLoaderData = {
-  user: Awaited<ReturnType<typeof getCurrentUser>>;
-  settings: BarangaySettings | null;
-};
+export type RootLoaderData = Bootstrap;
 
-export async function RootLoader(): Promise<RootLoaderData> {
-  const [user, settings] = await Promise.all([
-    getCurrentUser(),
-    api
-      .get("settings")
-      .json<BarangaySettings>()
-      .catch(() => null),
-  ]);
-
-  return { user, settings };
+export function RootLoader(): Promise<Bootstrap> {
+  return getBootstrap();
 }

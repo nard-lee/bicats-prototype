@@ -1,6 +1,8 @@
 import ky from "ky";
 import { getCsrfToken, resetCsrfToken } from "./csrf";
 
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+
 let refreshPromise: Promise<unknown> | null = null;
 
 function refreshAccessToken() {
@@ -26,8 +28,12 @@ export const api = ky.create({
     hooks: {
         beforeRequest: [
             async ({ request }) => {
-                const token = await getCsrfToken();
-                request.headers.set("X-CSRF-Token", token);
+                // The server ignores safe methods, so fetching a token for them
+                // would just add a round trip to every page load.
+                if (!SAFE_METHODS.has(request.method)) {
+                    const token = await getCsrfToken();
+                    request.headers.set("X-CSRF-Token", token);
+                }
                 pristine.set(request, request.clone());
             },
         ],

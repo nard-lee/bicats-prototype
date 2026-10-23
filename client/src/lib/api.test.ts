@@ -117,6 +117,16 @@ describe("api 401 retry", () => {
     expect(failure?.status).toBe(401);
   });
 
+  it("does not fetch a CSRF token for safe requests", async () => {
+    const { api } = await import("./api");
+
+    await api.get("auth/bootstrap").json();
+
+    expect(
+      recorded.map((call) => `${call.method} ${new URL(call.url).pathname}`),
+    ).toEqual(["GET /api/auth/bootstrap"]);
+  });
+
   it("refetches the CSRF token after a 403 rejection", async () => {
     let tokenFetches = 0;
     const postTokens: Array<string | null> = [];
