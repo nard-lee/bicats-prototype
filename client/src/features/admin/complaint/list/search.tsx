@@ -170,14 +170,14 @@ export function ComplaintSearch({ defaultValue = "" }: { defaultValue?: string }
           className="absolute z-20 mt-1 w-full overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md"
         >
           <div className="flex items-center justify-between px-3 pt-2 pb-1">
-            <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+            <span className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
               <History className="h-3.5 w-3.5" />
               {t("clRecentSearches")}
             </span>
             <button
               type="button"
               onClick={clearHistory}
-              className="text-xs text-muted-foreground transition-colors hover:text-foreground"
+              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
               {t("clClear")}
             </button>
@@ -230,7 +230,7 @@ export function ComplaintSearch({ defaultValue = "" }: { defaultValue?: string }
                     )}
                   >
                     <span className="font-medium">{item.reference}</span>
-                    <span className="line-clamp-1 text-xs text-muted-foreground">
+                    <span className="line-clamp-1 text-sm text-muted-foreground">
                       {item.complainantName} and {item.respondentName}
                     </span>
                   </button>

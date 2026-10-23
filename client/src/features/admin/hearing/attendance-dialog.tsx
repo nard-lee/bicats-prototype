@@ -165,7 +165,7 @@ export default function AttendanceDialog({ hearing, onClose, onSaved }: Props) {
             />
           </div>
 
-          <p className="text-xs text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             Saving attendance also sets the session outcome: completed when at
             least one party attended, no show when neither did.
           </p>

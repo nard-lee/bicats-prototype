@@ -124,12 +124,12 @@ function Section({
   return (
     <section className="overflow-hidden rounded-xl border bg-card shadow-sm">
       <div className="flex items-start gap-3 border-b bg-muted/40 px-5 py-4">
-        <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+        <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
           {number}
         </span>
         <div>
         <h2 className="font-semibold">{title}</h2>
-        <p className="text-xs text-muted-foreground">{subtitle}</p>
+        <p className="text-sm text-muted-foreground">{subtitle}</p>
         </div>
       </div>
       <div className="grid gap-5 p-5 sm:grid-cols-2 sm:p-6">{children}</div>
@@ -152,7 +152,7 @@ function Field({
     <div className={`space-y-2 ${full ? "sm:col-span-2" : ""}`}>
       <Label>{label}</Label>
       {children}
-      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+      {hint && <p className="text-sm text-muted-foreground">{hint}</p>}
     </div>
   );
 }
@@ -244,18 +244,18 @@ export default function FileComplaint() {
           </p>
 
           <div className="mt-6 rounded-md border bg-muted/50 p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
               {t("refNumber")}
             </p>
             <p className="mt-1 text-2xl font-bold tracking-wider">{reference}</p>
           </div>
 
-          <p className="mt-4 text-xs text-muted-foreground">
+          <p className="mt-4 text-sm text-muted-foreground">
             {t("fcSuccessNote")}
           </p>
 
           {screening === "needs_review" && (
-            <p className="mt-3 rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-300">
+            <p className="mt-3 rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-300">
               {t("eligSuccessReview")}
             </p>
           )}
@@ -287,7 +287,7 @@ export default function FileComplaint() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12">
       <div className="rounded-2xl border bg-gradient-to-br from-primary/10 via-background to-background p-6 sm:p-8">
-        <p className="text-xs font-semibold tracking-[0.16em] text-primary uppercase">
+        <p className="text-sm font-semibold tracking-[0.16em] text-primary uppercase">
           Barangay Kabayanihan · Online Desk
         </p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">{t("fcTitle")}</h1>
@@ -300,12 +300,12 @@ export default function FileComplaint() {
             ["3", "Submit", "Keep your reference number."],
           ].map(([step, title, description]) => (
             <li key={step} className="flex items-center gap-3 rounded-lg border bg-background/80 p-3">
-              <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
                 {step}
               </span>
               <span>
                 <span className="block font-medium">{title}</span>
-                <span className="block text-xs text-muted-foreground">{description}</span>
+                <span className="block text-sm text-muted-foreground">{description}</span>
               </span>
             </li>
           ))}
@@ -329,7 +329,7 @@ export default function FileComplaint() {
             </span>
             <div>
               <h2 className="font-semibold">{t("eligTitle")}</h2>
-              <p className="text-xs text-muted-foreground">{t("eligIntro")}</p>
+              <p className="text-sm text-muted-foreground">{t("eligIntro")}</p>
             </div>
           </div>
 
@@ -681,7 +681,7 @@ export default function FileComplaint() {
             <label className="relative flex cursor-pointer flex-col items-center gap-2 rounded-md border-2 border-dashed bg-muted/50 px-4 py-10 text-center text-sm">
               <Upload className="size-6 text-muted-foreground" />
               <span>{t("dropFiles")}</span>
-              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1 text-sm text-muted-foreground">
                 <Paperclip className="size-3" /> {ALLOWED_LABEL}
               </span>
               <input
@@ -699,7 +699,7 @@ export default function FileComplaint() {
             )}
             {files.length > 0 && (
               <div className="space-y-2">
-                <ul className="space-y-1 text-xs text-muted-foreground">
+                <ul className="space-y-1 text-sm text-muted-foreground">
                   {files.map((f) => (
                     <li
                       key={`${f.name}-${f.size}`}
@@ -748,7 +748,7 @@ export default function FileComplaint() {
           )}
 
         <div className="sticky bottom-3 flex flex-col gap-3 rounded-xl border bg-background/95 p-4 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs text-muted-foreground">{t("refNote")}</p>
+          <p className="text-sm text-muted-foreground">{t("refNote")}</p>
           <Button
             type="submit"
             size="lg"

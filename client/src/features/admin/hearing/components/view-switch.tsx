@@ -30,7 +30,7 @@ export default function ViewSwitch({
           {VIEW_LABEL[view]}
           <span
             className={cn(
-              "text-xs tabular-nums",
+              "text-sm tabular-nums",
               activeView === view ? "text-primary" : "text-muted-foreground",
             )}
           >

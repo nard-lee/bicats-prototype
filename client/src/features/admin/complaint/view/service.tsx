@@ -165,7 +165,7 @@ function RecordServiceModal({
           </div>
 
           {caseStatus === "summoned" && result === "received" && (
-            <p className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-300">
+            <p className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-300">
               {t("serviceDeadlineHint")}
             </p>
           )}
@@ -238,7 +238,7 @@ export default function ServiceRecordCard({
 
       <CardContent className="space-y-3">
         {isClosed && (
-          <p className="text-xs text-muted-foreground">{t("serviceClosed")}</p>
+          <p className="text-sm text-muted-foreground">{t("serviceClosed")}</p>
         )}
 
         {records.length === 0 ? (
@@ -257,14 +257,14 @@ export default function ServiceRecordCard({
                   {t(RESULT_KEY[record.result])}
                 </Badge>
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">
+              <p className="mt-1 text-sm text-muted-foreground">
                 {t("serviceDateTime")} · {formatDateTime(record.servedAt)}
               </p>
               {record.notes && (
                 <p className="mt-2 text-sm whitespace-pre-wrap">{record.notes}</p>
               )}
               {record.createdBy && (
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="mt-1 text-sm text-muted-foreground">
                   {t("serviceLoggedBy")}: {record.createdBy}
                 </p>
               )}

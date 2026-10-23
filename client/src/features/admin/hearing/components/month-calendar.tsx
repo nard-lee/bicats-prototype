@@ -55,7 +55,7 @@ export default function MonthCalendar({
           {WEEKDAYS.map((day) => (
             <div
               key={day}
-              className="px-1 pb-1 text-center text-[10px] font-medium text-muted-foreground sm:text-xs"
+              className="px-1 pb-1 text-center text-xs font-medium text-muted-foreground"
             >
               {day}
             </div>
@@ -106,7 +106,7 @@ export default function MonthCalendar({
                 </span>
 
                 {isBusy && (
-                  <span className="pointer-events-none absolute top-1 right-1 hidden h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground sm:flex">
+                  <span className="pointer-events-none absolute top-1 right-1 hidden h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-xs font-semibold text-primary-foreground sm:flex">
                     {items.length}
                   </span>
                 )}
@@ -128,7 +128,7 @@ export default function MonthCalendar({
                       }
                     }}
                     className={cn(
-                      "hidden cursor-pointer truncate rounded border px-1.5 py-0.5 text-[11px] font-medium transition-colors hover:ring-1 hover:ring-foreground/25 sm:block",
+                      "hidden cursor-pointer truncate rounded border px-1.5 py-0.5 text-xs font-medium transition-colors hover:ring-1 hover:ring-foreground/25 sm:block",
                       KIND_STYLE[hearing.kind],
                       hearing.status === "cancelled" && "line-through opacity-60",
                       hearing.overdue && "border-amber-500/60 ring-1 ring-amber-500/40",
@@ -167,7 +167,7 @@ export default function MonthCalendar({
                 )}
 
                 {!isHovered && items.length > 2 && (
-                  <span className="hidden px-1 text-[11px] text-muted-foreground sm:block">
+                  <span className="hidden px-1 text-xs text-muted-foreground sm:block">
                     +{items.length - 2} more
                   </span>
                 )}

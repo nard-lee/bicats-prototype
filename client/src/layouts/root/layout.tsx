@@ -34,10 +34,10 @@ export default function RootLayout() {
             />
           </div>
           <div className="hidden min-w-0 leading-tight sm:block">
-            <p className="hidden text-xs text-muted-foreground sm:block">
+            <p className="hidden text-sm text-muted-foreground sm:block">
               {t("republic")}
             </p>
-            <p className="truncate text-xs text-muted-foreground">
+            <p className="truncate text-sm text-muted-foreground">
               {settings?.city || t("city")}
             </p>
             <Link to="/" className="block truncate text-base font-semibold sm:text-lg">
@@ -116,7 +116,7 @@ export default function RootLayout() {
             </p>
           </div>
         </div>
-        <div className="border-t py-4 text-center text-xs text-muted-foreground">
+        <div className="border-t py-4 text-center text-sm text-muted-foreground">
           © {YEAR}{" "}
           {settings?.barangayName || "Barangay Kabayanihan"}. {t("tagline")}
         </div>

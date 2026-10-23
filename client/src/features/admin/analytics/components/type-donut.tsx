@@ -34,7 +34,7 @@ export default function TypeDonut({ data, scopeLabel }: TypeDonutProps) {
         <CardTitle>{t("anTypes")}</CardTitle>
         <CardDescription>{t("anTypesDesc")}</CardDescription>
         <CardAction>
-          <Badge variant="outline" className="text-xs font-normal">
+          <Badge variant="outline" className="font-normal">
             {scopeLabel}
           </Badge>
         </CardAction>
@@ -73,7 +73,7 @@ export default function TypeDonut({ data, scopeLabel }: TypeDonutProps) {
                 verticalAlign="middle"
                 iconType="circle"
                 iconSize={8}
-                wrapperStyle={{ fontSize: 11, lineHeight: "1.7", maxWidth: 210 }}
+                wrapperStyle={{ fontSize: 12, lineHeight: "1.7", maxWidth: 210 }}
               />
             </PieChart>
           </ResponsiveContainer>

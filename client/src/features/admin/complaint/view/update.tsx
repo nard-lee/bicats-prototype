@@ -191,7 +191,7 @@ export default function StatusUpdateModal({ complaintId, currentStatus, currentP
             </div>
           </div>
           {(!canChangeStatus || targetIsClosed) && (
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               {!canChangeStatus
                 ? "This case is closed. You can only add notes."
                 : "Closing the case cancels its scheduled sessions and clears its deadline."}
@@ -231,7 +231,7 @@ export default function StatusUpdateModal({ complaintId, currentStatus, currentP
               placeholder="Select date & time"
             />
             {!canScheduleHearing && (
-              <p className="text-xs text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 Mediation cannot be scheduled for closed cases.
               </p>
             )}

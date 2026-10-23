@@ -29,7 +29,7 @@ export default function TrendChart({ data }: { data: TrendDatum[] }) {
         <CardTitle>{t("anTrends")}</CardTitle>
         <CardDescription>{t("anTrendsDesc")}</CardDescription>
         <CardAction>
-          <Badge variant="outline" className="text-xs font-normal">
+          <Badge variant="outline" className="font-normal">
             {t("anAllTime")}
           </Badge>
         </CardAction>

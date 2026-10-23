@@ -82,7 +82,7 @@ export default function SchedulingSection({
               className="h-11"
               aria-invalid={!!fields.hearingDurationMinutes}
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               {t("sessionLengthHint")}
             </p>
             <FieldError message={fields.hearingDurationMinutes} />
@@ -105,7 +105,7 @@ export default function SchedulingSection({
               className="h-11"
               aria-invalid={!!fields.hearingGraceHours}
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               {t("hearingGraceHint")}
             </p>
             <FieldError message={fields.hearingGraceHours} />
@@ -125,7 +125,7 @@ export default function SchedulingSection({
               {t("enforceOfficeHoursLabel")}
             </Label>
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             {t("enforceOfficeHoursHint")}
           </p>
 

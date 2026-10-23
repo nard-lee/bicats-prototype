@@ -102,7 +102,7 @@ export default function NoticesList() {
                   {notice.body}
                 </p>
 
-                <div className="mt-auto flex items-center justify-between gap-2 border-t pt-3 text-xs text-muted-foreground">
+                <div className="mt-auto flex items-center justify-between gap-2 border-t pt-3 text-sm text-muted-foreground">
                   <span className="truncate">
                     {notice.createdBy?.fullName ?? "Admin"} · {date(notice.createdAt)}
                   </span>

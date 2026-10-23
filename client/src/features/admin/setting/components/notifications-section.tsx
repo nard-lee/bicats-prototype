@@ -36,7 +36,7 @@ export default function NotificationsSection({
         <CardDescription>{t("notificationsHint")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid gap-2 text-xs font-medium tracking-wide text-muted-foreground uppercase sm:grid-cols-[minmax(0,1fr)_120px_120px]">
+        <div className="grid gap-2 text-sm font-medium tracking-wide text-muted-foreground uppercase sm:grid-cols-[minmax(0,1fr)_120px_120px]">
           <span />
           <span>{t("channelSms")}</span>
           <span>{t("channelEmail")}</span>
@@ -84,7 +84,7 @@ export default function NotificationsSection({
             className="h-11"
             aria-invalid={!!fields.reminderLeadHours}
           />
-          <p className="text-xs text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             {t("reminderLeadHint")}
           </p>
           <FieldError message={fields.reminderLeadHours} />

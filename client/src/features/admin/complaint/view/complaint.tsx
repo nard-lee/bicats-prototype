@@ -55,7 +55,7 @@ const PRIORITY_FULL_KEY: Record<Exclude<ComplaintPriority, "none">, Key> = {
 function Info({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="space-y-1">
-      <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+      <p className="text-sm font-medium tracking-wide text-muted-foreground uppercase">
         {label}
       </p>
       <p className="text-sm text-foreground">{value}</p>
@@ -410,7 +410,7 @@ export default function ComplaintView() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="mb-4 text-xs text-muted-foreground tabular-nums">
+                <p className="mb-4 text-sm text-muted-foreground tabular-nums">
                   {pageCount} · {historyCount}
                 </p>
                 <div className="space-y-6">
@@ -488,7 +488,7 @@ export default function ComplaintView() {
                       <ChevronLeft className="mr-1 h-3.5 w-3.5" />
                       {t("prevPage")}
                     </Button>
-                    <span className="text-center text-xs tabular-nums text-muted-foreground">
+                    <span className="text-center text-sm tabular-nums text-muted-foreground">
                       {pageCount}
                     </span>
                     <Button

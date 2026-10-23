@@ -21,14 +21,14 @@ export default function AuthCard({
         <div className="flex flex-col items-center gap-2 bg-primary px-6 py-8 text-center text-primary-foreground">
           {icon}
           <h1 className="text-2xl font-semibold">{title}</h1>
-          <p className="text-xs opacity-80">{subtitle}</p>
+          <p className="text-sm opacity-80">{subtitle}</p>
         </div>
         <div className="space-y-5 p-6">{children}</div>
       </div>
 
       <Link
         to="/"
-        className="mt-6 block text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground"
+        className="mt-6 block text-center text-sm font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground"
       >
         {t("backPublic")}
       </Link>

@@ -102,7 +102,7 @@ export default function ComplaintsTable({
                       {c.reference}
                     </span>
                     {!c.viewedAt && (
-                      <Badge className="h-5 px-1.5 text-[10px] uppercase tracking-wide">
+                      <Badge className="h-5 px-1.5 uppercase tracking-wide">
                         {t("notifNew")}
                       </Badge>
                     )}
@@ -121,16 +121,16 @@ export default function ComplaintsTable({
                         {t(`pr_${c.priority}` as Key)}
                       </Badge>
                     )}
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-sm text-muted-foreground">
                       {t("dueDate")}: {c.dueAt ? date(c.dueAt) : "—"}
                     </span>
                     {isOverdue(c) && (
-                      <Badge variant="destructive" className="h-5 px-1.5 text-[10px] uppercase tracking-wide">
+                      <Badge variant="destructive" className="h-5 px-1.5 uppercase tracking-wide">
                         {t("overdue")}
                       </Badge>
                     )}
                     {isDueSoon(c) && (
-                      <Badge className="h-5 border-transparent bg-amber-500 px-1.5 text-[10px] tracking-wide text-white uppercase hover:bg-amber-500">
+                      <Badge className="h-5 border-transparent bg-amber-500 px-1.5 tracking-wide text-white uppercase hover:bg-amber-500">
                         {t("dueSoon")}
                       </Badge>
                     )}
@@ -185,7 +185,7 @@ export default function ComplaintsTable({
                   <span className="inline-flex items-center gap-2 whitespace-nowrap">
                     {c.reference}
                     {!c.viewedAt && (
-                      <Badge className="h-5 px-1.5 text-[10px] uppercase tracking-wide">
+                      <Badge className="h-5 px-1.5 uppercase tracking-wide">
                         {t("notifNew")}
                       </Badge>
                     )}
@@ -213,12 +213,12 @@ export default function ComplaintsTable({
                         {date(c.dueAt)}
                       </span>
                       {isOverdue(c) && (
-                        <Badge variant="destructive" className="h-5 px-1.5 text-[10px] uppercase tracking-wide">
+                        <Badge variant="destructive" className="h-5 px-1.5 uppercase tracking-wide">
                           {t("overdue")}
                         </Badge>
                       )}
                       {isDueSoon(c) && (
-                        <Badge className="h-5 border-transparent bg-amber-500 px-1.5 text-[10px] tracking-wide text-white uppercase hover:bg-amber-500">
+                        <Badge className="h-5 border-transparent bg-amber-500 px-1.5 tracking-wide text-white uppercase hover:bg-amber-500">
                           {t("dueSoon")}
                         </Badge>
                       )}

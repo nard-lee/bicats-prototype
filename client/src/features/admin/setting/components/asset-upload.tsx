@@ -97,7 +97,7 @@ export default function AssetUpload({
           )}
         </div>
       </div>
-      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+      {hint && <p className="text-sm text-muted-foreground">{hint}</p>}
       <input
         ref={inputRef}
         type="file"

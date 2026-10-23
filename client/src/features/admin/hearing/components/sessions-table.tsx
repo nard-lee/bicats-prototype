@@ -92,7 +92,7 @@ export default function SessionsTable({
                       <p className="whitespace-nowrap">
                         {fmtDate(hearing.scheduledAt)}
                       </p>
-                      <p className="text-xs text-muted-foreground tabular-nums">
+                      <p className="text-sm text-muted-foreground tabular-nums">
                         {fmtTime(hearing.scheduledAt)}
                       </p>
                     </TableCell>
@@ -110,7 +110,7 @@ export default function SessionsTable({
                       </p>
                       {attendance && (
                         <p
-                          className="mt-1 flex items-center gap-1.5 text-xs"
+                          className="mt-1 flex items-center gap-1.5 text-sm"
                           title={`Complainant: ${hearing.complainantAttendance ?? "not recorded"} · Respondent: ${hearing.respondentAttendance ?? "not recorded"}`}
                         >
                           <span

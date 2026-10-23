@@ -130,7 +130,7 @@ export default function AdminLayout() {
           <Link to="/admin" className="text-lg font-semibold leading-tight group-data-[collapsible=icon]:hidden">
             {settings?.barangayName || "Barangay Kabayanihan"}
           </Link>
-          <p className="text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
+          <p className="text-sm text-muted-foreground group-data-[collapsible=icon]:hidden">
             {t("adminPanel")}
           </p>
         </SidebarHeader>

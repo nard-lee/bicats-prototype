@@ -99,7 +99,7 @@ export default function Toolbar({
                   {label}
                   <span
                     className={cn(
-                      "text-xs tabular-nums",
+                      "text-sm tabular-nums",
                       active ? "text-primary" : "text-muted-foreground",
                     )}
                   >

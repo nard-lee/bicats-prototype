@@ -187,7 +187,7 @@ export default function DateTimePicker({
           </Button>
         </div>
 
-        <div className="grid grid-cols-7 gap-0.5 pb-1 text-center text-[0.7rem] font-medium text-muted-foreground">
+        <div className="grid grid-cols-7 gap-0.5 pb-1 text-center text-xs font-medium text-muted-foreground">
           {WEEKDAYS.map((d) => (
             <div key={d} className="py-1">
               {d}

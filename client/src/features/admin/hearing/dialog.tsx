@@ -203,7 +203,7 @@ export default function HearingDialog({
         </DialogHeader>
 
         {editing?.overdue && (
-          <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-300">
+          <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-800 dark:text-amber-300">
             This session date has passed with no outcome recorded. Set the status to
             Completed or No show, or pick a new date to reschedule it.
           </div>
@@ -219,7 +219,7 @@ export default function HearingDialog({
                 onChange={setComplaintId}
               />
               {complaints.length === 0 && (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-sm text-muted-foreground">
                   No open cases are available to schedule.
                 </p>
               )}
@@ -234,7 +234,7 @@ export default function HearingDialog({
               onChange={setScheduled}
               placeholder="Select date & time"
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               {settings.enforceOfficeHours
                 ? `Office hours: ${hourLabel(settings.officeStartHour)}–${hourLabel(settings.officeEndHour)} · ${settings.hearingDurationMinutes}-minute sessions`
                 : `${settings.hearingDurationMinutes}-minute sessions`}

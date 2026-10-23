@@ -80,7 +80,7 @@ export default function ComplaintPicker({ options, value, onChange }: Props) {
                     )}
                   >
                     <span className="font-medium">{o.reference}</span>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-sm text-muted-foreground">
                       {o.complainantName} and {o.respondentName}
                     </span>
                   </button>

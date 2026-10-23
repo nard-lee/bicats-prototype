@@ -34,7 +34,7 @@ export default function PurokBars({ data, scopeLabel }: PurokBarsProps) {
         <CardTitle>{t("anHotspots")}</CardTitle>
         <CardDescription>{t("anHotspotsDesc")}</CardDescription>
         <CardAction>
-          <Badge variant="outline" className="text-xs font-normal">
+          <Badge variant="outline" className="font-normal">
             {scopeLabel}
           </Badge>
         </CardAction>

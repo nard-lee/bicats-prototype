@@ -98,7 +98,7 @@ export default function Track() {
         <Button type="submit" size="lg" disabled={submitting}>
           {submitting ? t("tracking") : t("trackBtn")}
         </Button>
-        <p className="text-xs text-muted-foreground">{t("trackHelp")}</p>
+        <p className="text-sm text-muted-foreground">{t("trackHelp")}</p>
       </Form>
 
       {result && (
@@ -207,7 +207,7 @@ export default function Track() {
           )}
 
           {filedAt && (
-            <div className="text-right text-xs text-muted-foreground">
+            <div className="text-right text-sm text-muted-foreground">
               {t("filedDate")}: {fmt(filedAt)}
             </div>
           )}

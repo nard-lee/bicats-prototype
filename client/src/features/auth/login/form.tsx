@@ -98,7 +98,7 @@ export default function Login() {
         </Button>
       </Form>
 
-      <p className="text-center text-xs text-muted-foreground">
+      <p className="text-center text-sm text-muted-foreground">
         {t("forgot")}
       </p>
     </AuthCard>

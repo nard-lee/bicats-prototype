@@ -175,24 +175,24 @@ export default function NotificationsBell() {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2">
                           <p
-                            className={`min-w-0 truncate text-[15px] leading-snug ${
+                            className={`min-w-0 truncate text-base leading-snug ${
                               isUnread ? "font-semibold" : "text-muted-foreground"
                             }`}
                           >
                             {n.title}
                           </p>
                           {isUnread && (
-                            <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+                            <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-primary">
                               {t("notifNew")}
                             </span>
                           )}
                         </div>
                         <p
-                          className={`text-[13px] leading-relaxed ${isUnread ? "" : "text-muted-foreground/70"}`}
+                          className={`text-sm leading-relaxed ${isUnread ? "" : "text-muted-foreground/70"}`}
                         >
                           {n.body}
                         </p>
-                        <p className="mt-1.5 text-xs text-muted-foreground/70">
+                        <p className="mt-1.5 text-sm text-muted-foreground/70">
                           {fmt(n.createdAt)}
                         </p>
                       </div>

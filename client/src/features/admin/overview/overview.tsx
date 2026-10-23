@@ -95,7 +95,7 @@ export default function AdminOverview() {
               </p>
               <p
                 className={cn(
-                  "min-w-0 flex-1 text-xs leading-tight",
+                  "min-w-0 flex-1 text-sm leading-tight",
                   to ? "text-primary" : "text-muted-foreground",
                 )}
               >
@@ -147,11 +147,11 @@ export default function AdminOverview() {
                     <span className="text-sm font-medium tabular-nums">
                       {item.reference}
                     </span>
-                    <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+                    <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
                       {item.complainantName} and {item.respondentName}
                     </span>
                     {item.dueAt && (
-                      <span className="hidden text-xs text-muted-foreground tabular-nums sm:inline">
+                      <span className="hidden text-sm text-muted-foreground tabular-nums sm:inline">
                         {formatDate(item.dueAt)}
                       </span>
                     )}
@@ -192,13 +192,13 @@ export default function AdminOverview() {
                     key={hearing.id}
                     className="flex items-baseline gap-3 py-2.5"
                   >
-                    <span className="shrink-0 text-xs font-medium tabular-nums">
+                    <span className="shrink-0 text-sm font-medium tabular-nums">
                       {formatDateTime(hearing.scheduledAt)}
                     </span>
                     {hearing.complaint && (
                       <Link
                         to={`/admin/complaints/${hearing.complaint.id}`}
-                        className="min-w-0 flex-1 truncate text-xs text-muted-foreground hover:text-foreground"
+                        className="min-w-0 flex-1 truncate text-sm text-muted-foreground hover:text-foreground"
                       >
                         {hearing.complaint.reference} ·{" "}
                         {hearing.complaint.complainantName}
@@ -242,13 +242,13 @@ export default function AdminOverview() {
                   <span className="text-sm font-medium tabular-nums">
                     {complaint.reference}
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+                  <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
                     {complaint.complainantName} and {complaint.respondentName}
                   </span>
                   <Badge variant="secondary">
                     {t(`st_${complaint.status}` as Key)}
                   </Badge>
-                  <span className="hidden text-xs text-muted-foreground tabular-nums sm:inline">
+                  <span className="hidden text-sm text-muted-foreground tabular-nums sm:inline">
                     {formatDate(complaint.createdAt)}
                   </span>
                 </Link>
@@ -281,7 +281,7 @@ export default function AdminOverview() {
                   );
                 })}
               </div>
-              <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs">
+              <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm">
                 {statuses.map((status) => (
                   <span key={status} className="flex items-center gap-1.5">
                     <span

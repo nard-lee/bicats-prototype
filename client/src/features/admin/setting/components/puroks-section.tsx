@@ -93,7 +93,7 @@ export default function PuroksSection({
             </Button>
           </div>
           <FieldError message={fields.puroks} />
-          <p className="text-xs text-muted-foreground">{t("puroksNote")}</p>
+          <p className="text-sm text-muted-foreground">{t("puroksNote")}</p>
         </div>
       </CardContent>
     </Card>

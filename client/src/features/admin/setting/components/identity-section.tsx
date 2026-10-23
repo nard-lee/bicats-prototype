@@ -104,7 +104,7 @@ export default function IdentitySection({
             aria-invalid={!!fields.documentOfficeLine}
           />
           <FieldError message={fields.documentOfficeLine} />
-          <p className="text-xs text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             {t("officeLineHint")}
           </p>
         </div>

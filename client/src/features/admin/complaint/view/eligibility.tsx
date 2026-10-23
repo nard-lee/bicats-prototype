@@ -87,7 +87,7 @@ function propertyKey(value: EligibilityAnswers["propertyOutsideCity"]): Key {
 function AnswerRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-baseline justify-between gap-4 border-b border-border/60 pb-2 last:border-0 last:pb-0">
-      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="text-sm text-muted-foreground">{label}</span>
       <span className="text-right text-sm font-medium">{value}</span>
     </div>
   );
@@ -202,7 +202,7 @@ function ReviewEligibilityModal({
                 onChange={(event) => setReason(event.target.value)}
                 placeholder={t("eligReasonPlaceholder")}
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 {t("eligReasonHint")}
               </p>
             </div>
@@ -220,7 +220,7 @@ function ReviewEligibilityModal({
           </div>
 
           {willDismiss && (
-            <p className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
+            <p className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
               {status === "rejected"
                 ? t("eligRejectWarning")
                 : t("eligDismissWarning")}
@@ -295,7 +295,7 @@ export default function EligibilityCard({
       <CardContent className="space-y-4">
         {answers ? (
           <div className="space-y-2">
-            <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+            <p className="text-sm font-medium tracking-wide text-muted-foreground uppercase">
               {t("eligIntakeAnswers")}
             </p>
             <AnswerRow
@@ -333,7 +333,7 @@ export default function EligibilityCard({
 
         {complaint.eligibilityReason && (
           <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3">
-            <p className="text-xs font-medium tracking-wide text-destructive uppercase">
+            <p className="text-sm font-medium tracking-wide text-destructive uppercase">
               {t("eligRejectionReason")}
             </p>
             <p className="mt-1 text-sm whitespace-pre-wrap">
@@ -344,7 +344,7 @@ export default function EligibilityCard({
 
         {complaint.eligibilityNotes && (
           <div className="rounded-md border bg-muted/40 p-3">
-            <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+            <p className="text-sm font-medium tracking-wide text-muted-foreground uppercase">
               {t("eligNotes")}
             </p>
             <p className="mt-1 text-sm whitespace-pre-wrap">
@@ -354,11 +354,11 @@ export default function EligibilityCard({
         )}
 
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-xs text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             {reviewedAt ? `${t("eligReviewed")} · ${reviewedAt}` : ""}
           </p>
           {isClosed ? (
-            <p className="text-xs text-muted-foreground">{t("eligClosed")}</p>
+            <p className="text-sm text-muted-foreground">{t("eligClosed")}</p>
           ) : (
             canWrite && (
               <ReviewEligibilityModal

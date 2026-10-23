@@ -184,7 +184,7 @@ export default function AuditLog() {
         {items.map((row) => (
           <div key={row.id} className="space-y-1 px-4 py-3">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-xs text-muted-foreground tabular-nums">
+              <span className="text-sm text-muted-foreground tabular-nums">
                 {when(row.createdAt)}
               </span>
               <Badge variant="secondary" className="shrink-0">
@@ -192,7 +192,7 @@ export default function AuditLog() {
               </Badge>
             </div>
             <p className="text-sm break-words">{row.summary}</p>
-            <p className="text-xs break-words text-muted-foreground">
+            <p className="text-sm break-words text-muted-foreground">
               {row.actorName ?? "System"}
               {isRole(row.actorRole) && ` · ${t(ROLE_LABEL[row.actorRole])}`}
               {row.target && ` · ${row.target}`}
@@ -256,7 +256,7 @@ export default function AuditLog() {
                   </span>
                 </TableCell>
                 <TableCell className="max-w-[24rem] whitespace-normal">{row.summary}</TableCell>
-                <TableCell className="hidden text-xs text-muted-foreground tabular-nums xl:table-cell">
+                <TableCell className="hidden text-sm text-muted-foreground tabular-nums xl:table-cell">
                   {row.ip ?? "—"}
                 </TableCell>
               </TableRow>

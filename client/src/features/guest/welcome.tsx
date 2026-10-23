@@ -129,7 +129,7 @@ export default function Home() {
                 notices.map((n) => (
                   <Card key={n.id} className="border-l-4 border-l-primary">
                     <CardHeader>
-                      <p className="text-xs uppercase text-muted-foreground">
+                      <p className="text-sm uppercase text-muted-foreground">
                         {date(n.createdAt)}
                       </p>
                       <CardTitle className="text-base">{n.title}</CardTitle>
@@ -152,7 +152,7 @@ export default function Home() {
                 </div>
               ))}
             </div>
-            <p className="mt-4 text-xs text-muted-foreground">
+            <p className="mt-4 text-sm text-muted-foreground">
               {t("typesNote")}
             </p>
           </div>

@@ -160,7 +160,7 @@ export default function DeadlinesSection({
             />
             <Label htmlFor="workingDaysOnly">{t("workingDaysLabel")}</Label>
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             {t("workingDaysHint")}
           </p>
 
@@ -205,7 +205,7 @@ export default function DeadlinesSection({
                 {t("addHoliday")}
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               {t("holidaysHint")}
             </p>
           </div>
