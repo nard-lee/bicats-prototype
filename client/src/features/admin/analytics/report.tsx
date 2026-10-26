@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useLoaderData } from "react-router";
 import { useT, type Key } from "@/lib/I18n";
 import { api } from "@/lib/api";
+import { csvCell } from "@/lib/csv";
 import ScopeControls from "./components/scope-controls";
 import StatCards from "./components/stat-cards";
 import TypeDonut from "./components/type-donut";
@@ -157,7 +158,6 @@ export default function AdminReport() {
           : `${shortMonth(from)} – ${shortMonth(to)}`;
 
   function exportCsv() {
-    const escape = (value: string) => `"${value.replace(/"/g, '""')}"`;
     const rows: string[][] = [];
 
     rows.push([`${t("adminAnalytics")} — ${scopeLabel}`]);
@@ -177,7 +177,7 @@ export default function AdminReport() {
       rows.push([key, String(item.cases)]);
     }
 
-    const csv = rows.map((row) => row.map(escape).join(",")).join("\n");
+    const csv = rows.map((row) => row.map((value) => csvCell(value)).join(",")).join("\n");
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
     const link = document.createElement("a");
     link.href = url;

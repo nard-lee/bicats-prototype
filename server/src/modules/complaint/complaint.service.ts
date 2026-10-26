@@ -264,6 +264,30 @@ const complaintService = {
             return null;
         }
 
+        // Adjacent cases in the list's default order (newest first).
+        const [newer, older] = await Promise.all([
+            prisma.complaint.findFirst({
+                where: {
+                    OR: [
+                        { createdAt: { gt: complaint.createdAt } },
+                        { createdAt: complaint.createdAt, id: { gt: complaint.id } },
+                    ],
+                },
+                orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+                select: { id: true },
+            }),
+            prisma.complaint.findFirst({
+                where: {
+                    OR: [
+                        { createdAt: { lt: complaint.createdAt } },
+                        { createdAt: complaint.createdAt, id: { lt: complaint.id } },
+                    ],
+                },
+                orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+                select: { id: true },
+            }),
+        ]);
+
         const latestUpdate = complaint.updates[0];
         const currentStatus = latestUpdate?.status ?? complaint.status;
 
@@ -312,6 +336,8 @@ const complaintService = {
         return {
             id: complaint.id,
             reference: complaint.reference,
+            prevId: newer?.id ?? null,
+            nextId: older?.id ?? null,
             complainantName: complaint.complainantName,
             respondentName: complaint.respondentName,
             complaintType: complaint.complaintType,
@@ -737,10 +763,12 @@ const complaintService = {
                 select: { reference: true },
             });
 
+            // Reopen reasons can be sensitive; keep them staff-only rather than
+            // publishing them through the public tracker.
             const historyData: any = {
                 complaintId: id,
                 status: "received",
-                publicNote: `Case Reopened: ${reason}`,
+                internalNote: `Case Reopened: ${reason}`,
             };
 
             if (userId) historyData.createdById = userId;

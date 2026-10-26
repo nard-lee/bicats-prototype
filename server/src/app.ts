@@ -13,15 +13,8 @@ import { pinoHttp } from "pino-http";
 import { ZodError } from "zod";
 import { CustomError } from "@/utils/custom.exception.js";
 
-import authRouter from "@/modules/auth/auth.routes.js";
-import userRouter from "@/modules/user/user.routes.js";
-import complaintRouter from "@/modules/complaint/complaint.routes.js";
-import noticeRouter from "@/modules/notice/notice.routes.js";
-import analyticsRouter from "@/modules/analytics/analytics.routes.js";
-import notificationRouter from "@/modules/notification/notification.routes.js";
-import hearingRouter from "@/modules/hearing/hearing.routes.js";
-import auditRouter from "@/modules/audit/audit.routes.js";
-import settingRouter from "@/modules/setting/setting.routes.js";
+import routes from "./routes.js";
+
 import { config } from "@/utils/env.config.js";
 import {
   getStoredObject,
@@ -132,16 +125,7 @@ app.get("/api/csrf-token", (req: Request, res: Response) => {
 app.use(doubleCsrfProtection);
 
 // ---- Routes ----
-
-app.use("/api/auth", authRouter);
-app.use("/api/users", userRouter);
-app.use("/api/complaints", complaintRouter);
-app.use("/api/notices", noticeRouter);
-app.use("/api/analytics", analyticsRouter);
-app.use("/api/notifications", notificationRouter);
-app.use("/api/hearings", hearingRouter);
-app.use("/api/audit", auditRouter);
-app.use("/api/settings", settingRouter);
+app.use(routes);
 
 // ---- Unknown API route ----
 app.use("/api", (_req, res) => {

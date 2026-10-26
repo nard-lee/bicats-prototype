@@ -435,7 +435,28 @@ describe("complaint lifecycle guards", () => {
       (reopened!.dueAt!.getTime() - Date.now()) / 3_600_000;
     expect(hoursUntilDue).toBeGreaterThan(23);
     expect(hoursUntilDue).toBeLessThan(25);
-    expect(reopened!.updates[0]!.publicNote).toContain("Case Reopened");
+    expect(reopened!.updates[0]!.publicNote).toBeNull();
+    expect(reopened!.updates[0]!.internalNote).toContain("Case Reopened");
+
+    const reopenTarget = await prisma.complaint.findUnique({
+      where: { id: firstId },
+      select: { reference: true, complainantContact: true },
+    });
+    const publicAgent = request.agent(app);
+    const publicToken = await csrfToken(publicAgent);
+    const tracked = await publicAgent
+      .post("/api/complaints/track")
+      .set("x-csrf-token", publicToken)
+      .send({
+        reference: reopenTarget!.reference,
+        phone: reopenTarget!.complainantContact,
+      })
+      .expect(200);
+    expect(
+      tracked.body.updates.some((update: { publicNote: string | null }) =>
+        update.publicNote?.includes("Settlement was not honoured"),
+      ),
+    ).toBe(false);
 
     const reopenAgain = await agent
       .post(`/api/complaints/${firstId}/reopen`)

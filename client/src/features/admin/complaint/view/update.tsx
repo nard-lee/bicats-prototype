@@ -1,34 +1,22 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { HTTPError } from "ky";
+import { AlertTriangle, ArrowRight, NotebookPen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import DateTimePicker from "@/components/ui/date-time-picker";
+import { cn } from "cn";
 import { api } from "@/lib/api";
 import { useT, type Key } from "@/lib/I18n";
 import { PRIORITIES, type ComplaintPriority } from "../priority";
 import type { ComplaintStatus } from "./loader";
 
-interface StatusUpdateModalProps {
-  complaintId: number;
-  currentStatus: ComplaintStatus;
-  currentPriority: ComplaintPriority;
-  currentHearingAt?: string | null;
-  onSuccess: () => void;
-}
-
-// ISO string -> "YYYY-MM-DDTHH:mm" in local time (the picker's value format).
-function isoToLocalInput(iso?: string | null): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-const ALLOWED_TRANSITIONS: Record<ComplaintStatus, ComplaintStatus[]> = {
+// Mirrors COMPLAINT_TRANSITIONS on the server; the server still enforces it.
+const NEXT_STEPS: Record<ComplaintStatus, readonly ComplaintStatus[]> = {
   received: ["summoned", "dismissed"],
   summoned: ["mediation", "dismissed"],
   mediation: ["settled", "conciliation", "dismissed"],
@@ -38,42 +26,36 @@ const ALLOWED_TRANSITIONS: Record<ComplaintStatus, ComplaintStatus[]> = {
   dismissed: [],
 };
 
-export default function StatusUpdateModal({ complaintId, currentStatus, currentPriority, currentHearingAt, onSuccess }: StatusUpdateModalProps) {
+const CLOSED_STATUSES: readonly ComplaintStatus[] = ["settled", "certified", "dismissed"];
+
+interface StageAdvanceDialogProps {
+  complaintId: number;
+  currentStatus: ComplaintStatus;
+  currentPriority: ComplaintPriority;
+  onSuccess: () => void;
+}
+
+export function StageAdvanceDialog({ complaintId, currentStatus, currentPriority, onSuccess }: StageAdvanceDialogProps) {
   const { t } = useT();
   const [open, setOpen] = useState(false);
-
-  // Form State
-  const [newStatus, setNewStatus] = useState<ComplaintStatus>(currentStatus);
+  const [target, setTarget] = useState<ComplaintStatus | null>(null);
   const [priority, setPriority] = useState<ComplaintPriority>(currentPriority);
   const [publicNote, setPublicNote] = useState("");
   const [internalNote, setInternalNote] = useState("");
-  const [hearingAt, setHearingAt] = useState<string>("");
-
-  // Loading States
+  const [hearingAt, setHearingAt] = useState("");
+  const [showNotes, setShowNotes] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Logic Flags
-  const allowedNextStatuses = ALLOWED_TRANSITIONS[currentStatus] || [];
-  const canChangeStatus = allowedNextStatuses.length > 0;
-  const targetIsClosed = ["settled", "certified", "dismissed"].includes(newStatus);
-  const canScheduleHearing = canChangeStatus && !targetIsClosed;
-  const canChangePriority = canScheduleHearing;
+  const nextSteps = NEXT_STEPS[currentStatus] ?? [];
+  const closing = target !== null && CLOSED_STATUSES.includes(target);
 
-  // Check if any field in the main form has been modified
-  const hasChanges =
-    (canChangeStatus && newStatus !== currentStatus) ||
-    (canChangePriority && priority !== currentPriority) ||
-    publicNote.trim().length > 0 ||
-    internalNote.trim().length > 0 ||
-    (canScheduleHearing && hearingAt !== isoToLocalInput(currentHearingAt));
-
-  // Reset form when modal opens
   function resetForm() {
-    setNewStatus(currentStatus);
+    setTarget(null);
     setPriority(currentPriority);
     setPublicNote("");
     setInternalNote("");
-    setHearingAt(isoToLocalInput(currentHearingAt));
+    setHearingAt("");
+    setShowNotes(false);
   }
 
   function handleOpenChange(next: boolean) {
@@ -81,30 +63,29 @@ export default function StatusUpdateModal({ complaintId, currentStatus, currentP
     setOpen(next);
   }
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!hasChanges) return;
+    if (!target || isSubmitting) return;
 
     setIsSubmitting(true);
-
     try {
       await api.patch(`/complaints/${complaintId}/status`, {
         json: {
-          status: canChangeStatus ? newStatus : currentStatus,
+          status: target,
           publicNote: publicNote || null,
           internalNote: internalNote || null,
-          hearingAt: canScheduleHearing && hearingAt ? hearingAt : null,
+          hearingAt: !closing && hearingAt ? hearingAt : null,
         },
       });
 
-      if (canChangePriority && priority !== currentPriority) {
+      if (!closing && priority !== currentPriority) {
         await api.patch(`/complaints/${complaintId}/priority`, {
           json: { priority },
         });
       }
 
       setOpen(false);
-      toast.success("Status updated.");
+      toast.success(t("updSaved"));
       onSuccess();
     } catch (error) {
       console.error("Failed to update status", error);
@@ -112,97 +93,230 @@ export default function StatusUpdateModal({ complaintId, currentStatus, currentP
         error instanceof HTTPError
           ? (error.data as { message?: string } | undefined)
           : undefined;
-      toast.error(body?.message ?? "Failed to update status.");
+      toast.error(body?.message ?? t("updSaveFailed"));
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const allStatuses: ComplaintStatus[] = [
-    "received",
-    "summoned",
-    "mediation",
-    "conciliation",
-    "settled",
-    "certified",
-    "dismissed",
-  ];
+  }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="default">Update Status</Button>
+        <Button>
+          <ArrowRight className="mr-2 h-4 w-4" />
+          {t("updAdvance")}
+        </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Update Case Details</DialogTitle>
-          <DialogDescription>
-            Add notes, adjust priority, schedule mediation, or move the case to the next stage.
-          </DialogDescription>
+          <DialogTitle>{t("updStageTitle")}</DialogTitle>
+          <DialogDescription>{t("updStageDesc")}</DialogDescription>
+          <div className="flex items-center gap-2 pt-1 text-sm font-normal">
+            <span className="text-muted-foreground">{t("updCurrentStage")}:</span>
+            <Badge variant="outline">{t(`st_${currentStatus}` as Key)}</Badge>
+          </div>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="grid gap-2">
-              <Label htmlFor="status">Status</Label>
-              <Select
-                value={newStatus}
-                onValueChange={(val) => setNewStatus(val as ComplaintStatus)}
-                disabled={!canChangeStatus}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid gap-2">
+            {nextSteps.map((step) => (
+              <button
+                key={step}
+                type="button"
+                onClick={() => setTarget(step)}
+                aria-pressed={target === step}
+                className={cn(
+                  "w-full rounded-lg border p-3 text-left transition-colors hover:bg-muted/50",
+                  target === step && "border-primary bg-primary/5 ring-1 ring-primary",
+                )}
               >
-                <SelectTrigger id="status">
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {allStatuses.map((s) => {
-                    const isAllowed = allowedNextStatuses.includes(s);
-                    return (
-                      <SelectItem
-                        key={s}
-                        value={s}
-                        disabled={!isAllowed && s !== currentStatus}
-                      >
-                        {t(`st_${s}` as Key)}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="priority">Priority</Label>
-              <Select
-                value={priority}
-                onValueChange={(val) => setPriority(val as ComplaintPriority)}
-                disabled={!canChangePriority || isSubmitting}
-              >
-                <SelectTrigger id="priority">
-                  <SelectValue placeholder="Select priority" />
-                </SelectTrigger>
-                <SelectContent>
-                  {PRIORITIES.map((p) => (
-                    <SelectItem key={p} value={p}>
-                      {t(`pr_${p}` as Key)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                <span className="flex items-center gap-2 text-sm font-medium">
+                  <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  {t(`actTo_${step}` as Key)}
+                </span>
+                <span className="mt-1 block text-sm text-muted-foreground">
+                  {t(`actTo_${step}Desc` as Key)}
+                </span>
+              </button>
+            ))}
           </div>
-          {(!canChangeStatus || targetIsClosed) && (
-            <p className="text-sm text-muted-foreground">
-              {!canChangeStatus
-                ? "This case is closed. You can only add notes."
-                : "Closing the case cancels its scheduled sessions and clears its deadline."}
-            </p>
+
+          {target && (
+            <div className="space-y-4 rounded-lg border bg-muted/30 p-3">
+              {closing ? (
+                <p className="flex items-start gap-2 text-sm text-amber-700 dark:text-amber-300">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                  {t("updClosingNote")}
+                </p>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="grid gap-2">
+                    <Label htmlFor="labPriority">{t("updPriority")}</Label>
+                    <Select
+                      value={priority}
+                      onValueChange={(val) => setPriority(val as ComplaintPriority)}
+                      disabled={isSubmitting}
+                    >
+                      <SelectTrigger id="labPriority">
+                        <SelectValue placeholder={t("updPriority")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PRIORITIES.map((p) => (
+                          <SelectItem key={p} value={p}>
+                            {t(`pr_${p}` as Key)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="labHearing">
+                      {t("updNextSession")}{" "}
+                      <span className="font-normal text-muted-foreground">
+                        ({t("updOptional")})
+                      </span>
+                    </Label>
+                    <DateTimePicker
+                      id="labHearing"
+                      value={hearingAt}
+                      onChange={setHearingAt}
+                      disabled={isSubmitting}
+                    />
+                    <p className="text-sm text-muted-foreground">{t("updNextSessionHint")}</p>
+                  </div>
+                </div>
+              )}
+
+              {showNotes ? (
+                <>
+                  <div className="grid gap-2">
+                    <Label htmlFor="labPublic">{t("updPublicNote")}</Label>
+                    <Textarea
+                      id="labPublic"
+                      placeholder={t("updPublicNotePh")}
+                      value={publicNote}
+                      onChange={(e) => setPublicNote(e.target.value)}
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="labInternal">{t("updInternalNote")}</Label>
+                    <Textarea
+                      id="labInternal"
+                      placeholder={t("updInternalNotePh")}
+                      value={internalNote}
+                      onChange={(e) => setInternalNote(e.target.value)}
+                      rows={2}
+                      className="bg-muted/50"
+                    />
+                  </div>
+                </>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowNotes(true)}
+                  className="w-full border-dashed"
+                >
+                  <NotebookPen className="mr-2 h-4 w-4" />
+                  {t("updAddNote")}
+                  <span className="ml-1 font-normal text-muted-foreground">
+                    ({t("updOptional")})
+                  </span>
+                </Button>
+              )}
+            </div>
           )}
 
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+              {t("updCancel")}
+            </Button>
+            <Button type="submit" disabled={!target || isSubmitting}>
+              {isSubmitting ? t("saving") : target ? t(`actTo_${target}` as Key) : t("saveChanges")}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+interface NoteDialogProps {
+  complaintId: number;
+  currentStatus: ComplaintStatus;
+  onSuccess: () => void;
+}
+
+export function NoteDialog({ complaintId, currentStatus, onSuccess }: NoteDialogProps) {
+  const { t } = useT();
+  const [open, setOpen] = useState(false);
+  const [publicNote, setPublicNote] = useState("");
+  const [internalNote, setInternalNote] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const hasNote = publicNote.trim().length > 0 || internalNote.trim().length > 0;
+
+  function handleOpenChange(next: boolean) {
+    if (next) {
+      setPublicNote("");
+      setInternalNote("");
+    }
+    setOpen(next);
+  }
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!hasNote || isSubmitting) return;
+
+    setIsSubmitting(true);
+    try {
+      // A note-only save: the server keeps the stage's deadline untouched.
+      await api.patch(`/complaints/${complaintId}/status`, {
+        json: {
+          status: currentStatus,
+          publicNote: publicNote || null,
+          internalNote: internalNote || null,
+          hearingAt: null,
+        },
+      });
+
+      setOpen(false);
+      toast.success(t("updSaved"));
+      onSuccess();
+    } catch (error) {
+      console.error("Failed to add note", error);
+      const body =
+        error instanceof HTTPError
+          ? (error.data as { message?: string } | undefined)
+          : undefined;
+      toast.error(body?.message ?? t("updSaveFailed"));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogTrigger asChild>
+        <Button variant="outline">
+          <NotebookPen className="mr-2 h-4 w-4" />
+          {t("updAddNote")}
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[460px]">
+        <DialogHeader>
+          <DialogTitle>{t("updNoteTitle")}</DialogTitle>
+          <DialogDescription>{t("updNoteDesc")}</DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid gap-2">
-            <Label htmlFor="publicNote">Public Note / Resolution Summary</Label>
+            <Label htmlFor="notePublic">{t("updPublicNote")}</Label>
             <Textarea
-              id="publicNote"
-              placeholder="e.g., Parties reached an amicable settlement regarding boundary dispute."
+              id="notePublic"
+              placeholder={t("updPublicNotePh")}
               value={publicNote}
               onChange={(e) => setPublicNote(e.target.value)}
               rows={3}
@@ -210,10 +324,10 @@ export default function StatusUpdateModal({ complaintId, currentStatus, currentP
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="internalNote">Internal Note (Staff Only)</Label>
+            <Label htmlFor="noteInternal">{t("updInternalNote")}</Label>
             <Textarea
-              id="internalNote"
-              placeholder="e.g., Respondent failed to appear during the first mediation."
+              id="noteInternal"
+              placeholder={t("updInternalNotePh")}
               value={internalNote}
               onChange={(e) => setInternalNote(e.target.value)}
               rows={2}
@@ -221,28 +335,12 @@ export default function StatusUpdateModal({ complaintId, currentStatus, currentP
             />
           </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="hearingAt">Next Mediation Date (Optional)</Label>
-            <DateTimePicker
-              id="hearingAt"
-              value={hearingAt}
-              onChange={setHearingAt}
-              disabled={!canScheduleHearing}
-              placeholder="Select date & time"
-            />
-            {!canScheduleHearing && (
-              <p className="text-sm text-muted-foreground">
-                Mediation cannot be scheduled for closed cases.
-              </p>
-            )}
-          </div>
-
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              Cancel
+              {t("updCancel")}
             </Button>
-            <Button type="submit" disabled={isSubmitting || !hasChanges}>
-              {isSubmitting ? "Saving..." : "Save Changes"}
+            <Button type="submit" disabled={!hasNote || isSubmitting}>
+              {isSubmitting ? t("saving") : t("saveChanges")}
             </Button>
           </DialogFooter>
         </form>

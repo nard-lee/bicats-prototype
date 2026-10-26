@@ -12,7 +12,7 @@ export function ensureCsrfSession(req: Request, res: Response, next: NextFunctio
         res.cookie(CSRF_SID_COOKIE, sid, {
             httpOnly: true,
             secure: config.nodeEnv === "production",
-            sameSite: config.nodeEnv === "production" ? "none" : "lax",
+            sameSite: "lax",
             maxAge: 365 * 24 * 60 * 60 * 1000,
         });
 
@@ -28,7 +28,7 @@ const { generateCsrfToken, doubleCsrfProtection } = doubleCsrf({
     cookieOptions: {
         httpOnly: true,
         secure: config.nodeEnv === "production",
-        sameSite: config.nodeEnv === "production" ? "none" : "lax",
+        sameSite: "lax",
     },
     getCsrfTokenFromRequest: (req) => 
         (req.headers["x-csrf-token"] as string | undefined) ?? (req.body?._csrf as string | undefined)

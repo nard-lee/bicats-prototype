@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 import { useT, type Key } from "@/lib/I18n";
 import type { ComplaintDetail } from "./loader";
-import StatusUpdateModal from "./update";
+import { StageAdvanceDialog, NoteDialog } from "./update";
 import ReopenCaseModal from "./reopen";
 import EligibilityCard from "./eligibility";
 import ServiceRecordCard from "./service";
@@ -60,6 +60,43 @@ function Info({ label, value }: { label: string; value: ReactNode }) {
       </p>
       <p className="text-sm text-foreground">{value}</p>
     </div>
+  );
+}
+
+function CaseNavButton({
+  caseId,
+  to,
+  label,
+  icon,
+}: {
+  caseId: number | null;
+  to: string;
+  label: string;
+  icon: ReactNode;
+}) {
+  if (caseId === null) {
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        disabled
+        title={label}
+        aria-label={label}
+        className="px-2 sm:px-2.5"
+      >
+        {icon}
+        <span className="ml-1.5 hidden sm:inline">{label}</span>
+      </Button>
+    );
+  }
+
+  return (
+    <Button asChild variant="outline" size="sm" title={label} className="px-2 sm:px-2.5">
+      <Link to={to} aria-label={label}>
+        {icon}
+        <span className="ml-1.5 hidden sm:inline">{label}</span>
+      </Link>
+    </Button>
   );
 }
 
@@ -144,17 +181,33 @@ export default function ComplaintView() {
     <div className="-mx-4 -my-4 sm:-mx-6 sm:-my-6">
       {/* Sticky actions */}
       <div className="sticky -top-4 z-20 flex flex-wrap items-center justify-between gap-4 bg-background px-4 py-3 sm:-top-6 sm:px-6">
-        <Button
-          asChild
-          variant="ghost"
-          size="sm"
-          className="-ml-2 text-muted-foreground hover:text-foreground"
-        >
-          <Link to="/admin/complaints">
-            <ArrowLeft className="mr-1 h-4 w-4" />
-            {t("backToList")}
-          </Link>
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className="-ml-2 text-muted-foreground hover:text-foreground"
+          >
+            <Link to="/admin/complaints">
+              <ArrowLeft className="mr-1 h-4 w-4" />
+              {t("backToList")}
+            </Link>
+          </Button>
+          <div className="flex items-center gap-1">
+            <CaseNavButton
+              caseId={complaint.prevId}
+              to={`/admin/complaints/${complaint.prevId}`}
+              label={t("prevCase")}
+              icon={<ChevronLeft className="h-4 w-4" />}
+            />
+            <CaseNavButton
+              caseId={complaint.nextId}
+              to={`/admin/complaints/${complaint.nextId}`}
+              label={t("nextCase")}
+              icon={<ChevronRight className="h-4 w-4" />}
+            />
+          </div>
+        </div>
 
         <div className="flex flex-wrap items-center gap-2">
           {canWrite && (
@@ -165,13 +218,21 @@ export default function ComplaintView() {
                   {t(eligibilityHintKey)}
                 </p>
               ) : (
-                <StatusUpdateModal
-                  complaintId={complaint.id}
-                  currentStatus={complaint.status}
-                  currentPriority={complaint.priority}
-                  currentHearingAt={complaint.nextHearingAt}
-                  onSuccess={() => revalidator.revalidate()}
-                />
+                <>
+                  {!isClosed && (
+                    <StageAdvanceDialog
+                      complaintId={complaint.id}
+                      currentStatus={complaint.status}
+                      currentPriority={complaint.priority}
+                      onSuccess={() => revalidator.revalidate()}
+                    />
+                  )}
+                  <NoteDialog
+                    complaintId={complaint.id}
+                    currentStatus={complaint.status}
+                    onSuccess={() => revalidator.revalidate()}
+                  />
+                </>
               )}
               {isClosed && (
                 <ReopenCaseModal

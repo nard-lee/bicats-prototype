@@ -42,6 +42,8 @@ export type EligibilityAnswers = {
 export type ComplaintDetail = {
   id: number;
   reference: string;
+  prevId: number | null;
+  nextId: number | null;
   complainantName: string;
   respondentName: string;
   complaintType: string;

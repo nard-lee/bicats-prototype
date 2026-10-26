@@ -11,10 +11,12 @@ import auditService from "@/modules/audit/audit.service.js";
 
 const isProd = config.nodeEnv === "production";
 
+// The client and API share an origin, so Lax keeps session cookies off
+// cross-site requests without breaking anything.
 const AUTH_COOKIE = {
     httpOnly: true,
     secure: isProd,
-    sameSite: isProd ? ("none" as const) : ("lax" as const),
+    sameSite: "lax" as const,
 };
 
 function setSessionCookies(

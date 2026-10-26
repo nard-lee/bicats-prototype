@@ -71,6 +71,9 @@ export default function ReopenCaseModal({ complaintId, onSuccess }: ReopenCaseMo
 
         <div className="grid gap-2 py-4">
           <Label htmlFor="reopenReason">Reason for reopening</Label>
+          <p className="text-sm text-muted-foreground">
+            Only staff can see this reason; it is not shown on the public tracker.
+          </p>
           <Textarea
             id="reopenReason"
             rows={4}

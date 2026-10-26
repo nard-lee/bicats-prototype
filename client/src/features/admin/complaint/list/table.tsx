@@ -9,6 +9,7 @@ import {
 import { toast } from "sonner";
 import DataPagination from "@/components/data-pagination";
 import { api } from "@/lib/api";
+import { csvCell } from "@/lib/csv";
 import { CASE_WRITE_ROLES, type Role } from "@/lib/roles";
 import { useT, type Key } from "@/lib/I18n";
 import { complaintTypeLabel } from "../type-label";
@@ -135,7 +136,6 @@ export default function ComplaintsList() {
   function exportCsv() {
     const rows = items.filter((c) => selected.includes(c.id));
 
-    const escape = (value: string) => `"${value.replace(/"/g, '""')}"`;
     const lines = rows.map((c) =>
       [
         c.reference,
@@ -147,7 +147,7 @@ export default function ComplaintsList() {
         c.createdAt,
         c.dueAt ?? "",
       ]
-        .map((value) => escape(String(value)))
+        .map((value) => csvCell(String(value)))
         .join(","),
     );
 

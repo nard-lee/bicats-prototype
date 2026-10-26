@@ -466,6 +466,49 @@ const en = {
     "No settlement was reached, so a Certificate to File Action was issued. The complainant may now bring the case to court.",
   ph_dismissed: "The case was dismissed by the barangay.",
 
+  // case update flow (advance stage / add note)
+  updAdvance: "Advance stage",
+  updAddNote: "Add note",
+  updStageTitle: "Record the next step",
+  updStageDesc:
+    "Choose what actually happened. Only the steps allowed for the current stage are shown.",
+  updCurrentStage: "Current stage",
+  updNextSession: "Schedule next session",
+  updOptional: "optional",
+  updNextSessionHint: "Leave empty to keep the schedule unchanged.",
+  updClosingNote:
+    "Closing the case cancels its scheduled sessions and clears its deadline and priority.",
+  updPublicNote: "Public note (visible in case history)",
+  updPublicNotePh:
+    "e.g., Parties reached an amicable settlement regarding the boundary dispute.",
+  updInternalNote: "Internal note (staff only)",
+  updInternalNotePh:
+    "e.g., Respondent failed to appear during the first mediation.",
+  updNoteTitle: "Add note",
+  updNoteDesc:
+    "Adds a note to the case history without changing the stage or the deadline.",
+  updNeedNote: "Write at least one note before saving.",
+  updPriority: "Priority",
+  updSaved: "Case updated.",
+  updSaveFailed: "Failed to update the case.",
+  updCancel: "Cancel",
+  actTo_summoned: "Issue summons",
+  actTo_summonedDesc:
+    "The barangay summons the respondent to appear at mediation.",
+  actTo_mediation: "Begin mediation",
+  actTo_mediationDesc: "The case enters mediation before the lupon.",
+  actTo_settled: "Record settlement",
+  actTo_settledDesc:
+    "The parties reached an amicable settlement. The case closes.",
+  actTo_conciliation: "Escalate to conciliation",
+  actTo_conciliationDesc:
+    "Mediation did not settle the case. It moves to the Lupon for conciliation.",
+  actTo_certified: "Issue certificate to file action",
+  actTo_certifiedDesc:
+    "Conciliation failed. The parties receive a certificate to bring the case to court.",
+  actTo_dismissed: "Dismiss case",
+  actTo_dismissedDesc: "Close the case without a settlement.",
+
   // privacy policy
   privacyTitle: "Privacy Policy",
   privacyUpdated: "Last updated: October 23, 2026",
@@ -520,6 +563,8 @@ const en = {
   // complaint view/detail page
   complaintDetails: "Complaint Details",
   backToList: "Back to List",
+  prevCase: "Previous case",
+  nextCase: "Next case",
   partiesInvolved: "Parties Involved",
   complainant: "Complainant",
   respondent: "Respondent",
@@ -1089,6 +1134,48 @@ const tl: Record<Key, string> = {
     "Walang naging kasunduan, kaya binigyan ng Certificate to File Action. Maaari nang dalhin ng nagreklamo ang kaso sa korte.",
   ph_dismissed: "Ibinasura ng barangay ang kaso.",
 
+  // case update flow (advance stage / add note)
+  updAdvance: "Isulong ang yugto",
+  updAddNote: "Magdagdag ng tala",
+  updStageTitle: "Itala ang susunod na hakbang",
+  updStageDesc:
+    "Piliin ang tunay na nangyari. Ipapakita lamang ang mga hakbang na pinapayagan sa kasalukuyang yugto.",
+  updCurrentStage: "Kasalukuyang yugto",
+  updNextSession: "Mag-iskedyul ng susunod na sesyon",
+  updOptional: "opsyonal",
+  updNextSessionHint: "Hayaang walang laman para hindi magbago ang iskedyul.",
+  updClosingNote:
+    "Ang pagsasara ng kaso ay kakanselahin ang mga nakaiskedyul na sesyon at buburahin ang deadline at priority nito.",
+  updPublicNote: "Pampublikong tala (makikita sa kasaysayan ng kaso)",
+  updPublicNotePh:
+    "hal., Nakapagkasunduo ang mga partido tungkol sa hidwaan sa lupa.",
+  updInternalNote: "Panloob na tala (staff lamang)",
+  updInternalNotePh:
+    "hal., Hindi dumating ang inirereklamo sa unang mediasyon.",
+  updNoteTitle: "Magdagdag ng tala",
+  updNoteDesc:
+    "Nagdaragdag ng tala sa kasaysayan ng kaso nang hindi binabago ang yugto o ang deadline.",
+  updNeedNote: "Magsulat ng kahit isang tala bago i-save.",
+  updPriority: "Prayoridad",
+  updSaved: "Na-update ang kaso.",
+  updSaveFailed: "Hindi na-update ang kaso.",
+  updCancel: "Kanselahin",
+  actTo_summoned: "Maglabas ng patawag",
+  actTo_summonedDesc:
+    "Magpapatawag ang barangay sa inirereklamo para dumalo sa mediasyon.",
+  actTo_mediation: "Simulan ang mediasyon",
+  actTo_mediationDesc: "Papasok ang kaso sa mediasyon sa harap ng lupon.",
+  actTo_settled: "Itala ang kasunduan",
+  actTo_settledDesc: "Nakapagkasunduo ang mga partido. Sasara ang kaso.",
+  actTo_conciliation: "Isulong sa conciliation",
+  actTo_conciliationDesc:
+    "Hindi natapos ang kaso sa mediasyon. Magpapatuloy ito sa conciliation sa Lupon.",
+  actTo_certified: "Maglabas ng sertipiko para maghain sa korte",
+  actTo_certifiedDesc:
+    "Hindi umasenso ang conciliation. Tumatanggap ang mga partido ng sertipiko para dalhin ang kaso sa korte.",
+  actTo_dismissed: "Ibasura ang kaso",
+  actTo_dismissedDesc: "Isasara ang kaso nang walang kasunduan.",
+
   // privacy policy
   privacyTitle: "Patakaran sa Privacy",
   privacyUpdated: "Huling na-update: Oktubre 23, 2026",
@@ -1147,6 +1234,8 @@ const tl: Record<Key, string> = {
   // complaint view/detail page
   complaintDetails: "Mga Detalye ng Reklamo",
   backToList: "Bumalik sa Listahan",
+  prevCase: "Naunang kaso",
+  nextCase: "Susunod na kaso",
   partiesInvolved: "Mga Panig na Kabilang",
   complainant: "Nagrereklamo",
   respondent: "Inirereklamo",

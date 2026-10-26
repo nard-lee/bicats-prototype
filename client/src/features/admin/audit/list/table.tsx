@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import DataPagination from "@/components/data-pagination";
 import { api } from "@/lib/api";
+import { csvCell } from "@/lib/csv";
 import {
   Select,
   SelectContent,
@@ -84,7 +85,6 @@ export default function AuditLog() {
         })
         .json<AuditRow[]>();
 
-      const escape = (value: string) => `"${value.replace(/"/g, '""')}"`;
       const lines = rows.map((r) =>
         [
           when(r.createdAt),
@@ -95,7 +95,7 @@ export default function AuditLog() {
           r.summary,
           r.ip ?? "",
         ]
-          .map((value) => escape(String(value)))
+          .map((value) => csvCell(String(value)))
           .join(","),
       );
 

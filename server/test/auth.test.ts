@@ -88,7 +88,7 @@ describe("authentication", () => {
     expect(anonymous.body).toEqual({ message: "Missing access token" });
 
     const user = await createUser("staff");
-    const { agent } = await loginAgent("staff");
+    const { agent, token } = await loginAgent("staff");
 
     await prisma.user.update({
       where: { id: user.id },
@@ -97,6 +97,44 @@ describe("authentication", () => {
 
     const deactivated = await agent.get("/api/auth/me").expect(401);
     expect(deactivated.body).toEqual({ message: "Account is not active" });
+
+    // Deactivation blocks both re-authentication and session rotation.
+    const freshAgent = request.agent(app);
+    const freshToken = await csrfToken(freshAgent);
+    const relogin = await freshAgent
+      .post("/api/auth/log-in")
+      .set("x-csrf-token", freshToken)
+      .send({ identifier: "staff", password: PASSWORD })
+      .expect(401);
+    expect(relogin.body.message).toBe("Account is not active");
+
+    const refreshed = await agent
+      .post("/api/auth/refresh")
+      .set("x-csrf-token", token)
+      .expect(401);
+    expect(refreshed.body.message).toBe("Account is not active");
+    expect(await prisma.refreshToken.count({ where: { userId: user.id } })).toBe(0);
+  });
+
+  it("revokes every session when the password changes", async () => {
+    const user = await createUser("staff");
+    const { agent, token } = await loginAgent("staff");
+
+    expect(await prisma.refreshToken.count({ where: { userId: user.id } })).toBe(1);
+
+    await agent
+      .patch("/api/users/me")
+      .set("x-csrf-token", token)
+      .send({ password: "new-password-123" })
+      .expect(200);
+
+    expect(await prisma.refreshToken.count({ where: { userId: user.id } })).toBe(0);
+
+    const refreshed = await agent
+      .post("/api/auth/refresh")
+      .set("x-csrf-token", token)
+      .expect(401);
+    expect(refreshed.body.message).toBe("Invalid session");
   });
 
   it("rotates the refresh token and keeps the access token working", async () => {

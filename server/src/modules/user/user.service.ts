@@ -131,6 +131,20 @@ const userService = {
             if (taken) throw new CustomError('Update failed', { username: 'Username already in use' });
         }
 
+        // A reset or deactivation must also end the account's existing
+        // sessions, not just change what the next sign-in will accept.
+        if (password || rest.isActive === false) {
+            const [updated] = await prisma.$transaction([
+                prisma.user.update({
+                    where: { id },
+                    data,
+                    omit: { passwordHash: true },
+                }),
+                prisma.refreshToken.deleteMany({ where: { userId: id } }),
+            ]);
+            return updated;
+        }
+
         return prisma.user.update({
             where: { id },
             data,

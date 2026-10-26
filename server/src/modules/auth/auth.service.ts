@@ -53,6 +53,7 @@ const authService = {
         phone: true,
         role: true,
         passwordHash: true,
+        isActive: true,
       },
     });
 
@@ -68,6 +69,10 @@ const authService = {
       { password: "Incorrect password" },
       401,
     );
+
+    // Checked after the password so an inactive account isn't disclosed to
+    // someone who doesn't already know its credentials.
+    if (!user.isActive) throw new CustomError("Account is not active", undefined, 401);
 
     const accessToken = signAccessToken({ userId: user.id, role: user.role });
     const refreshToken = generateRefreshToken();
@@ -92,10 +97,18 @@ const authService = {
   async refresh(oldRefreshToken: string, ip: string | null = null): Promise<RefreshResult> {
     const stored = await prisma.refreshToken.findUnique({
       where: { token: oldRefreshToken },
-      include: { user: { select: { id: true, role: true, fullName: true } } },
+      include: {
+        user: { select: { id: true, role: true, fullName: true, isActive: true } },
+      },
     });
 
     if (!stored) throw new CustomError('Invalid session', { refreshToken: 'Invalid or expired session' }, 401);
+
+    // A deactivated account must not be able to mint fresh access tokens.
+    if (!stored.user.isActive) {
+      await prisma.refreshToken.deleteMany({ where: { userId: stored.user.id } });
+      throw new CustomError('Account is not active', undefined, 401);
+    }
 
     if (stored.revokedAt) await rejectReplay(stored.user, ip);
 
