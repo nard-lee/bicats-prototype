@@ -8,7 +8,7 @@ export const INTERNAL_ROLES: Role[] = ["admin", "staff", "secretary", "lupon"];
 
 // See the complaint register.
 export const CASE_VIEW_ROLES: Role[] = ["admin", "staff", "secretary", "lupon"];
-// Change status / priority, reopen, bulk-update.
+// Change status, reopen, bulk-update.
 export const CASE_WRITE_ROLES: Role[] = ["admin", "staff", "lupon"];
 
 // Schedule and manage hearings.

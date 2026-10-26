@@ -1,6 +1,5 @@
 import { api } from "@/lib/api";
 import type { LoaderFunctionArgs } from "react-router";
-import type { ComplaintPriority } from "../priority";
 
 export type ComplaintStatus =
   | "received"
@@ -19,7 +18,6 @@ export type ComplaintListItem = {
   complaintType: string;
   complaintTypeOther: string | null;
   status: ComplaintStatus;
-  priority: ComplaintPriority;
   createdAt: string; 
   viewedAt: string | null;
   dueAt: string | null;
@@ -51,7 +49,6 @@ export async function ComplaintsLoader({ request }: LoaderFunctionArgs): Promise
   const q = params.get("q")?.trim() ?? "";
   const status = params.get("status") ?? "";
   const type = params.get("type") ?? "";
-  const priority = params.get("priority") ?? "";
   const risk = params.get("risk") ?? "all";
   const open = risk === "open";
   const overdue = risk === "overdue";
@@ -66,7 +63,6 @@ export async function ComplaintsLoader({ request }: LoaderFunctionArgs): Promise
           ...(q ? { q } : {}),
           ...(status && status !== "all" ? { status } : {}),
           ...(type && type !== "all" ? { type } : {}),
-          ...(priority && priority !== "all" ? { priority } : {}),
           ...(open ? { open: "true" } : {}),
           ...(overdue ? { overdue: "true" } : {}),
           ...(dueSoon ? { dueSoon: "true" } : {}),

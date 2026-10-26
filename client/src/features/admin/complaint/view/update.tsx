@@ -6,13 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import DateTimePicker from "@/components/ui/date-time-picker";
 import { cn } from "cn";
 import { api } from "@/lib/api";
 import { useT, type Key } from "@/lib/I18n";
-import { PRIORITIES, type ComplaintPriority } from "../priority";
 import type { ComplaintStatus } from "./loader";
 
 // Mirrors COMPLAINT_TRANSITIONS on the server; the server still enforces it.
@@ -31,15 +29,13 @@ const CLOSED_STATUSES: readonly ComplaintStatus[] = ["settled", "certified", "di
 interface StageAdvanceDialogProps {
   complaintId: number;
   currentStatus: ComplaintStatus;
-  currentPriority: ComplaintPriority;
   onSuccess: () => void;
 }
 
-export function StageAdvanceDialog({ complaintId, currentStatus, currentPriority, onSuccess }: StageAdvanceDialogProps) {
+export function StageAdvanceDialog({ complaintId, currentStatus, onSuccess }: StageAdvanceDialogProps) {
   const { t } = useT();
   const [open, setOpen] = useState(false);
   const [target, setTarget] = useState<ComplaintStatus | null>(null);
-  const [priority, setPriority] = useState<ComplaintPriority>(currentPriority);
   const [publicNote, setPublicNote] = useState("");
   const [internalNote, setInternalNote] = useState("");
   const [hearingAt, setHearingAt] = useState("");
@@ -51,7 +47,6 @@ export function StageAdvanceDialog({ complaintId, currentStatus, currentPriority
 
   function resetForm() {
     setTarget(null);
-    setPriority(currentPriority);
     setPublicNote("");
     setInternalNote("");
     setHearingAt("");
@@ -77,12 +72,6 @@ export function StageAdvanceDialog({ complaintId, currentStatus, currentPriority
           hearingAt: !closing && hearingAt ? hearingAt : null,
         },
       });
-
-      if (!closing && priority !== currentPriority) {
-        await api.patch(`/complaints/${complaintId}/priority`, {
-          json: { priority },
-        });
-      }
 
       setOpen(false);
       toast.success(t("updSaved"));
@@ -149,41 +138,20 @@ export function StageAdvanceDialog({ complaintId, currentStatus, currentPriority
                   {t("updClosingNote")}
                 </p>
               ) : (
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="grid gap-2">
-                    <Label htmlFor="labPriority">{t("updPriority")}</Label>
-                    <Select
-                      value={priority}
-                      onValueChange={(val) => setPriority(val as ComplaintPriority)}
-                      disabled={isSubmitting}
-                    >
-                      <SelectTrigger id="labPriority">
-                        <SelectValue placeholder={t("updPriority")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {PRIORITIES.map((p) => (
-                          <SelectItem key={p} value={p}>
-                            {t(`pr_${p}` as Key)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="labHearing">
-                      {t("updNextSession")}{" "}
-                      <span className="font-normal text-muted-foreground">
-                        ({t("updOptional")})
-                      </span>
-                    </Label>
-                    <DateTimePicker
-                      id="labHearing"
-                      value={hearingAt}
-                      onChange={setHearingAt}
-                      disabled={isSubmitting}
-                    />
-                    <p className="text-sm text-muted-foreground">{t("updNextSessionHint")}</p>
-                  </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="labHearing">
+                    {t("updNextSession")}{" "}
+                    <span className="font-normal text-muted-foreground">
+                      ({t("updOptional")})
+                    </span>
+                  </Label>
+                  <DateTimePicker
+                    id="labHearing"
+                    value={hearingAt}
+                    onChange={setHearingAt}
+                    disabled={isSubmitting}
+                  />
+                  <p className="text-sm text-muted-foreground">{t("updNextSessionHint")}</p>
                 </div>
               )}
 

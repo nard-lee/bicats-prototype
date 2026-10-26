@@ -35,7 +35,6 @@ import { StageAdvanceDialog, NoteDialog } from "./update";
 import ReopenCaseModal from "./reopen";
 import EligibilityCard from "./eligibility";
 import ServiceRecordCard from "./service";
-import { PRIORITY_STYLE, type ComplaintPriority } from "../priority";
 import { DOCUMENT_TYPES } from "../documents/loader";
 import { complaintTypeLabel } from "../type-label";
 import type { AdminLoaderData } from "@/layouts/admin/loader";
@@ -44,13 +43,6 @@ const NOW_MS = Date.now();
 
 // Newest events are already first; show a window of them and page deeper.
 const HISTORY_PAGE = 6;
-
-const PRIORITY_FULL_KEY: Record<Exclude<ComplaintPriority, "none">, Key> = {
-  low: "prLowFull",
-  normal: "prNormalFull",
-  high: "prHighFull",
-  urgent: "prUrgentFull",
-};
 
 function Info({ label, value }: { label: string; value: ReactNode }) {
   return (
@@ -82,19 +74,17 @@ function CaseNavButton({
         disabled
         title={label}
         aria-label={label}
-        className="px-2 sm:px-2.5"
+        className="px-2"
       >
         {icon}
-        <span className="ml-1.5 hidden sm:inline">{label}</span>
       </Button>
     );
   }
 
   return (
-    <Button asChild variant="outline" size="sm" title={label} className="px-2 sm:px-2.5">
+    <Button asChild variant="outline" size="sm" title={label} className="px-2">
       <Link to={to} aria-label={label}>
         {icon}
-        <span className="ml-1.5 hidden sm:inline">{label}</span>
       </Link>
     </Button>
   );
@@ -163,10 +153,6 @@ export default function ComplaintView() {
     (complaint.eligibilityStatus === "unreviewed" ||
       complaint.eligibilityStatus === "needs_review");
 
-  const eligibilityHintKey: Key =
-    complaint.eligibilityStatus === "unreviewed"
-      ? "eligUnscreenedHint"
-      : "eligPendingHint";
   const eligibilityFlagKey: Key =
     complaint.eligibilityStatus === "unreviewed"
       ? "eligUnscreenedFlag"
@@ -193,6 +179,31 @@ export default function ComplaintView() {
               {t("backToList")}
             </Link>
           </Button>
+        </div>
+
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+          {canWrite && !eligibilityHold && (
+            <>
+              {!isClosed && (
+                <StageAdvanceDialog
+                  complaintId={complaint.id}
+                  currentStatus={complaint.status}
+                  onSuccess={() => revalidator.revalidate()}
+                />
+              )}
+              <NoteDialog
+                complaintId={complaint.id}
+                currentStatus={complaint.status}
+                onSuccess={() => revalidator.revalidate()}
+              />
+            </>
+          )}
+          {canWrite && isClosed && (
+            <ReopenCaseModal
+              complaintId={complaint.id}
+              onSuccess={() => revalidator.revalidate()}
+            />
+          )}
           <div className="flex items-center gap-1">
             <CaseNavButton
               caseId={complaint.prevId}
@@ -208,41 +219,6 @@ export default function ComplaintView() {
             />
           </div>
         </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          {canWrite && (
-            <>
-              {eligibilityHold ? (
-                <p className="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300">
-                  <ShieldAlert className="h-4 w-4 shrink-0" />
-                  {t(eligibilityHintKey)}
-                </p>
-              ) : (
-                <>
-                  {!isClosed && (
-                    <StageAdvanceDialog
-                      complaintId={complaint.id}
-                      currentStatus={complaint.status}
-                      currentPriority={complaint.priority}
-                      onSuccess={() => revalidator.revalidate()}
-                    />
-                  )}
-                  <NoteDialog
-                    complaintId={complaint.id}
-                    currentStatus={complaint.status}
-                    onSuccess={() => revalidator.revalidate()}
-                  />
-                </>
-              )}
-              {isClosed && (
-                <ReopenCaseModal
-                  complaintId={complaint.id}
-                  onSuccess={() => revalidator.revalidate()}
-                />
-              )}
-            </>
-          )}
-        </div>
       </div>
 
       <div className="space-y-10 p-4 pt-8 sm:p-6 sm:pt-10">
@@ -251,8 +227,7 @@ export default function ComplaintView() {
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-3">
               <h1 className="text-2xl font-semibold">{complaint.reference}</h1>
-              <Badge>{t(`st_${complaint.status}` as Key)}</Badge>
-              {eligibilityHold && (
+              {eligibilityHold ? (
                 <Badge
                   variant="outline"
                   className="gap-1 border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
@@ -260,13 +235,9 @@ export default function ComplaintView() {
                   <ShieldAlert className="h-3 w-3" />
                   {t(eligibilityFlagKey)}
                 </Badge>
+              ) : (
+                <Badge>{t(`st_${complaint.status}` as Key)}</Badge>
               )}
-              {complaint.priority !== "none" && (
-                <Badge className={cn("border", PRIORITY_STYLE[complaint.priority])}>
-                  {t(PRIORITY_FULL_KEY[complaint.priority])}
-                </Badge>
-              )}
-
             </div>
 
             <p className="text-sm text-muted-foreground">

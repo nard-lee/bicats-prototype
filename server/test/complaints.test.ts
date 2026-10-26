@@ -296,7 +296,7 @@ describe("staff case workflow", () => {
     });
   });
 
-  it("filters the register by search, type, priority, and risk", async () => {
+  it("filters the register by search, type, and risk", async () => {
     await createUser("admin");
 
     const publicAgent = request.agent(app);
@@ -330,12 +330,6 @@ describe("staff case workflow", () => {
 
     const { agent, token } = await loginAgent("admin");
 
-    await agent
-      .patch(`/api/complaints/${idOf(overdue.body.reference)}/priority`)
-      .set("x-csrf-token", token)
-      .send({ priority: "high" })
-      .expect(200);
-
     const list = (query: string) =>
       agent
         .post(`/api/complaints/list${query}`)
@@ -350,11 +344,6 @@ describe("staff case workflow", () => {
     const byType = await list("?type=type2");
     expect(
       byType.body.items.map((item: { reference: string }) => item.reference),
-    ).toEqual([overdue.body.reference]);
-
-    const byPriority = await list("?priority=high");
-    expect(
-      byPriority.body.items.map((item: { reference: string }) => item.reference),
     ).toEqual([overdue.body.reference]);
 
     const open = await list("?open=1");

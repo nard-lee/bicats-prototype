@@ -3,7 +3,7 @@ import { prisma } from "../../db.js";
 import { Prisma } from "../../generated/prisma/client.js";
 import { CustomError } from "../../utils/custom.exception.js";
 
-import { COMPLAINT_STATUSES, TERMINAL_STATUSES, RISK_WINDOW_DAYS, canTransition, computeNextDueAt, deadlineConfigFrom, isComplaintPriority, isComplaintStatus, isComplaintType } from "./complaint.schema.js";
+import { COMPLAINT_STATUSES, TERMINAL_STATUSES, RISK_WINDOW_DAYS, canTransition, computeNextDueAt, deadlineConfigFrom, isComplaintStatus, isComplaintType } from "./complaint.schema.js";
 import type { CreateComplaintInput } from "./complaint.schema.js";
 import type { UpdateEligibilityInput } from "./complaint.eligibility.js";
 import type { CreateServiceRecordInput, ServiceResult } from "./complaint.service-record.js";
@@ -11,7 +11,6 @@ import type {
     ComplaintDetail,
     ComplaintListFilters,
     ComplaintListRow,
-    ComplaintPriority,
     ComplaintStatus,
     ComplaintTrackResult,
     Paginated,
@@ -147,10 +146,6 @@ const complaintService = {
             conditions.push({ complaintType: filters.type });
         }
 
-        if (filters.priority && isComplaintPriority(filters.priority)) {
-            conditions.push({ priority: filters.priority });
-        }
-
         if (filters.open) {
             conditions.push({
                 status: {
@@ -197,7 +192,6 @@ const complaintService = {
                     complaintType: true,
                     complaintTypeOther: true,
                     status: true,
-                    priority: true,
                     createdAt: true,
                     viewedAt: true,
                     dueAt: true,
@@ -343,7 +337,6 @@ const complaintService = {
             complaintType: complaint.complaintType,
             complaintTypeOther: complaint.complaintTypeOther,
             status: currentStatus,
-            priority: complaint.priority,
             createdAt: complaint.createdAt.toISOString(),
             dueAt: complaint.dueAt ? complaint.dueAt.toISOString() : null,
             nextHearingAt: complaint.hearings[0]?.scheduledAt.toISOString() ?? null,
@@ -433,7 +426,7 @@ const complaintService = {
         const result = await prisma.$transaction(async (tx) => {
             const previous = await tx.complaint.findUnique({
                 where: { id },
-                select: { reference: true, status: true, dueAt: true, priority: true, eligibilityStatus: true },
+                select: { reference: true, status: true, dueAt: true, eligibilityStatus: true },
             });
 
             if (!previous) {
@@ -486,7 +479,6 @@ const complaintService = {
                 data: {
                     status,
                     dueAt,
-                    ...(closing ? { priority: "none" } : {}),
                 },
             });
 
@@ -683,7 +675,6 @@ const complaintService = {
                 data: {
                     status,
                     dueAt,
-                    ...(closing ? { priority: "none" } : {}),
                 },
             });
 
@@ -709,26 +700,6 @@ const complaintService = {
 
         await clearHearingNotifications(result.cancelledHearingIds);
         return result.count;
-    },
-
-    async setPriority(id: number, priority: ComplaintPriority) {
-        const existing = await prisma.complaint.findUnique({
-            where: { id },
-            select: { reference: true, priority: true },
-        });
-
-        if (!existing) return null;
-
-        const { count } = await prisma.complaint.updateMany({
-            where: { id },
-            data: { priority },
-        });
-
-        return {
-            count,
-            reference: existing.reference,
-            previousPriority: existing.priority,
-        };
     },
 
     async reopenCase(id: number, reason: string, userId?: number) {
@@ -759,7 +730,7 @@ const complaintService = {
 
             const updated = await tx.complaint.update({
                 where: { id },
-                data: { status: "received", dueAt, priority: "normal" },
+                data: { status: "received", dueAt },
                 select: { reference: true },
             });
 
@@ -825,7 +796,7 @@ const complaintService = {
                     eligibilityReason: input.eligibilityReason,
                     eligibilityReviewedAt: new Date(),
                     ...(dismiss
-                        ? { status: "dismissed", dueAt: null, priority: "none" }
+                        ? { status: "dismissed", dueAt: null }
                         : {}),
                 },
             });

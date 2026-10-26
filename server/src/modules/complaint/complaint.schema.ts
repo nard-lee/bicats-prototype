@@ -7,7 +7,6 @@ import {
     toEligibilityAnswers,
 } from "./complaint.eligibility.js";
 import type {
-    ComplaintPriority,
     ComplaintRisk,
     ComplaintStatus,
     ComplaintType,
@@ -180,46 +179,13 @@ export function canTransition(from: string, to: string): boolean {
   return !!allowed && allowed.includes(to as ComplaintStatus);
 }
 
-// ---- Priority triage ----
-export const COMPLAINT_PRIORITIES = ["none", "low", "normal", "high", "urgent"] as const;
-
 export function isComplaintStatus(value: string): value is ComplaintStatus {
   return (COMPLAINT_STATUSES as readonly string[]).includes(value);
-}
-
-export function isComplaintPriority(value: string): value is ComplaintPriority {
-  return (COMPLAINT_PRIORITIES as readonly string[]).includes(value);
 }
 
 export function isComplaintType(value: string): value is ComplaintType {
   return (COMPLAINT_TYPES as readonly string[]).includes(value);
 }
-
-const PRIORITY_RANK: Record<ComplaintPriority, number> = {
-  none: 0,
-  low: 1,
-  normal: 2,
-  high: 3,
-  urgent: 4,
-};
-
-export function priorityRank(priority: string): number {
-  return PRIORITY_RANK[priority as ComplaintPriority] ?? PRIORITY_RANK.normal;
-}
-
-// Which priority an overdue case escalates to. Never downgrades, so returns
-// null when the case is already at or above the target level.
-export function escalatedPriority(
-  current: string,
-  overdueDays: number,
-): ComplaintPriority | null {
-  const desired: ComplaintPriority = overdueDays >= 7 ? "urgent" : "high";
-  return priorityRank(desired) > priorityRank(current) ? desired : null;
-}
-
-export const updatePrioritySchema = z.object({
-  priority: z.enum(COMPLAINT_PRIORITIES),
-});
 
 // Katarungang Pambarangay flow: for each status, how many days the barangay
 // has to take the next step (see the KP rules cited in the barangay handbook).

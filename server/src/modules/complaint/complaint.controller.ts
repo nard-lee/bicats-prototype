@@ -6,7 +6,7 @@ import notificationService from "../notification/notification.service.js";
 import complainantNotifier from "../notify/complainant.notifier.js";
 import { auditFromRequest } from "../audit/audit.service.js";
 import { CustomError } from "../../utils/custom.exception.js";
-import { createComplaintSchema, isComplaintStatus, trackComplaintSchema, updatePrioritySchema } from "./complaint.schema.js";
+import { createComplaintSchema, isComplaintStatus, trackComplaintSchema } from "./complaint.schema.js";
 import { updateEligibilitySchema } from "./complaint.eligibility.js";
 import { createServiceRecordSchema } from "./complaint.service-record.js";
 import { removeUploadedFiles } from "../../utils/upload.js";
@@ -58,12 +58,11 @@ const complaintController = {
         const q = typeof req.query.q === "string" ? req.query.q : undefined;
         const status = typeof req.query.status === "string" ? req.query.status : undefined;
         const type = typeof req.query.type === "string" ? req.query.type : undefined;
-        const priority = typeof req.query.priority === "string" ? req.query.priority : undefined;
         const open = req.query.open === "true" || req.query.open === "1";
         const overdue = req.query.overdue === "true" || req.query.overdue === "1";
         const dueSoon = req.query.dueSoon === "true" || req.query.dueSoon === "1";
 
-        res.json(await complaintService.list(page, pageSize, { q, status, type, priority, open, overdue, dueSoon }));
+        res.json(await complaintService.list(page, pageSize, { q, status, type, open, overdue, dueSoon }));
     },
 
     async markViewed(req: Request, res: Response): Promise<void> {
@@ -161,31 +160,6 @@ const complaintController = {
             entityType: "complaint",
             summary: `Set ${updated} case(s) to "${status}"`,
             meta: { ids, status, updated },
-        });
-    },
-
-    async updatePriority(req: Request, res: Response): Promise<void> {
-        const id = Number(req.params.id);
-
-        if (!id || isNaN(id)) {
-            throw new CustomError("Invalid complaint ID", undefined, 400);
-        }
-
-        const { priority } = validateRequest(updatePrioritySchema, req.body);
-        const result = await complaintService.setPriority(id, priority);
-
-        if (!result || result.count === 0) {
-            throw new CustomError("Complaint not found", undefined, 404);
-        }
-
-        res.json({ success: true });
-
-        await auditFromRequest(req, {
-            action: "complaint.priority.update",
-            entityType: "complaint",
-            entityId: id,
-            summary: `${result.reference}: priority changed from "${result.previousPriority}" to "${priority}"`,
-            meta: { priority, previousPriority: result.previousPriority },
         });
     },
 

@@ -1,6 +1,6 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Link } from "react-router";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, SlidersHorizontal } from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,7 +11,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { complaintTypeKeys, useT, type Key } from "@/lib/I18n";
-import { PRIORITIES } from "../../priority";
 import { ComplaintSearch } from "../search";
 import { STATUSES } from "./statuses";
 
@@ -30,11 +29,10 @@ type ToolbarProps = {
   statFilters: StatFilter[];
   status: string;
   type: string;
-  priority: string;
   reloading: boolean;
   onReload: () => void;
   onApplyStat: (kind: StatKind) => void;
-  onApplyParam: (key: "status" | "type" | "priority", value: string) => void;
+  onApplyParam: (key: "status" | "type", value: string) => void;
   pagination: ReactNode;
 };
 
@@ -45,7 +43,6 @@ export default function Toolbar({
   statFilters,
   status,
   type,
-  priority,
   reloading,
   onReload,
   onApplyStat,
@@ -53,6 +50,10 @@ export default function Toolbar({
   pagination,
 }: ToolbarProps) {
   const { t } = useT();
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const activeFilters = [status, type].filter((v) => v !== "all").length;
+  const filtersLabel =
+    activeFilters > 0 ? `${t("clFilters")} (${activeFilters})` : t("clFilters");
 
   return (
     <>
@@ -80,88 +81,91 @@ export default function Toolbar({
             <RefreshCw className={reloading ? "animate-spin" : ""} />
           </Button>
 
-          <div className="inline-flex w-fit flex-wrap items-center gap-1 rounded-lg border bg-muted/40 p-1">
-            {statFilters.map(({ kind, label, value }) => {
-              const active = activeStat === kind;
-              return (
-                <button
-                  key={kind}
-                  type="button"
-                  aria-pressed={active}
-                  onClick={() => onApplyStat(kind)}
-                  className={cn(
-                    "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                    active
-                      ? "bg-card text-foreground shadow-xs"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {label}
-                  <span
+          <Button
+            type="button"
+            variant={filtersOpen ? "secondary" : "outline"}
+            size="icon"
+            onClick={() => setFiltersOpen((open) => !open)}
+            aria-expanded={filtersOpen}
+            aria-label={filtersLabel}
+            title={filtersLabel}
+            className="relative"
+          >
+            <SlidersHorizontal />
+            {activeFilters > 0 && !filtersOpen && (
+              <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-primary ring-2 ring-background" />
+            )}
+          </Button>
+
+          {filtersOpen && (
+            <>
+              <Select value={status} onValueChange={(v) => onApplyParam("status", v)}>
+                <SelectTrigger className="w-[170px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t("clAllStatuses")}</SelectItem>
+                  {STATUSES.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {t(`st_${s}` as Key)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={type} onValueChange={(v) => onApplyParam("type", v)}>
+                <SelectTrigger className="w-[190px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t("clAllTypes")}</SelectItem>
+                  {complaintTypeKeys.map((k) => (
+                    <SelectItem key={k} value={k}>
+                      {t(k)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </>
+          )}
+
+          {!filtersOpen && (
+            <div className="inline-flex w-fit flex-wrap items-center gap-1 rounded-lg border bg-muted/40 p-1">
+              {statFilters.map(({ kind, label, value }) => {
+                const active = activeStat === kind;
+                return (
+                  <button
+                    key={kind}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => onApplyStat(kind)}
                     className={cn(
-                      "text-sm tabular-nums",
-                      active ? "text-primary" : "text-muted-foreground",
+                      "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                      active
+                        ? "bg-card text-foreground shadow-xs"
+                        : "text-muted-foreground hover:text-foreground",
                     )}
                   >
-                    {value}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+                    {label}
+                    <span
+                      className={cn(
+                        "text-sm tabular-nums",
+                        active ? "text-primary" : "text-muted-foreground",
+                      )}
+                    >
+                      {value}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
           {hasFilters && (
             <Button asChild type="button" variant="ghost" size="sm">
               <Link to="/admin/complaints">{t("clClear")}</Link>
             </Button>
           )}
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2 border-t pt-2">
-          <Select value={status} onValueChange={(v) => onApplyParam("status", v)}>
-            <SelectTrigger className="w-[170px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t("clAllStatuses")}</SelectItem>
-              {STATUSES.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {t(`st_${s}` as Key)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={type} onValueChange={(v) => onApplyParam("type", v)}>
-            <SelectTrigger className="w-[190px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t("clAllTypes")}</SelectItem>
-              {complaintTypeKeys.map((k) => (
-                <SelectItem key={k} value={k}>
-                  {t(k)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={priority}
-            onValueChange={(v) => onApplyParam("priority", v)}
-          >
-            <SelectTrigger className="w-[160px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t("anyPriority")}</SelectItem>
-              {PRIORITIES.map((p) => (
-                <SelectItem key={p} value={p}>
-                  {t(`pr_${p}` as Key)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
 
           <div className="ml-auto">{pagination}</div>
         </div>

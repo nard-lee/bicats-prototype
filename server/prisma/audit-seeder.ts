@@ -18,11 +18,6 @@ const TEMPLATES: Template[] = [
     entityType: "complaint",
     summary: (ref) => `Status changed for ${ref ?? "a case"}`,
   },
-  {
-    action: "complaint.priority.update",
-    entityType: "complaint",
-    summary: (ref) => `Priority changed for ${ref ?? "a case"}`,
-  },
   { action: "complaint.reopen", entityType: "complaint", summary: (ref) => `Reopened ${ref ?? "a case"}` },
   { action: "complaint.bulk_status", entityType: "complaint", summary: () => "Bulk status update" },
   { action: "hearing.create", entityType: "hearing", summary: (ref) => `Scheduled a mediation session for ${ref ?? "a case"}` },

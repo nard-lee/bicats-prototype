@@ -2,10 +2,8 @@ import { prisma } from "../db.js";
 import complainantNotifier from "../modules/notify/complainant.notifier.js";
 import {
   complaintRisk,
-  escalatedPriority,
   TERMINAL_STATUSES,
 } from "../modules/complaint/complaint.schema.js";
-import type { ComplaintPriority } from "../modules/complaint/complaint.types.js";
 import { INTERNAL_ROLES } from "../utils/roles.js";
 import notificationService from "../modules/notification/notification.service.js";
 import settingService from "../modules/setting/setting.service.js";
@@ -29,10 +27,9 @@ function prettyDate(date: Date): string {
 
 /**
  * Scan open cases whose KP deadline is within the next day (or already past):
- *  1. auto-escalate overdue cases that are still at a low priority,
- *  2. create one in-app notification per active staff member, per case, per day, and
- *  3. remind staff about mediation sessions whose date has passed without an outcome,
- *  4. remind the parties (and staff) about scheduled sessions inside the
+ *  1. create one in-app notification per active staff member, per case, per day, and
+ *  2. remind staff about mediation sessions whose date has passed without an outcome,
+ *  3. remind the parties (and staff) about scheduled sessions inside the
  *     configured lead time.
  * Dedupe keys keep the scan idempotent.
  */
@@ -50,7 +47,7 @@ export async function runReminderScan(): Promise<number> {
       status: { notIn: [...TERMINAL_STATUSES] },
       dueAt: { not: null, lte: soon },
     },
-    select: { id: true, reference: true, status: true, priority: true, dueAt: true },
+    select: { id: true, reference: true, status: true, dueAt: true },
   });
 
   const [overdueHearings, staff] = await Promise.all([
@@ -79,35 +76,6 @@ export async function runReminderScan(): Promise<number> {
 
   const stamp = dayKey(now);
 
-  // ---- Auto-escalation: overdue cases climb in priority ----
-  const byTargetPriority = new Map<ComplaintPriority, { id: number; reference: string }[]>();
-
-  for (const complaint of cases) {
-    if (!complaint.dueAt) continue;
-    if (complaintRisk(complaint.dueAt, complaint.status, windowDays) !== "overdue") continue;
-
-    const overdueDays = Math.floor((now.getTime() - complaint.dueAt.getTime()) / DAY);
-    const next = escalatedPriority(complaint.priority, overdueDays);
-    if (!next) continue;
-
-    const bucket = byTargetPriority.get(next) ?? [];
-    bucket.push({ id: complaint.id, reference: complaint.reference });
-    byTargetPriority.set(next, bucket);
-  }
-
-  await Promise.all(
-    [...byTargetPriority].map(([priority, items]) =>
-      prisma.complaint.updateMany({
-        where: { id: { in: items.map((item) => item.id) } },
-        data: { priority },
-      }),
-    ),
-  );
-
-  const escalated = [...byTargetPriority].flatMap(([priority, items]) =>
-    items.map((item) => ({ ...item, priority })),
-  );
-
   // ---- Daily deadline reminders ----
   const reminderRows = cases.flatMap((complaint) => {
     const dueAt = complaint.dueAt;
@@ -132,19 +100,6 @@ export async function runReminderScan(): Promise<number> {
       dedupeKey: `${risk}:${complaint.id}:${stamp}:${member.id}`,
     }));
   });
-
-  // ---- One-time escalation alerts (per case, per level, per staff) ----
-  const escalationRows = escalated.flatMap((item) =>
-    staff.map((member) => ({
-      userId: member.id,
-      type: "escalation",
-      title: `${item.reference} priority raised to ${item.priority}`,
-      body: `This case has stayed past-deadline, so its priority was automatically raised to "${item.priority}". Follow up ${item.reference} or record a resolution.`,
-      complaintId: item.id,
-      reference: item.reference,
-      dedupeKey: `escalation:${item.id}:${item.priority}:${member.id}`,
-    })),
-  );
 
   // ---- Missed sessions that still have no outcome on record ----
   const hearingRows = overdueHearings
@@ -171,7 +126,7 @@ export async function runReminderScan(): Promise<number> {
       }));
     });
 
-  const rows = [...reminderRows, ...escalationRows, ...hearingRows];
+  const rows = [...reminderRows, ...hearingRows];
 
   // ---- Pre-session reminders to the complainant (and staff) ----
   const leadHours = settings.reminderLeadHours;

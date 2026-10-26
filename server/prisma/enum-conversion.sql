@@ -7,7 +7,6 @@ BEGIN;
 
 DO $$ BEGIN CREATE TYPE "Role" AS ENUM ('admin', 'staff', 'secretary', 'lupon'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE TYPE "ComplaintStatus" AS ENUM ('received', 'summoned', 'mediation', 'conciliation', 'settled', 'certified', 'dismissed'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN CREATE TYPE "ComplaintPriority" AS ENUM ('none', 'low', 'normal', 'high', 'urgent'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE TYPE "ComplaintType" AS ENUM ('type1', 'type2', 'type3', 'type4', 'type5', 'type6', 'type7', 'type8', 'type9', 'type10', 'type11', 'type12'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE TYPE "EligibilityStatus" AS ENUM ('unreviewed', 'eligible', 'needs_review', 'outside_kp', 'rejected'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
@@ -19,9 +18,6 @@ ALTER TABLE "Complaint" ALTER COLUMN "complaintType" TYPE "ComplaintType" USING 
 ALTER TABLE "Complaint" ALTER COLUMN "status" DROP DEFAULT;
 ALTER TABLE "Complaint" ALTER COLUMN "status" TYPE "ComplaintStatus" USING "status"::"ComplaintStatus";
 ALTER TABLE "Complaint" ALTER COLUMN "status" SET DEFAULT 'received'::"ComplaintStatus";
-ALTER TABLE "Complaint" ALTER COLUMN "priority" DROP DEFAULT;
-ALTER TABLE "Complaint" ALTER COLUMN "priority" TYPE "ComplaintPriority" USING "priority"::"ComplaintPriority";
-ALTER TABLE "Complaint" ALTER COLUMN "priority" SET DEFAULT 'normal'::"ComplaintPriority";
 ALTER TABLE "Complaint" ALTER COLUMN "eligibilityStatus" DROP DEFAULT;
 ALTER TABLE "Complaint" ALTER COLUMN "eligibilityStatus" TYPE "EligibilityStatus" USING "eligibilityStatus"::"EligibilityStatus";
 ALTER TABLE "Complaint" ALTER COLUMN "eligibilityStatus" SET DEFAULT 'unreviewed'::"EligibilityStatus";

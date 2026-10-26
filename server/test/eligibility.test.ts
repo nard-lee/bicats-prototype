@@ -277,7 +277,6 @@ describe("eligibility screening", () => {
     });
     expect(dismissed!.status).toBe("dismissed");
     expect(dismissed!.dueAt).toBeNull();
-    expect(dismissed!.priority).toBe("none");
     expect(dismissed!.eligibilityStatus).toBe("outside_kp");
 
     const entry = await prisma.statusUpdate.findFirst({
@@ -337,7 +336,6 @@ describe("eligibility screening", () => {
     });
     expect(rejected!.status).toBe("dismissed");
     expect(rejected!.dueAt).toBeNull();
-    expect(rejected!.priority).toBe("none");
     expect(rejected!.eligibilityStatus).toBe("rejected");
     expect(rejected!.eligibilityReason).toBe(
       "The complaint was withdrawn by the complainant.",

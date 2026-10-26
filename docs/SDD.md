@@ -51,7 +51,7 @@ University of Baguio
 | 1.7 | Santiago, Ocampo | 10/20/2026 | | | Free-text description required when the complaint type is "Others" |
 | 1.8 | Santiago, Ocampo | 10/20/2026 | | | Configurable mediation deadline and one-click completed/no-show actions for overdue mediations |
 | 1.9 | Santiago, Ocampo | 10/20/2026 | | | Global mediation views (overdue/upcoming/this week) and notification cleanup (auto-resolve, per-user cap, retention) |
-| 1.10 | Santiago, Ocampo | 10/20/2026 | | | Audit log resolves case/account/notice references in targets and historical summaries, flags deleted records, and records old-to-new status/priority changes |
+| 1.10 | Santiago, Ocampo | 10/20/2026 | | | Audit log resolves case/account/notice references in targets and historical summaries, flags deleted records, and records old-to-new status changes |
 
 ---
 
@@ -102,7 +102,7 @@ BICATS is a comprehensive web-based complaint and dispute management application
 - Authenticate staff through secure role-based accounts (admin, staff, secretary, lupon).
 - Manage cases through the full KP status workflow (received → summoned → mediation → conciliation → settled / certified / dismissed).
 - Schedule and manage mediation, conciliation, and arbitration sessions, flagging past sessions that still have no recorded outcome.
-- Triage cases by priority with automatic escalation when a step exceeds its deadline.
+- Triage cases by deadline, with due-soon and overdue flags plus a daily staff alert.
 - Publish public advisories on a notice board.
 - Generate analytics, reports, and CSV exports of case and audit data.
 - Print official KP documents (Summons, Notice of Hearing, Amicable Settlement, Certificate to File Action).
@@ -146,23 +146,21 @@ f. **Case Status Workflow** — The ordered lifecycle of a complaint: received, 
 
 g. **Deadline (Due Date)** — The latest date by which the barangay must take the next KP step; a case past its deadline is flagged "overdue".
 
-h. **Priority** — A triage marker (low, normal, high, urgent) that rises automatically when a case lapses its deadline.
+h. **Evidence** — Files uploaded with a complaint (images, PDF, or video) that are stored and linked to the complaint record.
 
-i. **Evidence** — Files uploaded with a complaint (images, PDF, or video) that are stored and linked to the complaint record.
+i. **Notice Board** — A publicly visible list of advisories published by the barangay.
 
-j. **Notice Board** — A publicly visible list of advisories published by the barangay.
+j. **Notification** — An automatic message to residents (SMS/email) or to staff (in-app) regarding confirmations, reminders, deadlines, or case updates.
 
-k. **Notification** — An automatic message to residents (SMS/email) or to staff (in-app) regarding confirmations, reminders, deadlines, or case updates.
+k. **Audit Log** — An immutable trail recording who performed which action, when, and from where.
 
-l. **Audit Log** — An immutable trail recording who performed which action, when, and from where.
+l. **Role-Based Access Control (RBAC)** — A security model that grants capabilities according to a user's role.
 
-m. **Role-Based Access Control (RBAC)** — A security model that grants capabilities according to a user's role.
+m. **Barangay Settings** — The editable barangay profile (name, city, province, officials, contact details) used on letters and printable documents.
 
-n. **Barangay Settings** — The editable barangay profile (name, city, province, officials, contact details) used on letters and printable documents.
+n. **Reference Number** — A unique case identifier in the form `BK-<year>-<sequence>-<check>` (e.g. `BK-2026-000001-K7`) shown to residents for tracking. The random check characters keep public tracking codes from being guessed by enumerating the sequence.
 
-o. **Reference Number** — A unique case identifier in the form `BK-<year>-<sequence>-<check>` (e.g. `BK-2026-000001-K7`) shown to residents for tracking. The random check characters keep public tracking codes from being guessed by enumerating the sequence.
-
-p. **Dashboard Analytics** — Reports showing complaint volumes, status distribution, trends, and hotspot puroks.
+o. **Dashboard Analytics** — Reports showing complaint volumes, status distribution, trends, and hotspot puroks.
 
 ### Acronyms
 
@@ -285,7 +283,7 @@ b. **Build Features List (based on the MoSCoW method from the SRS)**
 - **Version 2.0 — SHOULD HAVE:**
 
   - Analytics and reporting with CSV export
-  - Automated deadline reminders and priority escalation
+  - Automated deadline reminders
   - Audit log
   - Notice board
   - Printable KP documents
@@ -384,7 +382,7 @@ The logical architecture separates the system into three layers that map to the 
 
 - **Presentation Layer (View)** — The React SPA: complaint form, tracking page, staff dashboard, complaints register, case detail, mediation calendar, analytics, and administrative screens. It is responsible for rendering data and capturing user input.
 - **Application Layer (Controller)** — The Express routes and controllers. They receive requests, validate input with Zod schemas, enforce `requireAuth` role checks, and coordinate with services. Controllers remain thin; business rules live in services.
-- **Data Layer (Model)** — The service functions and the Prisma ORM. Services encapsulate domain logic (deadline computation, priority escalation, status transitions, mediation-date mirroring, notification fan-out), while Prisma maps objects to PostgreSQL tables.
+- **Data Layer (Model)** — The service functions and the Prisma ORM. Services encapsulate domain logic (deadline computation, status transitions, mediation-date mirroring, notification fan-out), while Prisma maps objects to PostgreSQL tables.
 
 This separation keeps presentation, control, and data management clearly divided, making the system more organized, maintainable, and scalable.
 
@@ -501,10 +499,10 @@ The system exchanges data with four external parties: residents (who file and tr
 
 ```
  Staff              BICATS API                          PostgreSQL
-   |  update status/priority |                               |
+   |  update status          |                               |
    |  (authenticated) ------>| requireAuth (role check)      |
    |                         | validate + compute deadline   |
-   |                         | record status/priority ------->| UPDATE Complaint
+   |                         | record status ---------------->| UPDATE Complaint
    |                         | mirror mediation to Hearing -->| INSERT/UPDATE Hearing
    |                         | write audit entry ------------>| INSERT AuditLog
    |                         | notify internal + complainant->| INSERT Notification
@@ -608,14 +606,14 @@ The system exchanges data with four external parties: residents (who file and tr
      |   |   |   |   |                | incidentAt     +---------------------+
      |   |   |   |   |                | narrative      |
      |   |   |   |   |                | status         |       +---------------------+
-     |   |   |   |   |                | priority       |1     *|    StatusUpdate     |
-     |   |   |   |   |                | dueAt          +--------|---------------------|
-     |   |   |   |   |                | consentAt      |        | id (PK)             |
-     |   |   |   |   |                | viewedAt       |        | complaintId (FK)    |
-     |   |   |   |   |                | createdAt/upd  |        | status              |
-     |   |   |   |   |                +--+---+---+-----+        | publicNote          |
-     |   |   |   |   |                   |   |   | 1            | internalNote        |
-     |   |   |   |   |                   |   |   +------------> | hearingAt           |
+     |   |   |   |   |                | dueAt          |1     *|    StatusUpdate     |
+     |   |   |   |   |                | consentAt      +--------|---------------------|
+     |   |   |   |   |                | viewedAt       |        | id (PK)             |
+     |   |   |   |   |                | createdAt/upd  |        | complaintId (FK)    |
+     |   |   |   |   |                +--+---+---+-----+        | status              |
+     |   |   |   |   |                   |   |   | 1            | publicNote          |
+     |   |   |   |   |                   |   |   +------------> | internalNote        |
+     |   |   |   |   |                   |   |                  | hearingAt           |
      |   |   |   |   |                   |   |                  | createdById (FK)    |
      |   |   |   |   |                   |   |                  | createdAt           |
      |   |   |   |   |                   |   |                  +----------+----------+
@@ -695,7 +693,7 @@ This ERD represents the BICATS system and connects directly to the functions des
 
 - **User Table** — Stores all staff account information: full name, position, email, phone, username, password hash, and role (admin, staff, secretary, or lupon). It supports authentication and role-based access control. There is no public registration.
 - **RefreshToken Table** — Stores hashed refresh tokens linked to a user, enabling secure session renewal and revocation.
-- **Complaint Table** — The core record. It holds complainant details, respondent details, incident information, the KP status, triage priority, and the next-step deadline (`dueAt`). It links to evidence, timeline entries, notifications, and hearings (Hearing is the internal name for a mediation/conciliation/arbitration session).
+- **Complaint Table** — The core record. It holds complainant details, respondent details, incident information, the KP status, and the next-step deadline (`dueAt`). It links to evidence, timeline entries, notifications, and hearings (Hearing is the internal name for a mediation/conciliation/arbitration session).
 - **Evidence Table** — Stores metadata for uploaded files linked to a complaint; the binary files live in the `uploads/` directory.
 - **StatusUpdate Table** — The case timeline. Each status change records a public note, an optional internal note, and an optional mediation date (`hearingAt`) that is mirrored to a Hearing record.
 - **Hearing Table** — Scheduled mediation, conciliation, or arbitration sessions, including date, kind, status, location, notes, and outcome.
@@ -756,7 +754,6 @@ This ERD represents the BICATS system and connects directly to the functions des
 | incidentPlace | Location of the incident | VARCHAR(200) | Required | None | "Purok 3 basketball court" |
 | narrative | Free-text account of the complaint | TEXT | Required | None | "Loud videoke every night..." |
 | status | KP status | ENUM('received','summoned','mediation','conciliation','settled','certified','dismissed') | Required | Index | received |
-| priority | Triage priority | ENUM('low','normal','high','urgent') | Required | Index | normal |
 | dueAt | Deadline for the next KP step (null if terminal) | TIMESTAMP | Optional | Index | 2026-10-18 09:00:00 |
 | consentAt | Data-privacy consent timestamp | TIMESTAMP | Required | None | 2026-10-15 10:00:00 |
 | viewedAt | First staff-open timestamp (null = unopened) | TIMESTAMP | Optional | Index | 2026-10-15 11:20:00 |
@@ -944,7 +941,7 @@ BICATS presents a clean, responsive interface with two experiences: a **public**
 
 - d.1. **Navigation Panel** — sidebar menu for navigating system modules
 - d.2. **Summary Cards** — counts of open, due-soon, overdue, and unopened cases
-- d.3. **Recent Complaints Table** — newest cases with reference, type, status, priority
+- d.3. **Recent Complaints Table** — newest cases with reference, type, status, deadline
 - d.4. **Notifications Bell** — dropdown of live staff notifications
 - d.5. **Quick Actions** — shortcuts to file/register/analytics
 - d.6. **Logout** — button click to end the session securely
@@ -953,25 +950,23 @@ BICATS presents a clean, responsive interface with two experiences: a **public**
 
 - e.1. **Search Field** — text input (reference or complainant)
 - e.2. **Status Filter** — dropdown selection
-- e.3. **Priority Filter** — dropdown selection
-- e.4. **Type Filter** — dropdown selection
-- e.5. **Date Range Filter** — date pickers
-- e.6. **Clear Filters** — button click to reset
-- e.7. **Complaints Table** — rows with reference, complainant, type, status, priority, deadline, risk
-- e.8. **Bulk Selection & Bulk Status** — checkboxes + action to update several cases
-- e.9. **View Details** — row action to open the case detail
+- e.3. **Type Filter** — dropdown selection
+- e.4. **Risk Chips** — one-click filters for open, due-soon, overdue, and unopened cases
+- e.5. **Clear Filters** — button click to reset
+- e.6. **Complaints Table** — rows with reference, complainant, type, status, deadline, risk
+- e.7. **Bulk Selection & Bulk Status** — checkboxes + action to update several cases
+- e.8. **View Details** — row action to open the case detail
 
 #### f. Case Detail
 
-- f.1. **Case Header** — reference, status badge, priority badge, risk indicator
+- f.1. **Case Header** — reference, status badge, risk indicator
 - f.2. **Complainant / Respondent Panels** — read-only party details
 - f.3. **Incident Panel** — type, date/time, place, narrative
 - f.4. **Evidence Gallery** — thumbnails/links to uploaded files
-- f.5. **Update Status** — status dropdown, public note, internal note, mediation date
-- f.6. **Priority Selector** — dropdown
-- f.7. **Timeline** — chronological status updates with actor and timestamp
-- f.8. **Documents Button** — opens the printable KP documents
-- f.9. **Reopen Case** — action for terminal cases
+- f.5. **Advance Stage** — next-status action with public note, internal note, and mediation date
+- f.6. **Timeline** — chronological status updates with actor and timestamp
+- f.7. **Documents Button** — opens the printable KP documents
+- f.8. **Reopen Case** — action for terminal cases
 
 #### g. Mediation Scheduling
 
@@ -1057,7 +1052,7 @@ The Software Requirements Specification (SRS) is submitted as a separate documen
 - **FR-5** Complaints register with search and filters.
 - **FR-6** Case detail with timeline and evidence.
 - **FR-7** Katarungang Pambarangay status workflow with deadlines.
-- **FR-8** Priority triage with automatic escalation.
+- **FR-8** Case reopening and staff notes on the case timeline.
 - **FR-9** Mediation / conciliation / arbitration scheduling.
 - **FR-10** Notice board management and public display.
 - **FR-11** Analytics and reporting with CSV export.
@@ -1080,7 +1075,7 @@ Requirements Traceability Matrix (functional requirement → design/implementati
 | FR-5 | Register | `complaint` | Complaints Register | Complaint |
 | FR-6 | Case detail | `complaint` | Case Detail | Complaint, Evidence, StatusUpdate |
 | FR-7 | KP workflow | `complaint` | Case Detail | Complaint, StatusUpdate |
-| FR-8 | Priority escalation | `complaint`, `jobs/reminder` | Complaints Register | Complaint, Notification |
+| FR-8 | Reopen & notes | `complaint` | Case Detail | Complaint, StatusUpdate, AuditLog |
 | FR-9 | Mediation scheduling | `hearing` | Mediation Scheduling | Hearing, AuditLog |
 | FR-10 | Notice board | `notice` | Notice Board | Notice |
 | FR-11 | Analytics | `analytics` | Analytics & Reports | Complaint |
@@ -1102,7 +1097,7 @@ Representative test cases (to be maintained alongside the QA plan).
 | TC-04 | Track with wrong contact | Enter reference + wrong contact | "Not found" response; no data leaked |
 | TC-05 | Role restriction | Log in as `secretary`, attempt to update a case status | Request is forbidden (403) |
 | TC-06 | Status workflow & deadline | Move a case received → summoned | `dueAt` updates using the configured "summoned" deadline (default +15 days); timeline entry and audit row are written |
-| TC-07 | Priority escalation | Age a case past its `dueAt`, run the reminder scan | Priority escalates (never downgrades); escalation notification is created |
+| TC-07 | Reopen a closed case | Close a case, then reopen it with a reason | Case returns to `received` with a fresh deadline; the reason stays internal |
 | TC-08 | Mediation scheduling | Schedule a mediation session | Hearing is created; complainant is notified by SMS and email |
 | TC-09 | CSV export | Apply filters, click Export CSV | A `.csv` file with the filtered rows is downloaded |
 | TC-10 | Reminder idempotency | Run the reminder scan twice for the same day | Exactly one notification per case/day/user |

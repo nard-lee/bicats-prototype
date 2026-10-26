@@ -27,14 +27,6 @@ enum ComplaintStatus {
   dismissed
 }
 
-enum ComplaintPriority {
-  none
-  low
-  normal
-  high
-  urgent
-}
-
 // Public intake types; type12 ("Others") carries a free-text description.
 enum ComplaintType {
   type1
@@ -132,7 +124,6 @@ model Complaint {
   narrative     String
 
   status    ComplaintStatus   @default(received)
-  priority  ComplaintPriority @default(normal)
   // Deadline for the next Katarungang Pambarangay step (null for terminal cases)
   dueAt     DateTime?
   consentAt DateTime
@@ -160,8 +151,6 @@ model Complaint {
   @@index([status, createdAt])
   // Overdue open cases
   @@index([status, dueAt])
-  // Priority triage and escalation
-  @@index([priority, createdAt])
   // Unopened-first staff lists
   @@index([viewedAt, updatedAt])
   // Date-based reports and chronological filtering

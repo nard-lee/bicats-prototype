@@ -10,7 +10,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useT, type Key } from "@/lib/I18n";
-import { PRIORITY_STYLE } from "../../priority";
 import { complaintTypeLabel } from "../../type-label";
 import type { ComplaintListItem, ComplaintStatus } from "../loader";
 import EmptyState from "./empty-state";
@@ -116,11 +115,6 @@ export default function ComplaintsTable({
                     {c.respondentName}
                   </p>
                   <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                    {c.priority !== "none" && (
-                      <Badge className={cn("border", PRIORITY_STYLE[c.priority])}>
-                        {t(`pr_${c.priority}` as Key)}
-                      </Badge>
-                    )}
                     <span className="text-sm text-muted-foreground">
                       {t("dueDate")}: {c.dueAt ? date(c.dueAt) : "—"}
                     </span>
@@ -158,7 +152,6 @@ export default function ComplaintsTable({
               <TableHead>{t("respondent")}</TableHead>
               <TableHead className="hidden xl:table-cell">{t("complaintType")}</TableHead>
               <TableHead>{t("clStatus")}</TableHead>
-              <TableHead>{t("priority")}</TableHead>
               <TableHead>{t("dueDate")}</TableHead>
               <TableHead className="hidden 2xl:table-cell">{t("clFiled")}</TableHead>
             </TableRow>
@@ -198,13 +191,6 @@ export default function ComplaintsTable({
                 </TableCell>
                 <TableCell>
                   <Badge variant="secondary">{t(`st_${c.status}` as Key)}</Badge>
-                </TableCell>
-                <TableCell>
-                  {c.priority == "none" ? (<span className="text-muted-foreground">—</span>) : (
-                    <Badge className={cn("border", PRIORITY_STYLE[c.priority])}>
-                      {t(`pr_${c.priority}` as Key)}
-                    </Badge>
-                  )}
                 </TableCell>
                 <TableCell>
                   {c.dueAt ? (

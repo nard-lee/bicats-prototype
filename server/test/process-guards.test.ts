@@ -101,9 +101,9 @@ describe("complaint lifecycle guards", () => {
 
     const closed = await prisma.complaint.findUnique({
       where: { id: complaintId },
-      select: { status: true, dueAt: true, priority: true },
+      select: { status: true, dueAt: true },
     });
-    expect(closed).toEqual({ status: "dismissed", dueAt: null, priority: "none" });
+    expect(closed).toEqual({ status: "dismissed", dueAt: null });
 
     const reversed = await agent
       .patch(`/api/complaints/${complaintId}/status`)
@@ -178,14 +178,12 @@ describe("complaint lifecycle guards", () => {
       select: {
         status: true,
         dueAt: true,
-        priority: true,
         eligibilityStatus: true,
       },
     });
     expect(closed).toEqual({
       status: "dismissed",
       dueAt: null,
-      priority: "none",
       eligibilityStatus: "outside_kp",
     });
 
@@ -381,12 +379,6 @@ describe("complaint lifecycle guards", () => {
       new Date(Date.now() + DAY_MS),
     );
 
-    await agent
-      .patch(`/api/complaints/${secondId}/priority`)
-      .set("x-csrf-token", token)
-      .send({ priority: "high" })
-      .expect(200);
-
     const closed = await agent
       .post("/api/complaints/bulk-status")
       .set("x-csrf-token", token)
@@ -397,11 +389,11 @@ describe("complaint lifecycle guards", () => {
     const rows = await prisma.complaint.findMany({
       where: { id: { in: [firstId, secondId] } },
       orderBy: { id: "asc" },
-      select: { status: true, priority: true, dueAt: true },
+      select: { status: true, dueAt: true },
     });
     expect(rows).toEqual([
-      { status: "dismissed", priority: "none", dueAt: null },
-      { status: "dismissed", priority: "none", dueAt: null },
+      { status: "dismissed", dueAt: null },
+      { status: "dismissed", dueAt: null },
     ]);
 
     const hearing = await prisma.hearing.findUnique({ where: { id: hearingId } });
@@ -424,13 +416,11 @@ describe("complaint lifecycle guards", () => {
       where: { id: firstId },
       select: {
         status: true,
-        priority: true,
         dueAt: true,
         updates: { orderBy: { createdAt: "desc" }, take: 1 },
       },
     });
     expect(reopened!.status).toBe("received");
-    expect(reopened!.priority).toBe("normal");
     const hoursUntilDue =
       (reopened!.dueAt!.getTime() - Date.now()) / 3_600_000;
     expect(hoursUntilDue).toBeGreaterThan(23);

@@ -35,7 +35,6 @@ const ACTION_LABEL: Record<string, string> = {
   "user.create": "Account created",
   "user.update": "Account updated",
   "complaint.status.update": "Case status changed",
-  "complaint.priority.update": "Case priority changed",
   "complaint.bulk_status": "Bulk status update",
   "complaint.reopen": "Case reopened",
   "hearing.create": "Mediation scheduled",

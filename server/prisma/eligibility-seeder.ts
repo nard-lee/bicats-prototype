@@ -37,7 +37,6 @@ type SeedSample = {
   ageDays: number;
   narrative: string;
   status: string;
-  priority: string;
   eligibilityStatus: string;
   eligibilityAnswers: typeof eligibleAnswers | null;
   eligibilityNotes: string | null;
@@ -77,7 +76,6 @@ const SAMPLES: SeedSample[] = [
     narrative:
       "The respondent's videoke runs past midnight on weekdays, and repeated requests to lower the volume have been ignored.",
     status: "received",
-    priority: "normal",
     eligibilityStatus: "eligible",
     eligibilityAnswers: eligibleAnswers,
     eligibilityNotes: null,
@@ -97,7 +95,6 @@ const SAMPLES: SeedSample[] = [
     narrative:
       "The respondent shoved me during an argument outside the sari-sari store. I am not sure whether my injuries are serious enough to need the police or the barangay.",
     status: "received",
-    priority: "high",
     eligibilityStatus: "needs_review",
     eligibilityAnswers: {
       ...eligibleAnswers,
@@ -120,7 +117,6 @@ const SAMPLES: SeedSample[] = [
     narrative:
       "We dispute the boundary of a lot in Tuba, Benguet. No amicable settlement has been reached between our families.",
     status: "dismissed",
-    priority: "none",
     eligibilityStatus: "outside_kp",
     eligibilityAnswers: {
       ...eligibleAnswers,
@@ -145,7 +141,6 @@ const SAMPLES: SeedSample[] = [
     narrative:
       "The respondent borrowed money last year and has not paid despite several promises. I have kept the written agreement.",
     status: "received",
-    priority: "low",
     eligibilityStatus: "unreviewed",
     eligibilityAnswers: null,
     eligibilityNotes: null,
@@ -167,7 +162,6 @@ const SAMPLES: SeedSample[] = [
     narrative:
       "The respondent keeps dumping household garbage along the creek behind our houses, and the smell has become unbearable.",
     status: "received",
-    priority: "normal",
     eligibilityStatus: "eligible",
     eligibilityAnswers: eligibleAnswers,
     eligibilityNotes: null,
@@ -187,7 +181,6 @@ const SAMPLES: SeedSample[] = [
     narrative:
       "The respondent's dogs roam the street unleashed and chased my grandchildren on their way home from school.",
     status: "received",
-    priority: "low",
     eligibilityStatus: "eligible",
     eligibilityAnswers: eligibleAnswers,
     eligibilityNotes: null,
@@ -207,7 +200,6 @@ const SAMPLES: SeedSample[] = [
     narrative:
       "The respondent shouted insults and threatened me in front of customers at my store after I asked him to settle his balance.",
     status: "received",
-    priority: "high",
     eligibilityStatus: "eligible",
     eligibilityAnswers: eligibleAnswers,
     eligibilityNotes: null,
@@ -227,7 +219,6 @@ const SAMPLES: SeedSample[] = [
     narrative:
       "The respondent extended their fence into the alley without a permit, blocking the path used by the whole block.",
     status: "received",
-    priority: "normal",
     eligibilityStatus: "eligible",
     eligibilityAnswers: eligibleAnswers,
     eligibilityNotes: null,
@@ -247,7 +238,6 @@ const SAMPLES: SeedSample[] = [
     narrative:
       "The respondent and his friends keep drinking in the street past the barangay curfew and make noise near our gate.",
     status: "received",
-    priority: "normal",
     eligibilityStatus: "eligible",
     eligibilityAnswers: eligibleAnswers,
     eligibilityNotes: null,
@@ -269,7 +259,6 @@ const SAMPLES: SeedSample[] = [
     narrative:
       "The respondent's construction materials spill into the shared alley and block access to our homes.",
     status: "summoned",
-    priority: "normal",
     eligibilityStatus: "eligible",
     eligibilityAnswers: eligibleAnswers,
     eligibilityNotes: null,
@@ -297,7 +286,6 @@ const SAMPLES: SeedSample[] = [
     narrative:
       "The respondent's chickens keep wandering into my vegetable garden despite repeated requests to keep them penned.",
     status: "mediation",
-    priority: "normal",
     eligibilityStatus: "eligible",
     eligibilityAnswers: eligibleAnswers,
     eligibilityNotes: null,
@@ -444,7 +432,6 @@ async function main() {
         narrative: sample.narrative,
 
         status: sample.status,
-        priority: sample.priority,
         dueAt,
         createdAt,
         consentAt: createdAt,

@@ -295,7 +295,6 @@ async function main() {
       },
     ];
 
-    let priority = faker.helpers.arrayElement(["low", "normal", "normal", "high"]);
     let dueAt: Date | null;
 
     if (item.status === "mediation") {
@@ -325,7 +324,7 @@ async function main() {
       });
       dueAt = new Date(mediationStarted.getTime() + deadlineDays.mediation * DAY_MS);
     } else if (isTerminal) {
-      // Resolved cases no longer carry a deadline or priority.
+      // Resolved cases no longer carry a deadline.
       const summonedAt = faker.date.between({
         from: new Date(createdAt.getTime() + DAY_MS),
         to: new Date(NOW.getTime() - 3 * DAY_MS),
@@ -361,7 +360,6 @@ async function main() {
         internalNote: "Seed data entry.",
       });
       dueAt = null;
-      priority = "none";
     } else {
       dueAt = new Date(createdAt.getTime() + deadlineDays.received * DAY_MS);
     }
@@ -398,7 +396,6 @@ async function main() {
         narrative: faker.lorem.paragraphs(2),
 
         status: item.status,
-        priority,
         dueAt,
         createdAt,
         consentAt: faker.date.between({ from: createdAt, to: new Date() }),

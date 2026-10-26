@@ -33,13 +33,11 @@ export default function ComplaintsList() {
   const q = params.get("q") ?? "";
   const status = params.get("status") ?? "all";
   const type = params.get("type") ?? "all";
-  const priority = params.get("priority") ?? "all";
   const risk = params.get("risk") ?? "all";
   const hasFilters =
     q !== "" ||
     status !== "all" ||
     type !== "all" ||
-    priority !== "all" ||
     risk !== "all";
 
   const activeStat =
@@ -80,7 +78,7 @@ export default function ComplaintsList() {
 
   // Dropdowns filter as they change, so the URL always holds every active
   // param — including the one a stat chip set.
-  const applyParam = (key: "status" | "type" | "priority", value: string) => {
+  const applyParam = (key: "status" | "type", value: string) => {
     const next = new URLSearchParams(params);
     next.delete("page");
     // A specific status and a due-risk chip can't both be true.
@@ -143,7 +141,6 @@ export default function ComplaintsList() {
         c.respondentName,
         complaintTypeLabel(c.complaintType, c.complaintTypeOther, t),
         t(`st_${c.status}` as Key),
-        t(`pr_${c.priority}` as Key),
         c.createdAt,
         c.dueAt ?? "",
       ]
@@ -151,7 +148,7 @@ export default function ComplaintsList() {
         .join(","),
     );
 
-    const csv = ["Reference,Complainant,Respondent,Type,Status,Priority,Filed,Due", ...lines].join("\n");
+    const csv = ["Reference,Complainant,Respondent,Type,Status,Filed,Due", ...lines].join("\n");
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
     const link = document.createElement("a");
     link.href = url;
@@ -169,7 +166,6 @@ export default function ComplaintsList() {
         statFilters={statFilters}
         status={status}
         type={type}
-        priority={priority}
         reloading={revalidator.state === "loading"}
         onReload={() => revalidator.revalidate()}
         onApplyStat={applyStat}
