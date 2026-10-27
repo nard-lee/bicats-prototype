@@ -34,6 +34,7 @@ import {
   SidebarMenuItem,
   SidebarProvider,
   SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { useT, type Key } from "@/lib/I18n";
 import { CASE_VIEW_ROLES, HEARING_ROLES, NOTICE_ROLES, ADMIN_ROLES, type Role } from "@/lib/roles";
@@ -67,6 +68,47 @@ const adminLinks: NavLink[] = [
       { to: "/admin/settings", label: "adminSettings", icon: Settings },
 ];
 
+// Hovering a sidebar link starts the same chunk fetch React.lazy would trigger
+// on navigation, so the page opens without the skeleton.
+const routeImports: Record<string, () => Promise<unknown>> = {
+  "/admin/analytics": () => import("@/features/admin/analytics/report"),
+  "/admin/complaints": () => import("@/features/admin/complaint/list/table"),
+  "/admin/hearings": () => import("@/features/admin/hearing/hearings"),
+  "/admin/notices": () => import("@/features/admin/notice/list/table"),
+  "/admin/accounts": () => import("@/features/admin/user/list/table"),
+  "/admin/audit": () => import("@/features/admin/audit/list/table"),
+  "/admin/settings": () => import("@/features/admin/setting/setting"),
+};
+const prefetchedRoutes = new Set<string>();
+
+function prefetchRoute(to: string) {
+  const load = routeImports[to];
+  if (!load || prefetchedRoutes.has(to)) return;
+  prefetchedRoutes.add(to);
+  void load().catch(() => prefetchedRoutes.delete(to));
+}
+
+// The seal only has room in the collapsed icon rail; mounting it while the
+// sidebar is expanded would download the logo for a hidden element.
+function CollapsedSeal({ logoUrl }: { logoUrl?: string }) {
+  const { isMobile, state } = useSidebar();
+  if (isMobile || state !== "collapsed") return null;
+
+  return (
+    <Link
+      to="/admin"
+      className="flex size-8 items-center justify-center rounded-md"
+    >
+      <img
+        src={logoUrl || "/seal-96.webp"}
+        alt="Barangay seal"
+        className="size-8 rounded-full object-contain"
+        decoding="async"
+      />
+    </Link>
+  );
+}
+
 export default function AdminLayout() {
   const { t } = useT();
   const { pathname } = useLocation();
@@ -88,7 +130,11 @@ export default function AdminLayout() {
             tooltip={t(label)}
             isActive={end ? pathname === to : pathname.startsWith(to)}
           >
-            <Link to={to}>
+            <Link
+              to={to}
+              onMouseEnter={() => prefetchRoute(to)}
+              onFocus={() => prefetchRoute(to)}
+            >
               <Icon />
               <span>{t(label)}</span>
             </Link>
@@ -117,16 +163,7 @@ export default function AdminLayout() {
       <TopLoader />
       <Sidebar collapsible="icon">
         <SidebarHeader className="px-4 py-4 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-2">
-          <Link
-            to="/admin"
-            className="hidden size-8 items-center justify-center rounded-md group-data-[collapsible=icon]:flex"
-          >
-            <img
-              src={settings?.logoUrl || "/seal.png"}
-              alt="Barangay seal"
-              className="size-8 rounded-full object-contain"
-            />
-          </Link>
+          <CollapsedSeal logoUrl={settings?.logoUrl} />
           <Link to="/admin" className="text-lg font-semibold leading-tight group-data-[collapsible=icon]:hidden">
             {settings?.barangayName || "Barangay Kabayanihan"}
           </Link>

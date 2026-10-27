@@ -135,9 +135,20 @@ app.use("/api", (_req, res) => {
 // ---- Single-service deploys: serve the built client from the API origin ----
 const clientDist = path.resolve(__dirname, "../../client/dist");
 if (isProd && fs.existsSync(clientDist)) {
+  // Vite fingerprints every file under /assets, so a given URL never changes.
+  app.use(
+    "/assets",
+    express.static(path.join(clientDist, "assets"), {
+      maxAge: "1y",
+      immutable: true,
+    }),
+  );
   app.use(express.static(clientDist, { index: false, maxAge: "1h" }));
   app.use((req: Request, res: Response, next: NextFunction) => {
-    if (req.method !== "GET" || req.path.startsWith("/uploads")) return next();
+    if (
+      (req.method !== "GET" && req.method !== "HEAD") ||
+      req.path.startsWith("/uploads")
+    ) return next();
     res.sendFile(path.join(clientDist, "index.html"));
   });
 }

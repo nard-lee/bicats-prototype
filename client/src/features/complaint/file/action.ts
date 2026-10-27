@@ -1,6 +1,7 @@
 import { HTTPError } from "ky";
 import type { ActionFunctionArgs } from "react-router";
 import { api } from "@/lib/api";
+import { compressEvidence } from "@/lib/images";
 import type { Key } from "@/lib/I18n";
 import { rememberReference } from "../reference";
 
@@ -16,6 +17,7 @@ export async function fileComplaintAction({
   request,
 }: ActionFunctionArgs): Promise<ActionResult> {
   const form = await request.formData();
+  await compressEvidence(form);
 
   try {
     const { reference } = await api

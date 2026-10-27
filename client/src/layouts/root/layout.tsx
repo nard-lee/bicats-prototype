@@ -29,8 +29,16 @@ export default function RootLayout() {
           <div className="flex size-12 shrink-0 items-center justify-center rounded-full border font-semibold sm:size-24">
             <img
               className="h-full w-full object-contain"
-              src={settings?.logoUrl || "/seal.png"}
+              src={settings?.logoUrl || "/seal-192.webp"}
+              srcSet={
+                settings?.logoUrl
+                  ? undefined
+                  : "/seal-96.webp 96w, /seal-192.webp 192w"
+              }
+              sizes="(min-width: 640px) 96px, 48px"
               alt="Barangay seal"
+              decoding="async"
+              fetchPriority="high"
             />
           </div>
           <div className="hidden min-w-0 leading-tight sm:block">
