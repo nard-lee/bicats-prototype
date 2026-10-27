@@ -60,12 +60,16 @@ export default async function setup(): Promise<void> {
 
   await ensureDatabase(url);
 
+  // Dropping a column here is never real data loss: this database exists only
+  // for the suite and is rebuilt from the schema on every run, but the leftover
+  // rows from the previous run make Prisma refuse the push without this flag.
   execFileSync(
     process.execPath,
     [
       path.resolve(serverRoot, "node_modules/prisma/build/index.js"),
       "db",
       "push",
+      "--accept-data-loss",
     ],
     {
       cwd: serverRoot,

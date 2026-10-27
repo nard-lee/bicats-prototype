@@ -5,19 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api";
 import { useT } from "@/lib/I18n";
-
-async function readError(err: unknown): Promise<string> {
-  const response = (err as { response?: Response })?.response;
-  if (response) {
-    try {
-      const data = (await response.json()) as { error?: string; message?: string };
-      return data.error ?? data.message ?? "Something went wrong.";
-    } catch {
-      /* fall through */
-    }
-  }
-  return "Something went wrong.";
-}
+import { readErrorMessage } from "@/lib/api-error";
 
 export default function AssetUpload({
   label,
@@ -51,7 +39,7 @@ export default function AssetUpload({
       onChange(result.url);
       toast.success(t("imageUploaded"));
     } catch (err) {
-      toast.error(await readError(err));
+      toast.error(readErrorMessage(err, "Something went wrong."));
     } finally {
       setUploading(false);
     }

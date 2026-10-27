@@ -19,6 +19,7 @@ router.get("/:id", requireAuth(...CASE_VIEW_ROLES), complaintController.getById)
 router.post("/:id/view", requireAuth(...CASE_VIEW_ROLES), complaintController.markViewed);
 router.patch("/:id/status", requireAuth(...CASE_WRITE_ROLES), complaintController.updateStatus);
 router.patch("/:id/eligibility", requireAuth(...CASE_WRITE_ROLES), complaintController.reviewEligibility);
+router.patch("/:id/pangkat", requireAuth(...CASE_WRITE_ROLES), complaintController.updatePangkat);
 router.post("/:id/service-records", requireAuth(...CASE_WRITE_ROLES), complaintController.addServiceRecord);
 router.post("/:id/reopen", requireAuth(...CASE_WRITE_ROLES), complaintController.reopenCase); 
 

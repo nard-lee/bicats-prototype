@@ -88,7 +88,7 @@ const hearingService = {
   async create(
     input: CreateHearingInput,
     userId?: number,
-  ): Promise<{ id: number; reference: string }> {
+  ): Promise<{ id: number; reference: string; location: string | null }> {
     const complaint = await prisma.complaint.findUnique({
       where: { id: input.complaintId },
       select: { id: true, reference: true, status: true },
@@ -122,10 +122,14 @@ const hearingService = {
         notes: input.notes,
         createdById: userId ?? null,
       },
-      select: { id: true },
+      select: { id: true, location: true },
     });
 
-    return { id: hearing.id, reference: complaint.reference };
+    return {
+      id: hearing.id,
+      reference: complaint.reference,
+      location: hearing.location,
+    };
   },
 
   async update(
@@ -134,6 +138,7 @@ const hearingService = {
   ): Promise<{
     complaintId: number;
     kind: string;
+    location: string | null;
     rescheduled: boolean;
     reference: string;
     previousStatus: string;
@@ -180,7 +185,7 @@ const hearingService = {
     const updated = await prisma.hearing.update({
       where: { id },
       data,
-      select: { complaintId: true, kind: true },
+      select: { complaintId: true, kind: true, location: true },
     });
 
     const rescheduled = timeChanged;
@@ -276,10 +281,15 @@ const hearingService = {
 
   async cancel(
     id: number,
-  ): Promise<{ complaintId: number; kind: string; reference: string }> {
+  ): Promise<{
+    complaintId: number;
+    kind: string;
+    reference: string;
+    previousStatus: string;
+  }> {
     const existing = await prisma.hearing.findUnique({
       where: { id },
-      select: { id: true },
+      select: { id: true, status: true },
     });
 
     if (!existing) throw new CustomError("Mediation not found", undefined, 404);
@@ -300,6 +310,7 @@ const hearingService = {
       complaintId: updated.complaintId,
       kind: updated.kind,
       reference: updated.complaint.reference,
+      previousStatus: existing.status,
     };
   },
 };

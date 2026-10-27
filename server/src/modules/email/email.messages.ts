@@ -47,6 +47,26 @@ export function statusUpdateEmail(input: {
   return { subject, text: stripTags(lines), html: wrap(subject, lines) };
 }
 
+// Receipt the filer gets the moment intake accepts the complaint.
+export function intakeReceivedEmail(input: {
+  reference: string;
+  dueAt?: Date | null;
+}): EmailMessage {
+  const subject = `BICATS: Complaint ${input.reference} received`;
+
+  const lines = [
+    `Your complaint <strong>${input.reference}</strong> has been received by the Barangay and is now pending action.`,
+  ];
+  if (input.dueAt) {
+    lines.push(`The barangay will act on it on or before <strong>${formatLongWhen(input.dueAt)}</strong>.`);
+  }
+  lines.push(
+    "Keep this reference number safe. You can track your complaint anytime on the BICATS portal with this reference and your contact number.",
+  );
+
+  return { subject, text: stripTags(lines), html: wrap(subject, lines) };
+}
+
 export function mediationScheduledEmail(input: {
   reference: string;
   kind: string;

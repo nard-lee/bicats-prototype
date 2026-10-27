@@ -10,12 +10,12 @@ export type BarangaySettings = {
   email: string;
   officeHours: string;
   punongBarangay: string;
-  luponChairman: string;
+  secretaryName: string;
   logoUrl: string;
   punongSignatureUrl: string;
-  luponSignatureUrl: string;
+  secretarySignatureUrl: string;
   punongTitle: string;
-  luponTitle: string;
+  secretaryTitle: string;
   puroks: string[];
   documentOfficeLine: string;
   hotline: string;
@@ -33,6 +33,8 @@ export type BarangaySettings = {
   riskWindowDays: number;
   workingDaysOnly: boolean;
   holidays: string[];
+  notifyIntakeSms: boolean;
+  notifyIntakeEmail: boolean;
   notifyStatusSms: boolean;
   notifyStatusEmail: boolean;
   notifyMediationSms: boolean;

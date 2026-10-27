@@ -21,6 +21,10 @@ server/uploads/
 server/uploads-archive-*/
 server/src/generated/
 
+# Locally maintained specs (not tracked)
+docs/SDD.md
+docs/sddv2.md
+
 # Editor / OS
 .vscode/*
 !.vscode/extensions.json

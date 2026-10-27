@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
+import { readErrorMessage } from "@/lib/api-error";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -30,20 +31,6 @@ type Props = {
 };
 
 const ATTENDANCE_OPTIONS: AttendanceStatus[] = ["present", "absent", "excused"];
-
-async function readError(err: unknown): Promise<string> {
-  const e = err as { data?: { message?: string }; response?: Response };
-  if (e.data?.message) return e.data.message;
-  if (e.response) {
-    try {
-      const data = (await e.response.clone().json()) as { message?: string };
-      if (data.message) return data.message;
-    } catch {
-      /* fall through */
-    }
-  }
-  return "Could not save attendance.";
-}
 
 export default function AttendanceDialog({ hearing, onClose, onSaved }: Props) {
   const { lang } = useT();
@@ -88,7 +75,7 @@ export default function AttendanceDialog({ hearing, onClose, onSaved }: Props) {
       }
       onSaved();
     } catch (err) {
-      toast.error(await readError(err));
+      toast.error(readErrorMessage(err, "Could not save attendance."));
     } finally {
       setSaving(false);
     }

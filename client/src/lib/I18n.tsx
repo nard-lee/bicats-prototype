@@ -315,10 +315,12 @@ const en = {
   cityLabel: "City / Municipality",
   province: "Province",
   punongBarangay: "Punong Barangay",
-  luponChairman: "Lupon Chairman",
+  secretaryName: "Barangay Secretary",
   settingsIdentity: "Barangay identity",
   settingsContact: "Contact and office",
   settingsSignatories: "Signatories",
+  settingsSignatoriesDesc:
+    "The Punong Barangay chairs the Lupong Tagapamayapa by law, so one official carries both titles. The Pangkat chairman is elected per case and is recorded on the case page.",
   settingsBranding: "Logo and branding",
   settingsDeadlines: "Katarungang Pambarangay deadlines",
   settingsNotifications: "Complainant notifications",
@@ -333,7 +335,7 @@ const en = {
   hotlineLabel: "Office hotline",
   tanodLabel: "Tanod hotline",
   punongTitleLabel: "Punong Barangay title",
-  luponTitleLabel: "Lupon chairman title",
+  secretaryTitleLabel: "Secretary title",
   settingsPuroks: "Puroks",
   puroksHint:
     "These are the purok choices offered by the public complaint form.",
@@ -352,6 +354,7 @@ const en = {
   deadlineConciliationLabel: "Days to conclude conciliation",
   riskWindowLabel: "Due-soon warning window (days)",
   daysSuffix: "days",
+  notifyIntakeEvent: "Complaint received (receipt)",
   notifyStatusEvent: "Case status updates",
   notifyMediationEvent: "Mediation scheduled or moved",
   notifyCancelledEvent: "Mediation cancelled",
@@ -654,10 +657,32 @@ const en = {
   doc_settlement: "Amicable Settlement",
   doc_cfa: "Certificate to File Action",
   lblPunongBarangay: "Punong Barangay",
-  lblLuponChairman: "Lupon Chairman",
+  lblPangkatChairman: "Chairman, Pangkat ng Tagapagkasundo",
+  lblSecretary: "Barangay Secretary",
+  lblWitnessedBy: "Signed in the presence of",
+  cfaCertifiedBy: "Certified by",
+  cfaAttestedBy: "Attested by",
   lblComplainant: "Complainant",
   lblRespondent: "Respondent",
   lblAttestedBy: "Attested by",
+
+  // Pangkat ng Tagapagkasundo (RA 7160 §412)
+  pangkatTitle: "Pangkat ng Tagapagkasundo",
+  pangkatDesc: "The panel that conciliates when mediation does not settle the case.",
+  pangkatEmpty: "No Pangkat has been constituted for this case yet.",
+  pangkatChairmanLabel: "Pangkat chairman",
+  pangkatChairmanPlaceholder: "Full name of the elected chairman",
+  pangkatChairmanHint:
+    "The parties choose three members from the Lupong Tagapamayapa, and those members elect one of their own as chairman.",
+  pangkatRecord: "Record Pangkat chairman",
+  pangkatEdit: "Change chairman",
+  pangkatModalTitle: "Pangkat chairman",
+  pangkatModalDesc:
+    "Recorded on the case so the conciliation papers are signed by the right chairperson.",
+  pangkatSave: "Save chairman",
+  pangkatSaving: "Saving...",
+  pangkatSaved: "Pangkat chairman recorded.",
+  pangkatSaveFailed: "Could not save the Pangkat chairman.",
 
   // 404
   nfTitle: "Page not found",
@@ -967,10 +992,12 @@ const tl: Record<Key, string> = {
   cityLabel: "Lungsod / Munisipalidad",
   province: "Probinsya",
   punongBarangay: "Punong Barangay",
-  luponChairman: "Tagapangulo ng Lupon",
+  secretaryName: "Barangay Secretario",
   settingsIdentity: "Pagkakakilanlan ng barangay",
   settingsContact: "Kontak at opisina",
   settingsSignatories: "Mga pipirma",
+  settingsSignatoriesDesc:
+    "Sa batas, ang Punong Barangay ang nangunguna sa Lupong Tagapamayapa, kaya isang opisyal ang may dalawang titulo. Ang tagapangulo ng Pangkat ay halal sa bawat kaso at inilalagay sa pahina ng kaso.",
   settingsBranding: "Logo at branding",
   settingsDeadlines: "Mga takda ng Katarungang Pambarangay",
   settingsNotifications: "Abiso sa naghain ng reklamo",
@@ -985,7 +1012,7 @@ const tl: Record<Key, string> = {
   hotlineLabel: "Hotline ng opisina",
   tanodLabel: "Hotline ng tanod",
   punongTitleLabel: "Titulo ng Punong Barangay",
-  luponTitleLabel: "Titulo ng tagapangulo ng lupon",
+  secretaryTitleLabel: "Titulo ng Secretario",
   settingsPuroks: "Mga purok",
   puroksHint:
     "Ito ang mga pagpipilian na purok sa pampublikong form ng reklamo.",
@@ -1004,6 +1031,7 @@ const tl: Record<Key, string> = {
   deadlineConciliationLabel: "Araw para tapusin ang konsilyasyon",
   riskWindowLabel: "Window ng babala bago matapos ang takda (araw)",
   daysSuffix: "araw",
+  notifyIntakeEvent: "Natanggap ang reklamo (resibo)",
   notifyStatusEvent: "Mga pagbabago sa estado ng kaso",
   notifyMediationEvent: "Naiskedyul o nailipat ang mediasyon",
   notifyCancelledEvent: "Nakansela ang mediasyon",
@@ -1312,10 +1340,33 @@ const tl: Record<Key, string> = {
   doc_settlement: "Kasunduang Pag-aayos",
   doc_cfa: "Sertipiko para Magsampa ng Kaso",
   lblPunongBarangay: "Punong Barangay",
-  lblLuponChairman: "Tagapangulo ng Lupon",
+  lblPangkatChairman: "Tagapangulo ng Pangkat ng Tagapagkasundo",
+  lblSecretary: "Barangay Secretario",
+  lblWitnessedBy: "Pinangdalahan ni",
+  cfaCertifiedBy: "Sinertipohan ni",
+  cfaAttestedBy: "Pinatunayan ni",
   lblComplainant: "Nagrereklamo",
   lblRespondent: "Inirereklamo",
   lblAttestedBy: "Pinatunayan ni",
+
+  // Pangkat ng Tagapagkasundo (RA 7160 §412)
+  pangkatTitle: "Pangkat ng Tagapagkasundo",
+  pangkatDesc:
+    "Ang panelang nagmumunsura kapag hindi naayos sa mediatasyon ang kaso.",
+  pangkatEmpty: "Wala pang Pangkat na binubuo para sa kasong ito.",
+  pangkatChairmanLabel: "Tagapangulo ng Pangkat",
+  pangkatChairmanPlaceholder: "Buong pangalan ng halal na tagapangulo",
+  pangkatChairmanHint:
+    "Pumipili ang mga partido ng tatlong miyembro mula sa Lupong Tagapamayapa, at ang mga miyembrong ito ang bumubuhalid ng isa sa kanila bilang tagapangulo.",
+  pangkatRecord: "Itala ang tagapangulo ng Pangkat",
+  pangkatEdit: "Palitan ang tagapangulo",
+  pangkatModalTitle: "Tagapangulo ng Pangkat",
+  pangkatModalDesc:
+    "Inilalagay sa kaso upang ang mga dokumento ng munsurasyon ay pirman ng tamang tagapangulo.",
+  pangkatSave: "I-save ang tagapangulo",
+  pangkatSaving: "Sine-save...",
+  pangkatSaved: "Naitala ang tagapangulo ng Pangkat.",
+  pangkatSaveFailed: "Hindi ma-save ang tagapangulo ng Pangkat.",
 };
 
 const dict = { en, tl };

@@ -24,6 +24,21 @@ export function statusUpdateSms(input: {
   return parts.join(" ");
 }
 
+// Receipt the filer gets the moment intake accepts the complaint.
+export function intakeReceivedSms(input: {
+  reference: string;
+  dueAt?: Date | null;
+}): string {
+  const parts = [`BARANGAY: Your complaint ${input.reference} has been received and is pending action.`];
+
+  if (input.dueAt) {
+    parts.push(`We will act on it on or before ${formatShortWhen(input.dueAt)}.`);
+  }
+  parts.push("Keep this reference. Track it on the BICATS portal with your contact number. Do not reply.");
+
+  return parts.join(" ");
+}
+
 export function mediationScheduledSms(input: {
   reference: string;
   kind: string;

@@ -3,9 +3,17 @@ import { z } from "zod";
 const optionalText = (max: number) =>
   z.string().trim().max(max).nullable().optional().transform((v) => v || null);
 
-// For PATCH: absent = leave unchanged, null = clear.
+// For PATCH: absent = leave unchanged, null = clear. Blank is normalised to
+// null here rather than stored as "", so a cleared venue never reads back as
+// an empty string.
 const patchText = (max: number) =>
-  z.string().trim().max(max).nullable().optional();
+  z
+    .string()
+    .trim()
+    .max(max)
+    .nullable()
+    .optional()
+    .transform((v) => (v === undefined ? v : v || null));
 
 export const HEARING_KINDS = ["mediation", "conciliation", "hearing"] as const;
 export const HEARING_STATUSES = [

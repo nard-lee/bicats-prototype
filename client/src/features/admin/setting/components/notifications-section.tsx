@@ -43,6 +43,14 @@ export default function NotificationsSection({
         </div>
 
         <ChannelRow
+          label={t("notifyIntakeEvent")}
+          sms={values.notifyIntakeSms}
+          email={values.notifyIntakeEmail}
+          onSms={(value) => update("notifyIntakeSms", value)}
+          onEmail={(value) => update("notifyIntakeEmail", value)}
+          disabled={!canEdit}
+        />
+        <ChannelRow
           label={t("notifyStatusEvent")}
           sms={values.notifyStatusSms}
           email={values.notifyStatusEmail}

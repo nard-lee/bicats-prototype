@@ -55,18 +55,18 @@ export default function LetterheadPreview({ values }: { values: Values }) {
             </p>
           </div>
           <div className="flex-1">
-            {values.luponSignatureUrl && (
+            {values.secretarySignatureUrl && (
               <img
-                src={values.luponSignatureUrl}
+                src={values.secretarySignatureUrl}
                 alt=""
                 className="mx-auto h-8 object-contain"
               />
             )}
             <p className="text-xs font-semibold uppercase">
-              {values.luponChairman || "—"}
+              {values.secretaryName || "—"}
             </p>
             <p className="text-[10px] text-muted-foreground uppercase">
-              {values.luponTitle}
+              {values.secretaryTitle}
             </p>
           </div>
         </div>

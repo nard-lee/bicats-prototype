@@ -2,6 +2,7 @@ import { PenLine } from "lucide-react";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -27,6 +28,7 @@ export default function SignatoriesSection({
           <PenLine className="size-4 text-primary" />
           {t("settingsSignatories")}
         </CardTitle>
+        <CardDescription>{t("settingsSignatoriesDesc")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="grid gap-6 sm:grid-cols-2">
@@ -59,31 +61,31 @@ export default function SignatoriesSection({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="luponChairman">{t("luponChairman")}</Label>
+            <Label htmlFor="secretaryName">{t("secretaryName")}</Label>
             <Input
-              id="luponChairman"
-              name="luponChairman"
-              value={values.luponChairman}
-              onChange={(e) => update("luponChairman", e.target.value)}
+              id="secretaryName"
+              name="secretaryName"
+              value={values.secretaryName}
+              onChange={(e) => update("secretaryName", e.target.value)}
               maxLength={120}
               className="h-11"
-              aria-invalid={!!fields.luponChairman}
+              aria-invalid={!!fields.secretaryName}
             />
-            <FieldError message={fields.luponChairman} />
+            <FieldError message={fields.secretaryName} />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="luponTitle">{t("luponTitleLabel")}</Label>
+            <Label htmlFor="secretaryTitle">{t("secretaryTitleLabel")}</Label>
             <Input
-              id="luponTitle"
-              name="luponTitle"
-              value={values.luponTitle}
-              onChange={(e) => update("luponTitle", e.target.value)}
+              id="secretaryTitle"
+              name="secretaryTitle"
+              value={values.secretaryTitle}
+              onChange={(e) => update("secretaryTitle", e.target.value)}
               maxLength={120}
               className="h-11"
-              aria-invalid={!!fields.luponTitle}
+              aria-invalid={!!fields.secretaryTitle}
             />
-            <FieldError message={fields.luponTitle} />
+            <FieldError message={fields.secretaryTitle} />
           </div>
         </div>
 
@@ -95,9 +97,9 @@ export default function SignatoriesSection({
             readOnly={!canEdit}
           />
           <AssetUpload
-            label={`${t("luponChairman")} — ${t("signatureLabel")}`}
-            value={values.luponSignatureUrl}
-            onChange={(url) => update("luponSignatureUrl", url)}
+            label={`${t("secretaryName")} — ${t("signatureLabel")}`}
+            value={values.secretarySignatureUrl}
+            onChange={(url) => update("secretarySignatureUrl", url)}
             readOnly={!canEdit}
           />
         </div>

@@ -110,7 +110,6 @@ export default function CreateUser() {
                                     id="fullName"
                                     name="fullName"
                                     placeholder="Juan Dela Cruz"
-                                    value="Jack Andrew"
                                     className="h-11"
                                     aria-invalid={!!fields.fullName}
                                     required
@@ -124,7 +123,6 @@ export default function CreateUser() {
                                     id="position"
                                     name="position"
                                     placeholder="Barangay Secretary"
-                                    value="staff"
                                     className="h-11"
                                     aria-invalid={!!fields.position}
                                     required
@@ -142,7 +140,6 @@ export default function CreateUser() {
                                     name="email"
                                     type="email"
                                     placeholder="juan@example.com"
-                                    value="jack@gmail.com"
                                     autoComplete="off"
                                     className="h-11"
                                     aria-invalid={!!fields.email}
@@ -158,7 +155,6 @@ export default function CreateUser() {
                                     name="phone"
                                     type="tel"
                                     placeholder="+639171234567"
-                                    value="09386161263"
                                     autoComplete="off"
                                     className="h-11"
                                     aria-invalid={!!fields.phone}
@@ -176,7 +172,6 @@ export default function CreateUser() {
                                     id="username"
                                     name="username"
                                     placeholder="juan123"
-                                    value="jack123"
                                     autoComplete="off"
                                     className="h-11"
                                     aria-invalid={!!fields.username}
@@ -218,7 +213,6 @@ export default function CreateUser() {
                                     id="password"
                                     name="password"
                                     type="password"
-                                    value="password123"
                                     autoComplete="new-password"
                                     placeholder="At least 8 characters"
                                     minLength={8}
@@ -235,7 +229,6 @@ export default function CreateUser() {
                                     id="confirm"
                                     name="confirm"
                                     type="password"
-                                    value="password123"
                                     autoComplete="new-password"
                                     placeholder="Re-enter password"
                                     className="h-11"

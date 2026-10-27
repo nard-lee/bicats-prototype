@@ -34,6 +34,7 @@ import type { ComplaintDetail } from "./loader";
 import { StageAdvanceDialog, NoteDialog } from "./update";
 import ReopenCaseModal from "./reopen";
 import EligibilityCard from "./eligibility";
+import PangkatCard from "./pangkat";
 import ServiceRecordCard from "./service";
 import { DOCUMENT_TYPES } from "../documents/loader";
 import { complaintTypeLabel } from "../type-label";
@@ -132,6 +133,12 @@ export default function ComplaintView() {
   const showServiceCard =
     (complaint.serviceRecords?.length ?? 0) > 0 ||
     !["received", "dismissed"].includes(complaint.status);
+
+  // The Pangkat only exists once mediation fails, so keep the card out of the
+  // way on a fresh case unless a chairman has already been recorded.
+  const showPangkatCard =
+    !!complaint.pangkatChairman ||
+    ["mediation", "conciliation"].includes(complaint.status);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -289,6 +296,14 @@ export default function ComplaintView() {
               canWrite={canWrite}
               onSuccess={() => revalidator.revalidate()}
             />
+
+            {showPangkatCard && (
+              <PangkatCard
+                complaint={complaint}
+                canWrite={canWrite}
+                onSuccess={() => revalidator.revalidate()}
+              />
+            )}
 
             {/* Documents */}
             {availableDocs.length > 0 && (

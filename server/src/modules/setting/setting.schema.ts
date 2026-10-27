@@ -32,14 +32,14 @@ export const updateSettingsSchema = z
     email: emailSchema,
     officeHours: z.string().trim().max(200),
     punongBarangay: z.string().trim().max(120),
-    luponChairman: z.string().trim().max(120),
+    secretaryName: z.string().trim().max(120),
 
     logoUrl: assetSchema,
     punongSignatureUrl: assetSchema,
-    luponSignatureUrl: assetSchema,
+    secretarySignatureUrl: assetSchema,
 
     punongTitle: z.string().trim().max(120),
-    luponTitle: z.string().trim().max(120),
+    secretaryTitle: z.string().trim().max(120),
 
     puroks: z
       .array(z.string().trim().min(1).max(60))
@@ -73,6 +73,8 @@ export const updateSettingsSchema = z
       .max(60)
       .transform((dates) => [...new Set(dates)].sort()),
 
+    notifyIntakeSms: z.boolean(),
+    notifyIntakeEmail: z.boolean(),
     notifyStatusSms: z.boolean(),
     notifyStatusEmail: z.boolean(),
     notifyMediationSms: z.boolean(),

@@ -349,6 +349,7 @@ const complaintService = {
             eligibilityReason: complaint.eligibilityReason,
             eligibilityReviewedAt:
                 complaint.eligibilityReviewedAt?.toISOString() ?? null,
+            pangkatChairman: complaint.pangkatChairman,
 
             evidence: complaint.evidence.map((evidence) => ({
                 originalName: evidence.originalName,
@@ -750,6 +751,44 @@ const complaintService = {
 
             return { reference: updated.reference };
         });
+    },
+
+    async updatePangkat(id: number, pangkatChairman: string) {
+        const existing = await prisma.complaint.findUnique({
+            where: { id },
+            select: {
+                reference: true,
+                status: true,
+                pangkatChairman: true,
+            },
+        });
+
+        if (!existing) {
+            throw new CustomError("Complaint not found", undefined, 404);
+        }
+
+        if (
+            TERMINAL_STATUSES.includes(
+                existing.status as (typeof TERMINAL_STATUSES)[number],
+            )
+        ) {
+            throw new CustomError(
+                "This case is closed. Reopen it before changing the Pangkat.",
+                undefined,
+                409,
+            );
+        }
+
+        const updated = await prisma.complaint.update({
+            where: { id },
+            data: { pangkatChairman },
+            select: { reference: true },
+        });
+
+        return {
+            reference: updated.reference,
+            previousChairman: existing.pangkatChairman,
+        };
     },
 
     async reviewEligibility(id: number, input: UpdateEligibilityInput, userId?: number) {

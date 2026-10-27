@@ -42,13 +42,14 @@ const hearingController = {
       meta: { complaintId: input.complaintId, reference: created.reference, kind: input.kind, scheduledAt: input.scheduledAt.toISOString() },
     });
 
-    // Text/email the complainant that their session is booked.
+    // Text/email the complainant that their session is booked. The saved row
+    // decides the venue because a blank request inherits the settings default.
     runSideEffect(
       "notifications: mediation scheduled",
       complainantNotifier.mediationScheduled(input.complaintId, {
         kind: input.kind,
         scheduledAt: input.scheduledAt,
-        location: input.location ?? null,
+        location: created.location,
       }),
     );
   },
@@ -80,14 +81,15 @@ const hearingController = {
       },
     });
 
-    // Text/email the complainant only when the session actually moved.
+    // Text/email the complainant only when the session actually moved. The
+    // saved row supplies the venue, so a date-only save still names it.
     if (updated.rescheduled && input.scheduledAt && input.status !== "cancelled") {
       runSideEffect(
         "notifications: mediation rescheduled",
         complainantNotifier.mediationScheduled(updated.complaintId, {
           kind: updated.kind,
           scheduledAt: input.scheduledAt,
-          location: input.location ?? null,
+          location: updated.location,
           rescheduled: true,
         }),
       );
@@ -151,13 +153,16 @@ const hearingController = {
       meta: { reference: cancelled.reference },
     });
 
-    // Text/email the complainant their session is cancelled.
-    runSideEffect(
-      "notifications: mediation cancelled",
-      complainantNotifier.mediationCancelled(cancelled.complaintId, {
-        kind: cancelled.kind,
-      }),
-    );
+    // Text/email the complainant their session is cancelled — once, matching
+    // the PATCH guard above, so a repeat cancel doesn't alert again.
+    if (cancelled.previousStatus !== "cancelled") {
+      runSideEffect(
+        "notifications: mediation cancelled",
+        complainantNotifier.mediationCancelled(cancelled.complaintId, {
+          kind: cancelled.kind,
+        }),
+      );
+    }
   },
 };
 

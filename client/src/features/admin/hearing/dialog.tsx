@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
+import { readErrorMessage } from "@/lib/api-error";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -80,36 +81,6 @@ function outsideOfficeHours(
   );
 }
 
-async function readError(err: unknown): Promise<string> {
-  console.error("Request failed:", err); // temporary, remove once it works
-
-  const e = err as {
-    data?: { error?: string; message?: string };
-    response?: Response;
-    message?: string;
-  };
-
-  // Some versions of ky expose the parsed body directly.
-  if (e?.data?.error || e?.data?.message) {
-    return (e.data.error ?? e.data.message)!;
-  }
-
-  // Otherwise read it from the response (clone so we never hit "body already used").
-  if (e?.response) {
-    try {
-      const data = (await e.response.clone().json()) as {
-        error?: string;
-        message?: string;
-      };
-      return data.error ?? data.message ?? "Something went wrong.";
-    } catch {
-      /* fall through */
-    }
-  }
-
-  return "Something went wrong.";
-}
-
 export default function HearingDialog({
   mode,
   complaints,
@@ -175,7 +146,7 @@ export default function HearingDialog({
       }
       onSaved();
     } catch (err) {
-      toast.error(await readError(err));
+      toast.error(readErrorMessage(err, "Something went wrong."));
     } finally {
       setSaving(false);
     }
@@ -328,7 +299,7 @@ export default function HearingDialog({
                     toast.success("Mediation cancelled.");
                     onSaved();
                   } catch (err) {
-                    toast.error(await readError(err));
+                    toast.error(readErrorMessage(err, "Something went wrong."));
                   } finally {
                     setSaving(false);
                   }

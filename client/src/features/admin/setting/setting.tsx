@@ -125,8 +125,8 @@ export default function BarangaySettingsPage() {
               />
               <input
                 type="hidden"
-                name="luponSignatureUrl"
-                value={values.luponSignatureUrl}
+                name="secretarySignatureUrl"
+                value={values.secretarySignatureUrl}
                 readOnly
               />
               <input
@@ -145,6 +145,8 @@ export default function BarangaySettingsPage() {
                 [
                   "enforceOfficeHours",
                   "workingDaysOnly",
+                  "notifyIntakeSms",
+                  "notifyIntakeEmail",
                   "notifyStatusSms",
                   "notifyStatusEmail",
                   "notifyMediationSms",

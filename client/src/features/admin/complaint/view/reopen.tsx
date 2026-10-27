@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
+import { readErrorMessage } from "@/lib/api-error";
 import { RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -45,8 +46,7 @@ export default function ReopenCaseModal({ complaintId, onSuccess }: ReopenCaseMo
       toast.success("Case reopened.");
       onSuccess();
     } catch (error) {
-      console.error("Failed to reopen case", error);
-      toast.error("Failed to reopen case.");
+      toast.error(readErrorMessage(error, "Failed to reopen case."));
     } finally {
       setIsSubmitting(false);
     }

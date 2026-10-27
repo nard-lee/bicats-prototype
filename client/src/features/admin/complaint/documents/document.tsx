@@ -104,6 +104,28 @@ export default function ComplaintDocument() {
     </p>
   );
 
+  // RA 7160 §409: the Punong Barangay chairs the Lupon and personally conducts
+  // mediation, so the PB signs the mediation papers. The Pangkat only exists once
+  // mediation fails, and from there on its own chairman signs (§412).
+  const pangkatChairman = complaint.pangkatChairman;
+  const viaPangkat =
+    !!pangkatChairman &&
+    (type === "settlement" ||
+      type === "cfa" ||
+      (type === "notice" && complaint.status === "conciliation"));
+  const chair = {
+    name: viaPangkat ? pangkatChairman ?? settings.punongBarangay : settings.punongBarangay,
+    label: viaPangkat
+      ? t("lblPangkatChairman")
+      : settings.punongTitle || t("lblPunongBarangay"),
+    signatureUrl: viaPangkat ? undefined : settings.punongSignatureUrl,
+  };
+  const secretary = {
+    name: settings.secretaryName,
+    label: settings.secretaryTitle || t("lblSecretary"),
+    signatureUrl: settings.secretarySignatureUrl,
+  };
+
   return (
     <div className="min-h-screen bg-muted/30 py-6 print:bg-white print:py-0">
       {/* Screen-only toolbar */}
@@ -230,14 +252,14 @@ export default function ComplaintDocument() {
 
             <div className="mt-12 flex flex-wrap justify-between gap-10">
               <SignLine
-                label={settings.punongTitle || t("lblPunongBarangay")}
-                name={settings.punongBarangay}
-                signatureUrl={settings.punongSignatureUrl}
+                label={chair.label}
+                name={chair.name}
+                signatureUrl={chair.signatureUrl}
               />
               <SignLine
-                label={settings.luponTitle || t("lblLuponChairman")}
-                name={settings.luponChairman}
-                signatureUrl={settings.luponSignatureUrl}
+                label={secretary.label}
+                name={secretary.name}
+                signatureUrl={secretary.signatureUrl}
               />
             </div>
           </div>
@@ -265,9 +287,19 @@ export default function ComplaintDocument() {
             </table>
 
             <Paragraph>
-              The parties, assisted by the Punong Barangay and the Lupong
-              Tagapamayapa, have this day agreed to settle their dispute
-              amicably under the following terms and conditions:
+              The parties, assisted by{" "}
+              {viaPangkat ? (
+                <>
+                  the Pangkat ng Tagapagkasundo chaired by{" "}
+                  <span className="font-semibold">{pangkatChairman}</span>
+                </>
+              ) : (
+                <>
+                  the Punong Barangay, who chairs the Lupong Tagapamayapa
+                </>
+              )}
+              , have this day agreed to settle their dispute amicably under the
+              following terms and conditions:
             </Paragraph>
 
             <div className="min-h-40 border border-black p-3">
@@ -306,11 +338,16 @@ export default function ComplaintDocument() {
               <SignLine label={t("lblRespondent")} name={complaint.respondentName} />
             </div>
 
-            <div className="mt-10 max-w-xs">
+            <div className="mt-10 flex flex-wrap justify-between gap-10">
               <SignLine
-                label={t("lblAttestedBy")}
-                name={settings.punongBarangay}
-                signatureUrl={settings.punongSignatureUrl}
+                label={`${t("lblAttestedBy")}: ${chair.label}`}
+                name={chair.name}
+                signatureUrl={chair.signatureUrl}
+              />
+              <SignLine
+                label={`${t("lblWitnessedBy")}: ${secretary.label}`}
+                name={secretary.name}
+                signatureUrl={secretary.signatureUrl}
               />
             </div>
           </div>
@@ -357,10 +394,14 @@ export default function ComplaintDocument() {
 
             <div className="mt-12 flex flex-wrap justify-between gap-10">
               <SignLine
-                label="Certified by: Lupon Secretary / Pangkat Secretary"
+                label={`${t("cfaCertifiedBy")}: ${secretary.label}`}
+                name={secretary.name}
+                signatureUrl={secretary.signatureUrl}
               />
               <SignLine
-                label="Attested by: Punong Barangay / Pangkat Chairperson"
+                label={`${t("cfaAttestedBy")}: ${chair.label}`}
+                name={chair.name}
+                signatureUrl={chair.signatureUrl}
               />
             </div>
           </div>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
+import { readErrorMessage } from "@/lib/api-error";
 import { MailCheck } from "lucide-react";
 import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
@@ -104,8 +105,7 @@ function RecordServiceModal({
       );
       onSuccess();
     } catch (error) {
-      console.error("Failed to record proof of service", error);
-      toast.error(t("serviceSaveFailed"));
+      toast.error(readErrorMessage(error, t("serviceSaveFailed")));
     } finally {
       setIsSaving(false);
     }

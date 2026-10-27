@@ -41,7 +41,7 @@ export default function Home() {
 
   const officials = [
     [settings?.punongBarangay, settings?.punongTitle].filter(Boolean).join(", "),
-    [settings?.luponChairman, settings?.luponTitle].filter(Boolean).join(", "),
+    [settings?.secretaryName, settings?.secretaryTitle].filter(Boolean).join(", "),
   ]
     .filter(Boolean)
     .join(" · ");

@@ -143,6 +143,16 @@ export const trackComplaintSchema = z.object({
     phone: z.string().trim().min(7).max(20),
 });
 
+// The Pangkat chairman is chosen by the parties from the lupon members, so the
+// name lives on the case rather than in the barangay-wide settings.
+export const updatePangkatSchema = z.object({
+  pangkatChairman: z
+    .string()
+    .trim()
+    .min(2, "Enter the name of the Pangkat chairman")
+    .max(120),
+});
+
 export const COMPLAINT_STATUSES = [
   "received",
   "summoned",

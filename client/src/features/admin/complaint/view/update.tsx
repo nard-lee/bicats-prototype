@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { HTTPError } from "ky";
+import { readErrorMessage } from "@/lib/api-error";
 import { AlertTriangle, ArrowRight, NotebookPen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -77,12 +77,7 @@ export function StageAdvanceDialog({ complaintId, currentStatus, onSuccess }: St
       toast.success(t("updSaved"));
       onSuccess();
     } catch (error) {
-      console.error("Failed to update status", error);
-      const body =
-        error instanceof HTTPError
-          ? (error.data as { message?: string } | undefined)
-          : undefined;
-      toast.error(body?.message ?? t("updSaveFailed"));
+      toast.error(readErrorMessage(error, t("updSaveFailed")));
     } finally {
       setIsSubmitting(false);
     }
@@ -254,12 +249,7 @@ export function NoteDialog({ complaintId, currentStatus, onSuccess }: NoteDialog
       toast.success(t("updSaved"));
       onSuccess();
     } catch (error) {
-      console.error("Failed to add note", error);
-      const body =
-        error instanceof HTTPError
-          ? (error.data as { message?: string } | undefined)
-          : undefined;
-      toast.error(body?.message ?? t("updSaveFailed"));
+      toast.error(readErrorMessage(error, t("updSaveFailed")));
     } finally {
       setIsSubmitting(false);
     }

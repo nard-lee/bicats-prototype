@@ -6,7 +6,7 @@ import notificationService from "../notification/notification.service.js";
 import complainantNotifier from "../notify/complainant.notifier.js";
 import { auditFromRequest } from "../audit/audit.service.js";
 import { CustomError } from "../../utils/custom.exception.js";
-import { createComplaintSchema, isComplaintStatus, trackComplaintSchema } from "./complaint.schema.js";
+import { createComplaintSchema, isComplaintStatus, trackComplaintSchema, updatePangkatSchema } from "./complaint.schema.js";
 import { updateEligibilitySchema } from "./complaint.eligibility.js";
 import { createServiceRecordSchema } from "./complaint.service-record.js";
 import { removeUploadedFiles } from "../../utils/upload.js";
@@ -33,6 +33,12 @@ const complaintController = {
             } catch (err) {
                 console.error("==> notifications: new complaint alert failed", err);
             }
+
+            // Send the filer their receipt; they cannot track the case without it.
+            runSideEffect(
+                "notifications: intake receipt",
+                complainantNotifier.filingReceived(id),
+            );
         } catch (err) {
             // Rejecting the request leaves the uploads orphaned on disk.
             await removeUploadedFiles(files);
@@ -204,6 +210,32 @@ const complaintController = {
                 }),
             );
         }
+    },
+
+    async updatePangkat(req: Request, res: Response): Promise<void> {
+        const id = Number(req.params.id);
+
+        if (!id || isNaN(id)) {
+            throw new CustomError("Invalid complaint ID", undefined, 400);
+        }
+
+        const input = validateRequest(updatePangkatSchema, req.body);
+        const updated = await complaintService.updatePangkat(
+            id,
+            input.pangkatChairman,
+        );
+
+        res.json({ success: true });
+
+        await auditFromRequest(req, {
+            action: "complaint.pangkat.update",
+            entityType: "complaint",
+            entityId: id,
+            summary: updated.previousChairman
+                ? `${updated.reference}: Pangkat chairman changed from "${updated.previousChairman}" to "${input.pangkatChairman}"`
+                : `${updated.reference}: Pangkat chairman recorded as "${input.pangkatChairman}"`,
+            meta: { pangkatChairman: input.pangkatChairman, previous: updated.previousChairman },
+        });
     },
 
     async addServiceRecord(req: Request, res: Response): Promise<void> {

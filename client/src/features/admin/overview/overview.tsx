@@ -57,8 +57,8 @@ export default function AdminOverview() {
   const stats: { label: string; value: string; to?: string }[] = [
     { label: t("ovStatTotal"), value: String(data.totals.complaints), to: "/admin/complaints" },
     { label: t("ovStatOpen"), value: String(data.totals.open) },
-    { label: t("overdue"), value: String(data.totals.overdue), to: "/admin/complaints?overdue=true" },
-    { label: t("dueSoon"), value: String(data.totals.atRisk), to: "/admin/complaints?dueSoon=true" },
+    { label: t("overdue"), value: String(data.totals.overdue), to: "/admin/complaints?risk=overdue" },
+    { label: t("dueSoon"), value: String(data.totals.atRisk), to: "/admin/complaints?risk=dueSoon" },
     { label: t("st_settled"), value: String(data.totals.settled) },
     {
       label: t("ovStatNotices"),

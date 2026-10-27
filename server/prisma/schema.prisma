@@ -136,6 +136,9 @@ model Complaint {
   eligibilityReason     String?
   eligibilityReviewedAt DateTime?
 
+  // Chair of the Pangkat ng Tagapagkasundo, once the parties constitute one
+  pangkatChairman String?
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
@@ -320,16 +323,19 @@ model BarangaySettings {
   email          String   @default("")
   officeHours    String   @default("Monday–Friday, 8:00 AM – 5:00 PM")
   punongBarangay String   @default("Hon. Mario D. Santos")
-  luponChairman  String   @default("Mr. Pedro A. Reyes")
+  secretaryName  String   @default("")
 
   // Branding assets (paths under /uploads; empty falls back to the default seal)
-  logoUrl            String @default("")
-  punongSignatureUrl String @default("")
-  luponSignatureUrl  String @default("")
+  logoUrl               String @default("")
+  punongSignatureUrl    String @default("")
+  secretarySignatureUrl String @default("")
 
-  // Signatory titles printed under the names
-  punongTitle String @default("Punong Barangay")
-  luponTitle  String @default("Lupong Tagapamayapa Chairman")
+  // Signatory titles printed under the names. RA 7160 §409 makes the Punong
+  // Barangay the chairman of the Lupong Tagapamayapa, so one official carries
+  // both titles; the Pangkat chairman is not a standing officer and is instead
+  // recorded per case (Complaint.pangkatChairman).
+  punongTitle    String @default("Punong Barangay / Chairman, Lupong Tagapamayapa")
+  secretaryTitle String @default("Barangay Secretary / Secretary, Lupong Tagapamayapa")
 
   // Purok choices offered by the public filing form
   puroks String[] @default(["Session Road", "Assumption Road", "Mabini Street", "General Luna Road", "Fr. Carlu Street"])
@@ -361,6 +367,8 @@ model BarangaySettings {
   holidays        String[] @default([])
 
   // Complainant notifications per event and channel
+  notifyIntakeSms      Boolean @default(true)
+  notifyIntakeEmail    Boolean @default(true)
   notifyStatusSms      Boolean @default(true)
   notifyStatusEmail    Boolean @default(true)
   notifyMediationSms   Boolean @default(true)

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
+import { readErrorMessage } from "@/lib/api-error";
 import { ShieldCheck } from "lucide-react";
 import { cn } from "cn";
 import { Badge } from "@/components/ui/badge";
@@ -146,8 +147,7 @@ function ReviewEligibilityModal({
       toast.success(willDismiss ? t("eligSavedDismissed") : t("eligSaved"));
       onSuccess();
     } catch (error) {
-      console.error("Failed to update eligibility", error);
-      toast.error(t("eligSaveFailed"));
+      toast.error(readErrorMessage(error, t("eligSaveFailed")));
     } finally {
       setIsSaving(false);
     }

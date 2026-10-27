@@ -58,6 +58,7 @@ export type ComplaintDetail = {
   eligibilityNotes: string | null;
   eligibilityReason: string | null;
   eligibilityReviewedAt: string | null;
+  pangkatChairman: string | null;
   evidence: Array<{
     originalName: string;
     url: string;
