@@ -129,7 +129,11 @@ export default function MonthCalendar({
                     }}
                     className={cn(
                       "hidden cursor-pointer truncate rounded border px-1.5 py-0.5 text-xs font-medium transition-colors hover:ring-1 hover:ring-foreground/25 sm:block",
-                      KIND_STYLE[hearing.kind],
+                      // Finished sessions drop the type color so they read as
+                      // done; only live and failed ones stand out.
+                      hearing.status === "completed" || hearing.status === "cancelled"
+                        ? "border-border bg-muted/60 text-muted-foreground"
+                        : KIND_STYLE[hearing.kind],
                       hearing.status === "cancelled" && "line-through opacity-60",
                       hearing.overdue && "border-amber-500/60 ring-1 ring-amber-500/40",
                     )}

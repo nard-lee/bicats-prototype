@@ -20,11 +20,11 @@ export const EMPTY_MESSAGE: Record<HearingView, string> = {
 
 export const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-// Chip dot colors for the calendar, mirroring STATUS_STYLE in labels.ts
-// (dots instead of full badges because chips are only ~11px tall).
+// Chip dot colors for the calendar. Finished sessions (completed or
+// cancelled) recede to gray; only live and failed ones carry a color.
 export const STATUS_DOT: Record<HearingItem["status"], string> = {
   scheduled: "bg-primary",
-  completed: "bg-emerald-500",
+  completed: "bg-muted-foreground",
   cancelled: "bg-muted-foreground",
   no_show: "bg-red-500",
 };

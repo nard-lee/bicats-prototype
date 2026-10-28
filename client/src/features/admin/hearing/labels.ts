@@ -24,8 +24,7 @@ export const KIND_STYLE: Record<HearingKind, string> = {
 
 export const STATUS_STYLE: Record<HearingStatus, string> = {
   scheduled: "border-primary/20 bg-primary/10 text-primary",
-  completed:
-    "border-emerald-500/20 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+  completed: "border-border bg-muted text-muted-foreground",
   cancelled: "border-border bg-muted text-muted-foreground line-through",
   // A recorded negative outcome (red) is visually distinct from the
   // amber "needs action" overdue state.
