@@ -40,12 +40,18 @@ export function isHearingOverdue(
   );
 }
 
+// Booking is the only thing a session can start as, unless the desk is
+// recording one that was already held.
+const BOOKABLE_STATUSES = ["scheduled", "completed", "no_show"] as const;
+
 export const createHearingSchema = z.object({
   complaintId: z.coerce.number().int().positive(),
   scheduledAt: z.coerce.date(),
   kind: z.enum(HEARING_KINDS).default("mediation"),
+  status: z.enum(BOOKABLE_STATUSES).default("scheduled"),
   location: optionalText(200),
   notes: optionalText(1000),
+  outcome: optionalText(1000),
 });
 
 export const updateHearingSchema = z.object({

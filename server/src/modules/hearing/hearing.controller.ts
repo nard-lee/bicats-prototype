@@ -34,24 +34,33 @@ const hearingController = {
     const created = await hearingService.create(input, req.user?.userId);
     res.status(201).json({ success: true, ...created });
 
+    // A past session saved as completed/no-show is a record, not a booking,
+    // so it is audited and announced differently.
+    const held = created.status !== "scheduled";
+
     await auditFromRequest(req, {
       action: "hearing.create",
       entityType: "hearing",
       entityId: created.id,
-      summary: `Scheduled a ${KIND_LABEL[input.kind] ?? "mediation"} session for ${created.reference}`,
-      meta: { complaintId: input.complaintId, reference: created.reference, kind: input.kind, scheduledAt: input.scheduledAt.toISOString() },
+      summary: held
+        ? `Recorded a ${KIND_LABEL[input.kind] ?? "mediation"} session held for ${created.reference}`
+        : `Scheduled a ${KIND_LABEL[input.kind] ?? "mediation"} session for ${created.reference}`,
+      meta: { complaintId: input.complaintId, reference: created.reference, kind: input.kind, status: created.status, scheduledAt: input.scheduledAt.toISOString() },
     });
 
-    // Text/email the complainant that their session is booked. The saved row
-    // decides the venue because a blank request inherits the settings default.
-    runSideEffect(
-      "notifications: mediation scheduled",
-      complainantNotifier.mediationScheduled(input.complaintId, {
-        kind: input.kind,
-        scheduledAt: input.scheduledAt,
-        location: created.location,
-      }),
-    );
+    // Text/email the complainant that their session is booked. A session
+    // recorded after the fact is not news to them. The saved row decides the
+    // venue because a blank request inherits the settings default.
+    if (!held) {
+      runSideEffect(
+        "notifications: mediation scheduled",
+        complainantNotifier.mediationScheduled(input.complaintId, {
+          kind: input.kind,
+          scheduledAt: input.scheduledAt,
+          location: created.location,
+        }),
+      );
+    }
   },
 
   async update(req: Request, res: Response): Promise<void> {
@@ -65,15 +74,22 @@ const hearingController = {
     const updated = await hearingService.update(id, input, req.user?.userId);
     res.json({ success: true });
 
+    // Moving a session into the past is only allowed as a record of a session
+    // that was already held, so it is not an announcement either.
+    const held = input.status === "completed" || input.status === "no_show";
+
     await auditFromRequest(req, {
       action: "hearing.update",
       entityType: "hearing",
       entityId: id,
-      summary: updated.rescheduled
-        ? `Rescheduled mediation for ${updated.reference}`
-        : input.status
-          ? `Marked mediation for ${updated.reference} as ${input.status.replace("_", " ")}`
-          : `Updated mediation details for ${updated.reference}`,
+      summary:
+        updated.rescheduled && !held
+          ? `Rescheduled mediation for ${updated.reference}`
+          : updated.rescheduled
+            ? `Recorded a ${KIND_LABEL[updated.kind] ?? "mediation"} session held for ${updated.reference}`
+            : input.status
+              ? `Marked mediation for ${updated.reference} as ${input.status.replace("_", " ")}`
+              : `Updated mediation details for ${updated.reference}`,
       meta: {
         reference: updated.reference,
         ...(input.status ? { status: input.status } : {}),
@@ -84,7 +100,7 @@ const hearingController = {
     // Text/email the complainant when the session moved or came back after a
     // cancellation. The saved row supplies the venue and date, so a save that
     // only flips the status still names where and when.
-    if ((updated.rescheduled || updated.reopened) && input.status !== "cancelled") {
+    if ((updated.rescheduled || updated.reopened) && !held) {
       runSideEffect(
         "notifications: mediation rescheduled",
         complainantNotifier.mediationScheduled(updated.complaintId, {

@@ -20,19 +20,18 @@ async function filedComplaintId(): Promise<number> {
   return complaint!.id;
 }
 
-async function schedule(
-  agent: ReturnType<typeof request.agent>,
-  token: string,
+// Attendance gets recorded on sessions whose time already passed, and the
+// booking API refuses a past date, so these rows are seeded directly.
+async function openSession(
   complaintId: number,
   scheduledAt: Date,
 ): Promise<number> {
-  const created = await agent
-    .post("/api/hearings")
-    .set("x-csrf-token", token)
-    .send({ complaintId, scheduledAt: scheduledAt.toISOString(), kind: "mediation" })
-    .expect(201);
+  const created = await prisma.hearing.create({
+    data: { complaintId, scheduledAt, kind: "mediation" },
+    select: { id: true },
+  });
 
-  return created.body.id as number;
+  return created.id;
 }
 
 describe("hearing attendance", () => {
@@ -40,9 +39,7 @@ describe("hearing attendance", () => {
     await createUser("admin");
     const complaintId = await filedComplaintId();
     const { agent, token } = await loginAgent("admin");
-    const hearingId = await schedule(
-      agent,
-      token,
+    const hearingId = await openSession(
       complaintId,
       new Date(Date.now() - DAY_MS),
     );
@@ -94,9 +91,7 @@ describe("hearing attendance", () => {
     await createUser("admin");
     const complaintId = await filedComplaintId();
     const { agent, token } = await loginAgent("admin");
-    const hearingId = await schedule(
-      agent,
-      token,
+    const hearingId = await openSession(
       complaintId,
       new Date(Date.now() - DAY_MS),
     );
@@ -137,15 +132,8 @@ describe("hearing attendance", () => {
     const complaintId = await filedComplaintId();
     const { agent, token } = await loginAgent("admin");
 
-    const pastId = await schedule(
-      agent,
-      token,
-      complaintId,
-      new Date(Date.now() - DAY_MS),
-    );
-    const futureId = await schedule(
-      agent,
-      token,
+    const pastId = await openSession(complaintId, new Date(Date.now() - DAY_MS));
+    const futureId = await openSession(
       complaintId,
       new Date(Date.now() + 2 * DAY_MS),
     );

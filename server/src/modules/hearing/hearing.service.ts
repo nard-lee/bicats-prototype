@@ -104,7 +104,12 @@ const hearingService = {
   async create(
     input: CreateHearingInput,
     userId?: number,
-  ): Promise<{ id: number; reference: string; location: string | null }> {
+  ): Promise<{
+    id: number;
+    reference: string;
+    location: string | null;
+    status: string;
+  }> {
     const complaint = await prisma.complaint.findUnique({
       where: { id: input.complaintId },
       select: { id: true, reference: true, status: true },
@@ -120,14 +125,36 @@ const hearingService = {
       );
     }
 
-    const settings = await settingService.get();
-    assertSchedulingAllowed(input.scheduledAt, settings);
+    // A past time is only accepted when the desk records a session that was
+    // actually held; a live booking may not open in the past.
+    const heldInPast = input.scheduledAt.getTime() < Date.now();
 
-    await assertNoDuplicateForComplaint(input.complaintId, input.scheduledAt);
-    await assertNoConflict(
-      input.scheduledAt,
-      settings.hearingDurationMinutes,
-    );
+    if (heldInPast && input.status === "scheduled") {
+      throw new CustomError(
+        "A session can't be booked for a time that has already passed. Mark it completed or no show to record a session that was already held.",
+        { scheduledAt: "Choose a future date and time" },
+        400,
+      );
+    }
+
+    if (!heldInPast && input.status !== "scheduled") {
+      throw new CustomError(
+        "A session that hasn't been held yet can only be scheduled.",
+        { status: "Record its result after the session takes place" },
+        400,
+      );
+    }
+
+    const settings = await settingService.get();
+
+    // Calendar checks only apply to a live booking. A session that was
+    // already held is a record of what happened, so its slot is not up for
+    // approval.
+    if (!heldInPast) {
+      assertSchedulingAllowed(input.scheduledAt, settings);
+      await assertNoDuplicateForComplaint(input.complaintId, input.scheduledAt);
+      await assertNoConflict(input.scheduledAt, settings.hearingDurationMinutes);
+    }
 
     const hearing = await prisma.$transaction(async (tx) => {
       const row = await tx.hearing.create({
@@ -135,11 +162,13 @@ const hearingService = {
           complaintId: input.complaintId,
           scheduledAt: input.scheduledAt,
           kind: input.kind,
+          status: input.status,
           location: input.location ?? (settings.defaultHearingLocation || null),
           notes: input.notes,
+          outcome: input.outcome,
           createdById: userId ?? null,
         },
-        select: { id: true, location: true },
+        select: { id: true, location: true, status: true },
       });
 
       // Put the booking on the case timeline so staff see the session date
@@ -149,7 +178,10 @@ const hearingService = {
           complaintId: input.complaintId,
           status: complaint.status,
           hearingAt: input.scheduledAt,
-          internalNote: `${KIND_LABEL[input.kind] ?? "Session"} scheduled for ${formatWhen(input.scheduledAt)}.`,
+          internalNote:
+            input.status === "scheduled"
+              ? `${KIND_LABEL[input.kind] ?? "Session"} scheduled for ${formatWhen(input.scheduledAt)}.`
+              : `${KIND_LABEL[input.kind] ?? "Session"} held on ${formatWhen(input.scheduledAt)} (${input.status.replace("_", " ")}).`,
           createdById: userId ?? null,
         },
       });
@@ -161,6 +193,7 @@ const hearingService = {
       id: hearing.id,
       reference: complaint.reference,
       location: hearing.location,
+      status: hearing.status,
     };
   },
 
@@ -186,6 +219,8 @@ const hearingService = {
         kind: true,
         complaintId: true,
         scheduledAt: true,
+        location: true,
+        outcome: true,
         complaint: { select: { reference: true, status: true } },
       },
     });
@@ -198,6 +233,12 @@ const hearingService = {
     const timeChanged =
       !!input.scheduledAt &&
       input.scheduledAt.getTime() !== existing.scheduledAt.getTime();
+    const kindChanged = !!input.kind && input.kind !== existing.kind;
+    const locationChanged =
+      input.location !== undefined &&
+      input.location !== (existing.location ?? null);
+    const outcomeChanged =
+      input.outcome !== undefined && input.outcome !== (existing.outcome ?? null);
     const reopening =
       existing.status === "cancelled" && finalStatus !== "cancelled";
     // A cancelled session coming back on the calendar is news for the
@@ -205,13 +246,67 @@ const hearingService = {
     const reopened =
       existing.status === "cancelled" && finalStatus === "scheduled";
 
+    // A finished session is a record of what happened, and a closed case has
+    // no sessions left to move. Both may only have their details corrected.
+    const finished =
+      existing.status === "completed" || existing.status === "cancelled";
+    const caseClosed = TERMINAL_STATUSES.includes(existing.complaint.status);
+    const reactivating =
+      finalStatus === "scheduled" && existing.status !== "scheduled";
+
+    // Venue and outcome are the record of what happened; only notes stay
+    // open once the session is over or the case is closed.
+    if ((finished || caseClosed) && (locationChanged || outcomeChanged)) {
+      throw new CustomError(
+        "This session's venue and outcome can't be changed. Only notes can be added.",
+        undefined,
+        409,
+      );
+    }
+
+    if (finished && (timeChanged || kindChanged)) {
+      throw new CustomError(
+        "A finished session can't be rescheduled. Schedule a new session instead.",
+        undefined,
+        409,
+      );
+    }
+
+    if (caseClosed && (timeChanged || kindChanged || reactivating)) {
+      throw new CustomError(
+        "This case is closed. Reopen it before scheduling a session.",
+        undefined,
+        409,
+      );
+    }
+
     // Only check when it will occupy a slot, and either it moved or it's
     // coming back from cancelled.
     if (finalStatus !== "cancelled" && (timeChanged || reopening)) {
-      const settings = await settingService.get();
-      assertSchedulingAllowed(finalTime, settings);
-      await assertNoDuplicateForComplaint(existing.complaintId, finalTime, id);
-      await assertNoConflict(finalTime, settings.hearingDurationMinutes, id);
+      // A save that ends with a held session records what took place, so
+      // neither the past time nor the slot is up for approval. Any other
+      // session landing behind today would be overdue the moment it saves.
+      const heldFinal =
+        finalStatus === "completed" || finalStatus === "no_show";
+
+      if (
+        !heldFinal &&
+        finalTime.getTime() < Date.now() &&
+        (timeChanged || reactivating)
+      ) {
+        throw new CustomError(
+          "A session can't be moved to a time that has already passed.",
+          { scheduledAt: "Choose a future date and time" },
+          400,
+        );
+      }
+
+      if (!heldFinal) {
+        const settings = await settingService.get();
+        assertSchedulingAllowed(finalTime, settings);
+        await assertNoDuplicateForComplaint(existing.complaintId, finalTime, id);
+        await assertNoConflict(finalTime, settings.hearingDurationMinutes, id);
+      }
     }
 
     const data: Prisma.HearingUpdateInput = {};
@@ -355,6 +450,16 @@ const hearingService = {
     });
 
     if (!existing) throw new CustomError("Mediation not found", undefined, 404);
+
+    // Cancelling twice is a harmless repeat, but a session that already
+    // happened can't be called off after the fact.
+    if (existing.status !== "scheduled" && existing.status !== "cancelled") {
+      throw new CustomError(
+        "Only a scheduled session can be cancelled.",
+        undefined,
+        409,
+      );
+    }
 
     const updated = await prisma.hearing.update({
       where: { id },

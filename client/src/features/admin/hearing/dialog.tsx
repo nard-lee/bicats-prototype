@@ -47,6 +47,9 @@ const STATUSES: HearingStatus[] = [
   "cancelled",
   "no_show",
 ];
+// A new row is either a booking or the record of a session that was already
+// held. Calling a session off only makes sense on an existing booking.
+const CREATE_STATUSES: HearingStatus[] = ["scheduled", "completed", "no_show"];
 
 // Module-scope default so we don't call new Date() during render.
 const NOW = new Date();
@@ -89,6 +92,14 @@ export default function HearingDialog({
   onSaved,
 }: Props) {
   const editing = mode.type === "edit" ? mode.hearing : null;
+  const caseClosed =
+    !!editing &&
+    ["settled", "certified", "dismissed"].includes(editing.complaintStatus);
+  const finished =
+    !!editing && (editing.status === "completed" || editing.status === "cancelled");
+  // A finished session is a record of what happened, and a closed case has no
+  // booking left to move; both keep everything but their notes.
+  const scheduleLocked = !!editing && (finished || caseClosed);
 
   const [complaintId, setComplaintId] = useState(
     editing ? String(editing.complaintId) : complaints[0] ? String(complaints[0].id) : "",
@@ -107,11 +118,41 @@ export default function HearingDialog({
   const [outcome, setOutcome] = useState(editing?.outcome ?? "");
   const [saving, setSaving] = useState(false);
 
+  // Completed / no show mean the session already took place, which is what
+  // makes a past date acceptable.
+  const held = status === "completed" || status === "no_show";
+
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!scheduled || !complaintId) return;
 
-    if (outsideOfficeHours(scheduled, settings)) {
+    const past = new Date(scheduled).getTime() < Date.now();
+
+    // A save that leaves the time alone must stay possible, even on a session
+    // whose date already passed; only a move back in time is refused.
+    if (editing && status !== "cancelled") {
+      const moved = scheduled !== isoToLocalInput(editing.scheduledAt);
+      const reactivating =
+        editing.status !== "scheduled" && status === "scheduled";
+
+      if (past && !held && (moved || reactivating)) {
+        toast.error("A session can't be moved to a time that has already passed.");
+        return;
+      }
+    } else if (!editing) {
+      if (past && status === "scheduled") {
+        toast.error(
+          "A session can't be booked for a time that has already passed. Mark it completed or no show to record a session that was already held.",
+        );
+        return;
+      }
+      if (!past && held) {
+        toast.error("A session that hasn't been held yet can only be scheduled.");
+        return;
+      }
+    }
+
+    if (!held && outsideOfficeHours(scheduled, settings)) {
       toast.error(
         `Sessions must fit within office hours (${hourLabel(settings.officeStartHour)}–${hourLabel(settings.officeEndHour)}).`,
       );
@@ -138,11 +179,13 @@ export default function HearingDialog({
             complaintId: Number(complaintId),
             scheduledAt: new Date(scheduled).toISOString(),
             kind,
+            status,
             location: location || null,
             notes: notes || null,
+            outcome: outcome || null,
           },
         });
-        toast.success("Mediation scheduled.");
+        toast.success(held ? "Session recorded." : "Mediation scheduled.");
       }
       onSaved();
     } catch (err) {
@@ -203,19 +246,28 @@ export default function HearingDialog({
               id="scheduled"
               value={scheduled}
               onChange={setScheduled}
+              disabled={scheduleLocked}
               placeholder="Select date & time"
             />
             <p className="text-sm text-muted-foreground">
-              {settings.enforceOfficeHours
-                ? `Office hours: ${hourLabel(settings.officeStartHour)}–${hourLabel(settings.officeEndHour)} · ${settings.hearingDurationMinutes}-minute sessions`
-                : `${settings.hearingDurationMinutes}-minute sessions`}
+              {scheduleLocked
+                ? caseClosed
+                  ? "This case is closed, so its sessions are locked except for notes."
+                  : "This session is finished. Only notes can be added."
+                : settings.enforceOfficeHours
+                  ? `Office hours: ${hourLabel(settings.officeStartHour)}–${hourLabel(settings.officeEndHour)} · ${settings.hearingDurationMinutes}-minute sessions`
+                  : `${settings.hearingDurationMinutes}-minute sessions`}
             </p>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-2">
               <Label htmlFor="kind">Type</Label>
-              <Select value={kind} onValueChange={(v) => setKind(v as HearingKind)}>
+              <Select
+                value={kind}
+                onValueChange={(v) => setKind(v as HearingKind)}
+                disabled={scheduleLocked}
+              >
                 <SelectTrigger id="kind">
                   <SelectValue />
                 </SelectTrigger>
@@ -229,23 +281,30 @@ export default function HearingDialog({
               </Select>
             </div>
 
-            {editing && (
-              <div className="grid gap-2">
-                <Label htmlFor="status">Status</Label>
-                <Select value={status} onValueChange={(v) => setStatus(v as HearingStatus)}>
-                  <SelectTrigger id="status">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STATUSES.map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {STATUS_LABEL[s]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            <div className="grid gap-2">
+              <Label htmlFor="status">Status</Label>
+              <Select
+                value={status}
+                onValueChange={(v) => setStatus(v as HearingStatus)}
+                disabled={caseClosed}
+              >
+                <SelectTrigger id="status">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(editing ? STATUSES : CREATE_STATUSES).map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {STATUS_LABEL[s]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {!editing && (
+                <p className="text-sm text-muted-foreground">
+                  Choose Completed or No show to record a session that already took place.
+                </p>
+              )}
+            </div>
           </div>
 
           <div className="grid gap-2">
@@ -255,6 +314,7 @@ export default function HearingDialog({
               placeholder="e.g., Barangay Hall Session Room"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
+              disabled={scheduleLocked}
             />
           </div>
 
@@ -269,7 +329,7 @@ export default function HearingDialog({
             />
           </div>
 
-          {editing && (
+          {(editing || held) && (
             <div className="grid gap-2">
               <Label htmlFor="outcome">Outcome</Label>
               <Textarea
@@ -278,6 +338,7 @@ export default function HearingDialog({
                 placeholder="Result of the session (if completed)."
                 value={outcome}
                 onChange={(e) => setOutcome(e.target.value)}
+                disabled={scheduleLocked}
               />
             </div>
           )}
@@ -286,7 +347,7 @@ export default function HearingDialog({
             <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
               Cancel
             </Button>
-            {editing && editing.status !== "cancelled" && (
+            {editing && editing.status === "scheduled" && !caseClosed && (
               <Button
                 type="button"
                 variant="outline"
@@ -309,7 +370,13 @@ export default function HearingDialog({
               </Button>
             )}
             <Button type="submit" disabled={saving || !complaintId}>
-              {saving ? "Saving..." : editing ? "Save changes" : "Schedule"}
+              {saving
+                ? "Saving..."
+                : editing
+                  ? "Save changes"
+                  : held
+                    ? "Record session"
+                    : "Schedule"}
             </Button>
           </DialogFooter>
         </form>
