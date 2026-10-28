@@ -11,7 +11,7 @@ const COMPLAINT_TYPES = [
   "type7", "type8", "type9", "type10", "type11", "type12",
 ];
 
-const TOTAL = 100;
+const TOTAL = 5;
 
 // Fallback when the settings row has not been created yet.
 // The Punong Barangay issues the summons by the next working day.
@@ -189,11 +189,14 @@ async function makeEvidence(): Promise<FakeEvidence[]> {
 async function main() {
   console.log("🌱 Starting seed with Faker...");
 
-  // Clean up existing data (Evidence/Hearings cascade from Complaint).
+  // Clean up existing data (Evidence/ServiceRecords cascade from Complaint).
+  // Staff accounts, their sessions, notices and settings are kept.
   await prisma.notification.deleteMany();
   await prisma.hearing.deleteMany();
   await prisma.statusUpdate.deleteMany();
   await prisma.complaint.deleteMany();
+  await prisma.notice.deleteMany();
+  await prisma.auditLog.deleteMany();
 
   // Start the demo dataset from BK-<year>-000001 again.
   const year = new Date().getFullYear();
@@ -225,39 +228,20 @@ async function main() {
 
   let sequence = 0;
 
-  // A realistic mix so the demo data is not wall-to-wall overdue:
-  // fresh cases on track, some due soon, a few genuinely overdue,
-  // a couple mid-process, and some already resolved.
-  // The base mix (4/3/2/3/3 = 15 slots) is scaled to hit TOTAL,
-  // keeping proportions at any dataset size.
-  const slots = (count: number) => Math.round((count * TOTAL) / 15);
+  // One case per lifecycle stage so every screen (list, calendar, mediation,
+  // reports) has something real to show.
   type SeedPlan = {
-    status: "received" | "mediation" | "settled" | "certified" | "dismissed";
+    status: "received" | "summoned" | "mediation" | "settled" | "certified";
     ageDays: number; // how long ago the complaint was filed
   };
 
-  const plan: SeedPlan[] = faker.helpers.shuffle([
-    ...Array.from({ length: slots(4) }, () => ({
-      status: "received" as const,
-      ageDays: faker.number.int({ min: 0, max: 2 }), // within the summons deadline
-    })),
-    ...Array.from({ length: slots(3) }, () => ({
-      status: "received" as const,
-      ageDays: faker.number.int({ min: 1, max: 3 }), // borderline / just past
-    })),
-    ...Array.from({ length: slots(2) }, () => ({
-      status: "received" as const,
-      ageDays: faker.number.int({ min: 5, max: 12 }), // clearly overdue
-    })),
-    ...Array.from({ length: slots(3) }, () => ({
-      status: "mediation" as const,
-      ageDays: faker.number.int({ min: 8, max: 30 }),
-    })),
-    ...Array.from({ length: slots(3) }, () => ({
-      status: faker.helpers.arrayElement(["settled", "certified", "dismissed"] as const),
-      ageDays: faker.number.int({ min: 14, max: 90 }),
-    })),
-  ]);
+  const plan: SeedPlan[] = [
+    { status: "received", ageDays: 0 },
+    { status: "summoned", ageDays: 4 },
+    { status: "mediation", ageDays: 12 },
+    { status: "settled", ageDays: 30 },
+    { status: "certified", ageDays: 45 },
+  ];
 
   const TERMINAL = ["settled", "certified", "dismissed"];
   const NOW = new Date();
@@ -323,6 +307,17 @@ async function main() {
         }),
       });
       dueAt = new Date(mediationStarted.getTime() + deadlineDays.mediation * DAY_MS);
+    } else if (item.status === "summoned") {
+      const summonedAt = faker.date.between({
+        from: new Date(createdAt.getTime() + DAY_MS / 2),
+        to: NOW,
+      });
+      updates.push({
+        status: "summoned",
+        publicNote: "Respondent was summoned before the Punong Barangay.",
+        createdAt: summonedAt,
+      });
+      dueAt = new Date(summonedAt.getTime() + deadlineDays.summoned * DAY_MS);
     } else if (isTerminal) {
       // Resolved cases no longer carry a deadline.
       const summonedAt = faker.date.between({
@@ -455,51 +450,63 @@ async function main() {
     console.log(`✅ Seeded ${rows.length} staff notifications (${readCount} already read).`);
   }
 
-  // ---- Hearings spread around the current month ----
-  const KINDS = ["mediation", "conciliation", "hearing"] as const;
-  const PAST_OUTCOMES = ["completed", "cancelled", "no_show"] as const;
+  // ---- One session per case that has reached a session stage ----
   const now = new Date();
 
   const recent = await prisma.complaint.findMany({
     orderBy: { createdAt: "desc" },
-    take: 60,
-    select: { id: true },
+    select: { id: true, status: true },
   });
+
+  type SessionPlan = {
+    offsetDays: number;
+    kind: string;
+    status: string;
+    outcome?: string;
+    attendance?: { complainant: string; respondent: string };
+  };
+
+  const sessionsFor: Partial<Record<string, SessionPlan[]>> = {
+    mediation: [{ offsetDays: 3, kind: "conciliation", status: "scheduled" }],
+    settled: [
+      {
+        offsetDays: -5,
+        kind: "mediation",
+        status: "completed",
+        outcome: "Parties reached an amicable settlement.",
+        attendance: { complainant: "present", respondent: "present" },
+      },
+    ],
+    certified: [
+      {
+        offsetDays: -12,
+        kind: "conciliation",
+        status: "completed",
+        outcome: "No settlement; the case was certified for court filing.",
+        attendance: { complainant: "present", respondent: "absent" },
+      },
+    ],
+  };
 
   let hearingCount = 0;
 
   for (const complaint of recent) {
-    const count = faker.number.int({ min: 0, max: 2 });
-
-    for (let i = 0; i < count; i++) {
+    for (const session of sessionsFor[complaint.status] ?? []) {
       const scheduledAt = new Date(now);
-      scheduledAt.setDate(scheduledAt.getDate() + faker.number.int({ min: -12, max: 21 }));
-      scheduledAt.setHours(
-        faker.number.int({ min: 8, max: 16 }),
-        faker.helpers.arrayElement([0, 30]),
-        0,
-        0,
-      );
-
-      const isPast = scheduledAt.getTime() < now.getTime();
-      const status = isPast
-        ? faker.helpers.arrayElement(PAST_OUTCOMES)
-        : "scheduled";
+      scheduledAt.setDate(scheduledAt.getDate() + session.offsetDays);
+      scheduledAt.setHours(9, 0, 0, 0);
 
       await prisma.hearing.create({
         data: {
           complaintId: complaint.id,
           scheduledAt,
-          kind: faker.helpers.arrayElement(KINDS),
-          status,
+          kind: session.kind,
+          status: session.status,
           location: "Barangay Hall Session Room",
-          notes: faker.helpers.maybe(() => faker.lorem.sentence(), {
-            probability: 0.4,
-          }) ?? null,
-          outcome:
-            status === "completed"
-              ? faker.helpers.maybe(() => faker.lorem.sentence(), { probability: 0.7 }) ?? "Parties appeared."
-              : null,
+          outcome: session.outcome ?? null,
+          complainantAttendance: session.attendance?.complainant ?? null,
+          respondentAttendance: session.attendance?.respondent ?? null,
+          attendanceRecordedAt: session.attendance ? scheduledAt : null,
         },
       });
 
