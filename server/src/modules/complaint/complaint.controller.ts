@@ -251,19 +251,30 @@ const complaintController = {
         const input = validateRequest(updatePangkatSchema, req.body);
         const updated = await complaintService.updatePangkat(
             id,
-            input.pangkatChairman,
+            input.memberIds,
+            input.chairmanId,
         );
 
         res.json({ success: true });
+
+        const listing = updated.panel
+            .map((member) =>
+                member.isChairman ? `${member.fullName} (chairman)` : member.fullName,
+            )
+            .join(", ");
 
         await auditFromRequest(req, {
             action: "complaint.pangkat.update",
             entityType: "complaint",
             entityId: id,
             summary: updated.previousChairman
-                ? `${updated.reference}: Pangkat chairman changed from "${updated.previousChairman}" to "${input.pangkatChairman}"`
-                : `${updated.reference}: Pangkat chairman recorded as "${input.pangkatChairman}"`,
-            meta: { pangkatChairman: input.pangkatChairman, previous: updated.previousChairman },
+                ? `${updated.reference}: Pangkat changed from "${updated.previousChairman}" to "${listing}"`
+                : `${updated.reference}: Pangkat recorded as "${listing}"`,
+            meta: {
+                memberIds: input.memberIds,
+                chairmanId: input.chairmanId,
+                previous: updated.previousChairman,
+            },
         });
     },
 

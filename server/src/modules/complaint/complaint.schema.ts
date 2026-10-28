@@ -143,14 +143,16 @@ export const trackComplaintSchema = z.object({
     phone: z.string().trim().min(7).max(20),
 });
 
-// The Pangkat chairman is chosen by the parties from the lupon members, so the
-// name lives on the case rather than in the barangay-wide settings.
+// The Pangkat is three lupon members chosen by the parties; one of them is
+// elected chairman. The roster lives in settings, the chosen panel lives on
+// the case.
 export const updatePangkatSchema = z.object({
-  pangkatChairman: z
-    .string()
-    .trim()
-    .min(2, "Enter the name of the Pangkat chairman")
-    .max(120),
+  memberIds: z
+    .array(z.coerce.number().int().positive())
+    .length(3, "Select exactly three Lupon members"),
+  chairmanId: z.coerce.number().int().positive({
+    error: "Select the Pangkat chairman",
+  }),
 });
 
 export const COMPLAINT_STATUSES = [

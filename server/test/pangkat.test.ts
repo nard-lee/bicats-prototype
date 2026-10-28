@@ -20,27 +20,69 @@ async function filedComplaint() {
   });
 }
 
-describe("Pangkat chairman", () => {
-  it("records the chairman on the case and reads it back", async () => {
+async function addRoster(names: (string | { fullName: string; isActive: boolean })[]) {
+  const members = [];
+
+  for (const entry of names) {
+    const data = typeof entry === "string" ? { fullName: entry } : entry;
+    members.push(await prisma.luponMember.create({ data }));
+  }
+
+  return members;
+}
+
+// The Pangkat is only constituted at conciliation; mediation belongs to the
+// Punong Barangay.
+async function advanceToConciliation(
+  agent: ReturnType<typeof request.agent>,
+  token: string,
+  id: number,
+) {
+  for (const status of ["summoned", "mediation", "conciliation"]) {
+    await agent
+      .patch(`/api/complaints/${id}/status`)
+      .set("x-csrf-token", token)
+      .send({ status })
+      .expect(200);
+  }
+}
+
+describe("Pangkat panel", () => {
+  it("records three Lupon members with the elected chairman", async () => {
     const admin = await createUser("admin");
     const complaint = await filedComplaint();
     const { agent, token } = await loginAgent("admin");
+    const [ana, ben, cesar] = await addRoster([
+      "Ana Mendoza",
+      "Ben Torres",
+      "Cesar Lim",
+    ]);
+
+    await advanceToConciliation(agent, token, complaint!.id);
 
     await agent
       .patch(`/api/complaints/${complaint!.id}/pangkat`)
       .set("x-csrf-token", token)
-      .send({ pangkatChairman: "Hon. Ana Mendoza" })
+      .send({ memberIds: [ben!.id, ana!.id, cesar!.id], chairmanId: ana!.id })
       .expect(200);
+
+    const expected = [
+      { id: ana!.id, fullName: "Ana Mendoza", isChairman: true },
+      { id: ben!.id, fullName: "Ben Torres", isChairman: false },
+      { id: cesar!.id, fullName: "Cesar Lim", isChairman: false },
+    ];
 
     const updated = await prisma.complaint.findUnique({
       where: { id: complaint!.id },
     });
-    expect(updated!.pangkatChairman).toBe("Hon. Ana Mendoza");
+    expect(updated!.pangkatMembers).toEqual(expected);
+    expect(updated!.pangkatChairman).toBe("Ana Mendoza");
 
     const detail = await agent
       .get(`/api/complaints/${complaint!.id}`)
       .expect(200);
-    expect(detail.body.pangkatChairman).toBe("Hon. Ana Mendoza");
+    expect(detail.body.pangkatMembers).toEqual(expected);
+    expect(detail.body.pangkatChairman).toBe("Ana Mendoza");
 
     await vi.waitFor(async () => {
       const audit = await prisma.auditLog.findFirst({
@@ -48,32 +90,73 @@ describe("Pangkat chairman", () => {
       });
       expect(audit).toMatchObject({
         actorId: admin.id,
-        summary: expect.stringContaining("recorded as"),
+        summary: expect.stringContaining('recorded as "Ana Mendoza (chairman)'),
       });
     });
   });
 
-  it("replaces an existing chairman and names the previous one in the audit", async () => {
+  it("keeps the recorded names when the roster is later renamed", async () => {
     await createUser("admin");
     const complaint = await filedComplaint();
     const { agent, token } = await loginAgent("admin");
+    const [ana, ben, cesar] = await addRoster([
+      "Ana Mendoza",
+      "Ben Torres",
+      "Cesar Lim",
+    ]);
+
+    await advanceToConciliation(agent, token, complaint!.id);
 
     await agent
       .patch(`/api/complaints/${complaint!.id}/pangkat`)
       .set("x-csrf-token", token)
-      .send({ pangkatChairman: "Hon. Ana Mendoza" })
+      .send({ memberIds: [ana!.id, ben!.id, cesar!.id], chairmanId: ben!.id })
+      .expect(200);
+
+    await prisma.luponMember.update({
+      where: { id: ben!.id },
+      data: { fullName: "Ben T. Torres" },
+    });
+
+    const detail = await agent
+      .get(`/api/complaints/${complaint!.id}`)
+      .expect(200);
+    expect(detail.body.pangkatChairman).toBe("Ben Torres");
+    expect(detail.body.pangkatMembers[0]).toMatchObject({
+      fullName: "Ben Torres",
+      isChairman: true,
+    });
+  });
+
+  it("replaces the panel and names the previous chairman in the audit", async () => {
+    await createUser("admin");
+    const complaint = await filedComplaint();
+    const { agent, token } = await loginAgent("admin");
+    const [ana, ben, cesar, dina] = await addRoster([
+      "Ana Mendoza",
+      "Ben Torres",
+      "Cesar Lim",
+      "Dina Reyes",
+    ]);
+
+    await advanceToConciliation(agent, token, complaint!.id);
+
+    await agent
+      .patch(`/api/complaints/${complaint!.id}/pangkat`)
+      .set("x-csrf-token", token)
+      .send({ memberIds: [ana!.id, ben!.id, cesar!.id], chairmanId: ana!.id })
       .expect(200);
 
     await agent
       .patch(`/api/complaints/${complaint!.id}/pangkat`)
       .set("x-csrf-token", token)
-      .send({ pangkatChairman: "Hon. Ben Torres" })
+      .send({ memberIds: [ben!.id, cesar!.id, dina!.id], chairmanId: ben!.id })
       .expect(200);
 
     const updated = await prisma.complaint.findUnique({
       where: { id: complaint!.id },
     });
-    expect(updated!.pangkatChairman).toBe("Hon. Ben Torres");
+    expect(updated!.pangkatChairman).toBe("Ben Torres");
 
     await vi.waitFor(async () => {
       const audit = await prisma.auditLog.findFirst({
@@ -83,36 +166,149 @@ describe("Pangkat chairman", () => {
           summary: { contains: "changed from" },
         },
       });
-      expect(audit?.summary).toContain("Hon. Ana Mendoza");
-      expect(audit?.summary).toContain("Hon. Ben Torres");
+      expect(audit?.summary).toContain("Ana Mendoza");
+      expect(audit?.summary).toContain("Ben Torres (chairman)");
     });
   });
 
-  it("rejects a blank name with the field error envelope", async () => {
-    await createUser("lupon");
+  it("requires exactly three members", async () => {
+    await createUser("admin");
     const complaint = await filedComplaint();
-    const { agent, token } = await loginAgent("lupon");
+    const { agent, token } = await loginAgent("admin");
+    const [ana, ben, cesar, dina] = await addRoster([
+      "Ana Mendoza",
+      "Ben Torres",
+      "Cesar Lim",
+      "Dina Reyes",
+    ]);
 
-    const response = await agent
-      .patch(`/api/complaints/${complaint!.id}/pangkat`)
-      .set("x-csrf-token", token)
-      .send({ pangkatChairman: "  a  " })
-      .expect(400);
+    await advanceToConciliation(agent, token, complaint!.id);
 
-    expect(response.body.fields).toHaveProperty("pangkatChairman");
+    for (const memberIds of [
+      [ana!.id, ben!.id],
+      [ana!.id, ben!.id, cesar!.id, dina!.id],
+    ]) {
+      const response = await agent
+        .patch(`/api/complaints/${complaint!.id}/pangkat`)
+        .set("x-csrf-token", token)
+        .send({ memberIds, chairmanId: ana!.id })
+        .expect(400);
+
+      expect(response.body.fields).toHaveProperty("memberIds");
+    }
 
     const updated = await prisma.complaint.findUnique({
       where: { id: complaint!.id },
     });
-    expect(updated!.pangkatChairman).toBeNull();
+    expect(updated!.pangkatMembers).toBeNull();
   });
 
-  it("refuses to change the Pangkat on a closed case", async () => {
+  it("requires three active members", async () => {
     await createUser("admin");
     const complaint = await filedComplaint();
     const { agent, token } = await loginAgent("admin");
+    const [ana, ben, cesar] = await addRoster([
+      "Ana Mendoza",
+      "Ben Torres",
+      { fullName: "Cesar Lim", isActive: false },
+    ]);
 
-    for (const status of ["summoned", "mediation", "settled"]) {
+    await advanceToConciliation(agent, token, complaint!.id);
+
+    const response = await agent
+      .patch(`/api/complaints/${complaint!.id}/pangkat`)
+      .set("x-csrf-token", token)
+      .send({ memberIds: [ana!.id, ben!.id, cesar!.id], chairmanId: ana!.id })
+      .expect(400);
+
+    expect(response.body.message).toContain("three active Lupon members");
+
+    const updated = await prisma.complaint.findUnique({
+      where: { id: complaint!.id },
+    });
+    expect(updated!.pangkatMembers).toBeNull();
+  });
+
+  it("waits for conciliation before recording the panel", async () => {
+    await createUser("admin");
+    const complaint = await filedComplaint();
+    const { agent, token } = await loginAgent("admin");
+    const [ana, ben, cesar] = await addRoster([
+      "Ana Mendoza",
+      "Ben Torres",
+      "Cesar Lim",
+    ]);
+
+    for (const status of ["summoned", "mediation"]) {
+      await agent
+        .patch(`/api/complaints/${complaint!.id}/status`)
+        .set("x-csrf-token", token)
+        .send({ status })
+        .expect(200);
+    }
+
+    const rejected = await agent
+      .patch(`/api/complaints/${complaint!.id}/pangkat`)
+      .set("x-csrf-token", token)
+      .send({ memberIds: [ana!.id, ben!.id, cesar!.id], chairmanId: ana!.id })
+      .expect(409);
+
+    expect(rejected.body.message).toContain("reaches conciliation");
+
+    await agent
+      .patch(`/api/complaints/${complaint!.id}/status`)
+      .set("x-csrf-token", token)
+      .send({ status: "conciliation" })
+      .expect(200);
+
+    await agent
+      .patch(`/api/complaints/${complaint!.id}/pangkat`)
+      .set("x-csrf-token", token)
+      .send({ memberIds: [ana!.id, ben!.id, cesar!.id], chairmanId: ana!.id })
+      .expect(200);
+
+    const updated = await prisma.complaint.findUnique({
+      where: { id: complaint!.id },
+    });
+    expect(updated!.pangkatChairman).toBe("Ana Mendoza");
+  });
+
+  it("requires the chairman to be one of the selected members", async () => {
+    await createUser("admin");
+    const complaint = await filedComplaint();
+    const { agent, token } = await loginAgent("admin");
+    const [ana, ben, cesar, dina] = await addRoster([
+      "Ana Mendoza",
+      "Ben Torres",
+      "Cesar Lim",
+      "Dina Reyes",
+    ]);
+
+    await advanceToConciliation(agent, token, complaint!.id);
+
+    const response = await agent
+      .patch(`/api/complaints/${complaint!.id}/pangkat`)
+      .set("x-csrf-token", token)
+      .send({
+        memberIds: [ana!.id, ben!.id, cesar!.id],
+        chairmanId: dina!.id,
+      })
+      .expect(400);
+
+    expect(response.body.message).toContain("chairman must be one");
+  });
+
+  it("refuses to change the panel on a closed case", async () => {
+    await createUser("admin");
+    const complaint = await filedComplaint();
+    const { agent, token } = await loginAgent("admin");
+    const [ana, ben, cesar] = await addRoster([
+      "Ana Mendoza",
+      "Ben Torres",
+      "Cesar Lim",
+    ]);
+
+    for (const status of ["summoned", "mediation", "conciliation", "settled"]) {
       await agent
         .patch(`/api/complaints/${complaint!.id}/status`)
         .set("x-csrf-token", token)
@@ -123,7 +319,7 @@ describe("Pangkat chairman", () => {
     const response = await agent
       .patch(`/api/complaints/${complaint!.id}/pangkat`)
       .set("x-csrf-token", token)
-      .send({ pangkatChairman: "Hon. Ana Mendoza" })
+      .send({ memberIds: [ana!.id, ben!.id, cesar!.id], chairmanId: ana!.id })
       .expect(409);
 
     expect(response.body.message).toContain("Reopen");
@@ -133,11 +329,16 @@ describe("Pangkat chairman", () => {
     await createUser("secretary");
     const complaint = await filedComplaint();
     const { agent, token } = await loginAgent("secretary");
+    const [ana, ben, cesar] = await addRoster([
+      "Ana Mendoza",
+      "Ben Torres",
+      "Cesar Lim",
+    ]);
 
     await agent
       .patch(`/api/complaints/${complaint!.id}/pangkat`)
       .set("x-csrf-token", token)
-      .send({ pangkatChairman: "Hon. Ana Mendoza" })
+      .send({ memberIds: [ana!.id, ben!.id, cesar!.id], chairmanId: ana!.id })
       .expect(403);
   });
 });

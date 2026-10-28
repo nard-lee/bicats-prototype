@@ -8,6 +8,14 @@ import type { COMPLAINT_STATUSES, COMPLAINT_TYPES } from "./complaint.schema.js"
 export type ComplaintStatus = (typeof COMPLAINT_STATUSES)[number];
 export type ComplaintType = (typeof COMPLAINT_TYPES)[number];
 
+// Snapshot of a lupon member on one case. Names are frozen at assignment so a
+// later roster rename or removal never rewrites the case record.
+export type PangkatMember = {
+    id: number;
+    fullName: string;
+    isChairman: boolean;
+};
+
 export type ComplaintTrackUpdate = {
     status: string;
     publicNote: string | null;
@@ -77,6 +85,7 @@ export type ComplaintDetail = {
     eligibilityNotes: string | null;
     eligibilityReason: string | null;
     eligibilityReviewedAt: string | null;
+    pangkatMembers: PangkatMember[];
     pangkatChairman: string | null;
     evidence: Array<{
         originalName: string;

@@ -90,6 +90,18 @@ model RefreshToken {
   revokedAt DateTime?
 }
 
+// ---- Lupong Tagapamayapa roster (picked per case, no accounts needed) ----
+model LuponMember {
+  id        Int      @id @default(autoincrement())
+  fullName  String
+  contact   String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, fullName])
+}
+
 // ---- Per-year sequential reference counter (BK-<year>-000001-<check>) ----
 model ReferenceCounter {
   year      Int      @id
@@ -136,7 +148,11 @@ model Complaint {
   eligibilityReason     String?
   eligibilityReviewedAt DateTime?
 
-  // Chair of the Pangkat ng Tagapagkasundo, once the parties constitute one
+  // Pangkat ng Tagapagkasundo: the three lupon members picked for the case,
+  // snapshotted as {id, fullName, isChairman} so roster edits never rewrite
+  // an old record. The chairman name is also mirrored into the column below
+  // for the printed documents and for cases recorded before the panel existed.
+  pangkatMembers  Json?
   pangkatChairman String?
 
   createdAt DateTime  @default(now())

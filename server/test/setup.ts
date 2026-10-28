@@ -48,6 +48,7 @@ const TABLES = [
   '"Notification"',
   '"AuditLog"',
   '"ReferenceCounter"',
+  '"LuponMember"',
 ];
 
 beforeEach(async () => {

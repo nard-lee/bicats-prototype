@@ -37,7 +37,7 @@ const ACTION_LABEL: Record<string, string> = {
   "complaint.status.update": "Case status changed",
   "complaint.bulk_status": "Bulk status update",
   "complaint.reopen": "Case reopened",
-  "complaint.pangkat.update": "Pangkat chairman recorded",
+  "complaint.pangkat.update": "Pangkat panel recorded",
   "complaint.notify.failed": "Complainant alert failed",
   "hearing.create": "Mediation scheduled",
   "hearing.update": "Mediation updated",

@@ -11,6 +11,7 @@ import notificationRouter from "@/modules/notification/notification.routes.js";
 import hearingRouter from "@/modules/hearing/hearing.routes.js";
 import auditRouter from "@/modules/audit/audit.routes.js";
 import settingRouter from "@/modules/setting/setting.routes.js";
+import luponRouter from "@/modules/lupon/lupon.routes.js";
 
 router.use("/api/auth", authRouter);
 router.use("/api/users", userRouter);
@@ -21,5 +22,6 @@ router.use("/api/notifications", notificationRouter);
 router.use("/api/hearings", hearingRouter);
 router.use("/api/audit", auditRouter);
 router.use("/api/settings", settingRouter);
+router.use("/api/lupon-members", luponRouter);
 
 export default router;

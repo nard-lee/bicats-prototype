@@ -14,6 +14,7 @@ import type {
     ComplaintStatus,
     ComplaintTrackResult,
     Paginated,
+    PangkatMember,
 } from "./complaint.types.js";
 import { getEvidenceUrl, nextReference, normalizePhone } from "./complaint.helpers.js";
 import settingService from "../setting/setting.service.js";
@@ -334,6 +335,12 @@ const complaintService = {
             (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
         );
 
+        const pangkatMembers =
+            (complaint.pangkatMembers as PangkatMember[] | null) ?? [];
+        const pangkatChairman =
+            pangkatMembers.find((member) => member.isChairman)?.fullName ??
+            complaint.pangkatChairman;
+
         return {
             id: complaint.id,
             reference: complaint.reference,
@@ -356,7 +363,8 @@ const complaintService = {
             eligibilityReason: complaint.eligibilityReason,
             eligibilityReviewedAt:
                 complaint.eligibilityReviewedAt?.toISOString() ?? null,
-            pangkatChairman: complaint.pangkatChairman,
+            pangkatMembers,
+            pangkatChairman,
 
             evidence: complaint.evidence.map((evidence) => ({
                 originalName: evidence.originalName,
@@ -782,12 +790,13 @@ const complaintService = {
         });
     },
 
-    async updatePangkat(id: number, pangkatChairman: string) {
+    async updatePangkat(id: number, memberIds: number[], chairmanId: number) {
         const existing = await prisma.complaint.findUnique({
             where: { id },
             select: {
                 reference: true,
                 status: true,
+                pangkatMembers: true,
                 pangkatChairman: true,
             },
         });
@@ -808,15 +817,75 @@ const complaintService = {
             );
         }
 
+        // Mediation is the Punong Barangay's; the Pangkat is constituted only
+        // when the case moves on to conciliation.
+        if (existing.status !== "conciliation") {
+            throw new CustomError(
+                "The Pangkat is only assigned once the case reaches conciliation.",
+                undefined,
+                409,
+            );
+        }
+
+        // A duplicate, inactive, or unknown id leaves fewer than three rows.
+        const members = await prisma.luponMember.findMany({
+            where: { id: { in: memberIds }, isActive: true },
+            select: { id: true, fullName: true },
+        });
+
+        if (members.length !== 3) {
+            throw new CustomError(
+                "Pick three active Lupon members.",
+                undefined,
+                400,
+            );
+        }
+
+        const byId = new Map(members.map((member) => [member.id, member]));
+        const chairman = byId.get(chairmanId);
+
+        if (!chairman) {
+            throw new CustomError(
+                "The chairman must be one of the three selected members.",
+                undefined,
+                400,
+            );
+        }
+
+        // Snapshot the names so a later roster rename never rewrites the case.
+        const panel: PangkatMember[] = [
+            { id: chairman.id, fullName: chairman.fullName, isChairman: true },
+            ...memberIds
+                .filter((memberId) => memberId !== chairmanId)
+                .map((memberId) => {
+                    const member = byId.get(memberId)!;
+                    return {
+                        id: member.id,
+                        fullName: member.fullName,
+                        isChairman: false,
+                    };
+                }),
+        ];
+
+        const previousPanel =
+            (existing.pangkatMembers as PangkatMember[] | null) ?? [];
+        const previousChairman =
+            previousPanel.find((member) => member.isChairman)?.fullName ??
+            existing.pangkatChairman;
+
         const updated = await prisma.complaint.update({
             where: { id },
-            data: { pangkatChairman },
+            data: {
+                pangkatMembers: panel,
+                pangkatChairman: chairman.fullName,
+            },
             select: { reference: true },
         });
 
         return {
             reference: updated.reference,
-            previousChairman: existing.pangkatChairman,
+            panel,
+            previousChairman,
         };
     },
 

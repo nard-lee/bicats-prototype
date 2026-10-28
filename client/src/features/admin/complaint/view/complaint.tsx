@@ -134,11 +134,12 @@ export default function ComplaintView() {
     (complaint.serviceRecords?.length ?? 0) > 0 ||
     !["received", "dismissed"].includes(complaint.status);
 
-  // The Pangkat only exists once mediation fails, so keep the card out of the
-  // way on a fresh case unless a chairman has already been recorded.
+  // Mediation is handled by the Punong Barangay; the Pangkat is only formed at
+  // conciliation, so keep the card out of the way unless one was recorded.
   const showPangkatCard =
+    complaint.pangkatMembers.length > 0 ||
     !!complaint.pangkatChairman ||
-    ["mediation", "conciliation"].includes(complaint.status);
+    complaint.status === "conciliation";
 
   const getStatusIcon = (status: string) => {
     switch (status) {

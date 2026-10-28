@@ -19,6 +19,12 @@ export type EligibilityStatus =
 
 export type ServiceResult = "received" | "refused" | "not_found";
 
+export type PangkatMember = {
+  id: number;
+  fullName: string;
+  isChairman: boolean;
+};
+
 export type ServiceRecord = {
   id: number;
   servedAt: string;
@@ -58,6 +64,7 @@ export type ComplaintDetail = {
   eligibilityNotes: string | null;
   eligibilityReason: string | null;
   eligibilityReviewedAt: string | null;
+  pangkatMembers: PangkatMember[];
   pangkatChairman: string | null;
   evidence: Array<{
     originalName: string;

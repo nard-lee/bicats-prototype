@@ -11,13 +11,12 @@ const COMPLAINT_TYPES = [
   "type7", "type8", "type9", "type10", "type11", "type12",
 ];
 
-const TOTAL = 5;
-
 // Fallback when the settings row has not been created yet.
 // The Punong Barangay issues the summons by the next working day.
 const RECEIVED_DEADLINE_DAYS = 1;
 const SUMMONED_DEADLINE_DAYS = 5;
 const MEDIATION_DEADLINE_DAYS = 30;
+const CONCILIATION_DEADLINE_DAYS = 15;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -218,20 +217,56 @@ async function main() {
       deadlineReceived: true,
       deadlineSummoned: true,
       deadlineMediation: true,
+      deadlineConciliation: true,
     },
   });
   const deadlineDays = {
     received: settings?.deadlineReceived ?? RECEIVED_DEADLINE_DAYS,
     summoned: settings?.deadlineSummoned ?? SUMMONED_DEADLINE_DAYS,
     mediation: settings?.deadlineMediation ?? MEDIATION_DEADLINE_DAYS,
+    conciliation:
+      settings?.deadlineConciliation ?? CONCILIATION_DEADLINE_DAYS,
   };
+
+  // ---- Lupon roster, kept across reseeds so staff edits survive ----
+  const rosterSelect = { id: true, fullName: true } as const;
+  let roster = await prisma.luponMember.findMany({
+    where: { isActive: true },
+    orderBy: { id: "asc" },
+    select: rosterSelect,
+  });
+
+  if (roster.length === 0) {
+    await prisma.luponMember.createMany({
+      data: [
+        { fullName: "Elena Bautista", contact: "0917 555 0101" },
+        { fullName: "Ramon Salazar", contact: "0917 555 0102" },
+        { fullName: "Cecilia Dizon", contact: "0917 555 0103" },
+        { fullName: "Ferdinand Ocampo", contact: "0917 555 0104" },
+        { fullName: "Gloria Villanueva", contact: "0917 555 0105" },
+        { fullName: "Nestor Aquino", contact: "0917 555 0106" },
+      ],
+    });
+    roster = await prisma.luponMember.findMany({
+      where: { isActive: true },
+      orderBy: { id: "asc" },
+      select: rosterSelect,
+    });
+    console.log(`✅ Seeded ${roster.length} Lupon members.`);
+  }
 
   let sequence = 0;
 
   // One case per lifecycle stage so every screen (list, calendar, mediation,
   // reports) has something real to show.
   type SeedPlan = {
-    status: "received" | "summoned" | "mediation" | "settled" | "certified";
+    status:
+      | "received"
+      | "summoned"
+      | "mediation"
+      | "conciliation"
+      | "settled"
+      | "certified";
     ageDays: number; // how long ago the complaint was filed
   };
 
@@ -239,6 +274,7 @@ async function main() {
     { status: "received", ageDays: 0 },
     { status: "summoned", ageDays: 4 },
     { status: "mediation", ageDays: 12 },
+    { status: "conciliation", ageDays: 22 },
     { status: "settled", ageDays: 30 },
     { status: "certified", ageDays: 45 },
   ];
@@ -265,6 +301,19 @@ async function main() {
         : null;
 
     const isTerminal = TERMINAL.includes(item.status);
+
+    // Only cases that reached conciliation carry a Pangkat; mediation itself is
+    // handled by the Punong Barangay.
+    const panel =
+      roster.length >= 3 &&
+      ["conciliation", "certified"].includes(item.status)
+        ? roster.slice(0, 3).map((member, index) => ({
+            id: member.id,
+            fullName: member.fullName,
+            isChairman: index === 0,
+          }))
+        : [];
+
     const updates: {
       status: string;
       publicNote: string | null;
@@ -307,6 +356,44 @@ async function main() {
         }),
       });
       dueAt = new Date(mediationStarted.getTime() + deadlineDays.mediation * DAY_MS);
+    } else if (item.status === "conciliation") {
+      // Mediation before the Punong Barangay failed, so the Pangkat now
+      // handles the conciliation stage.
+      const summonedAt = faker.date.between({
+        from: new Date(createdAt.getTime() + DAY_MS),
+        to: new Date(NOW.getTime() - 3 * DAY_MS),
+      });
+      const mediationStarted = faker.date.between({
+        from: summonedAt,
+        to: new Date(NOW.getTime() - 2 * DAY_MS),
+      });
+      const conciliationStarted = faker.date.between({
+        from: mediationStarted,
+        to: new Date(NOW.getTime() - DAY_MS),
+      });
+      updates.push({
+        status: "summoned",
+        publicNote: "Respondent was summoned before the Punong Barangay.",
+        createdAt: summonedAt,
+      });
+      updates.push({
+        status: "mediation",
+        publicNote: "Mediation before the Punong Barangay.",
+        createdAt: mediationStarted,
+        hearingAt: mediationStarted,
+      });
+      updates.push({
+        status: "conciliation",
+        publicNote: "Conciliation before the Pangkat ng Tagapagkasundo.",
+        createdAt: conciliationStarted,
+        hearingAt: faker.date.between({
+          from: conciliationStarted,
+          to: new Date(NOW.getTime() + 10 * DAY_MS),
+        }),
+      });
+      dueAt = new Date(
+        conciliationStarted.getTime() + deadlineDays.conciliation * DAY_MS,
+      );
     } else if (item.status === "summoned") {
       const summonedAt = faker.date.between({
         from: new Date(createdAt.getTime() + DAY_MS / 2),
@@ -328,15 +415,6 @@ async function main() {
         from: summonedAt,
         to: new Date(NOW.getTime() - 2 * DAY_MS),
       });
-      const resolvedAt = faker.date.between({
-        from: mediationStarted,
-        to: NOW,
-      });
-      const note = {
-        settled: "The parties reached an amicable settlement.",
-        certified: "No amicable settlement was reached; certified for court filing.",
-        dismissed: "The complaint was dismissed for lack of merit.",
-      }[item.status];
       updates.push({
         status: "summoned",
         publicNote: "Respondent was summoned before the Punong Barangay.",
@@ -348,6 +426,29 @@ async function main() {
         createdAt: mediationStarted,
         hearingAt: mediationStarted,
       });
+
+      let lastStepAt = mediationStarted;
+
+      if (item.status === "certified") {
+        // Mediation failed, so the Pangkat was constituted for conciliation,
+        // which also failed — hence the certification for court filing.
+        lastStepAt = faker.date.between({
+          from: mediationStarted,
+          to: new Date(NOW.getTime() - DAY_MS),
+        });
+        updates.push({
+          status: "conciliation",
+          publicNote: "Conciliation before the Pangkat ng Tagapagkasundo.",
+          createdAt: lastStepAt,
+        });
+      }
+
+      const resolvedAt = faker.date.between({ from: lastStepAt, to: NOW });
+      const note = {
+        settled: "The parties reached an amicable settlement.",
+        certified: "No amicable settlement was reached; certified for court filing.",
+        dismissed: "The complaint was dismissed for lack of merit.",
+      }[item.status];
       updates.push({
         status: item.status,
         publicNote: note,
@@ -396,6 +497,12 @@ async function main() {
         consentAt: faker.date.between({ from: createdAt, to: new Date() }),
         viewedAt: openedAt,
 
+        ...(panel.length > 0 && {
+          pangkatMembers: panel,
+          pangkatChairman: panel[0]!.fullName,
+        }),
+
+
         evidence: { create: evidence },
         updates: { create: updates },
       },
@@ -407,7 +514,9 @@ async function main() {
     data: { lastValue: sequence },
   });
 
-  console.log(`✅ Seeded ${TOTAL} complaints with evidence (mixed freshness/statuses).`);
+  console.log(
+    `✅ Seeded ${plan.length} complaints with evidence (mixed freshness/statuses).`,
+  );
 
   // ---- Staff inbox: recent cases with a mix of read and unread alerts ----
   const staff = await prisma.user.findMany({
@@ -467,7 +576,10 @@ async function main() {
   };
 
   const sessionsFor: Partial<Record<string, SessionPlan[]>> = {
-    mediation: [{ offsetDays: 3, kind: "conciliation", status: "scheduled" }],
+    mediation: [{ offsetDays: 3, kind: "mediation", status: "scheduled" }],
+    conciliation: [
+      { offsetDays: 4, kind: "conciliation", status: "scheduled" },
+    ],
     settled: [
       {
         offsetDays: -5,
@@ -478,6 +590,13 @@ async function main() {
       },
     ],
     certified: [
+      {
+        offsetDays: -14,
+        kind: "mediation",
+        status: "completed",
+        outcome: "No settlement reached; the case was referred to the Pangkat.",
+        attendance: { complainant: "present", respondent: "absent" },
+      },
       {
         offsetDays: -12,
         kind: "conciliation",
