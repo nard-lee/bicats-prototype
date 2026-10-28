@@ -24,13 +24,16 @@ import {
     assertSchedulingAllowed,
 } from "../hearing/hearing.helpers.js";
 
+// Closing a case takes its booked sessions with it, and the complainant was
+// promised those dates, so hand back enough to tell them what was cancelled.
 async function cancelScheduledHearings(
     tx: Prisma.TransactionClient,
     complaintId: number,
-): Promise<number[]> {
+): Promise<{ id: number; complaintId: number; kind: string }[]> {
     const hearings = await tx.hearing.findMany({
         where: { complaintId, status: "scheduled" },
-        select: { id: true },
+        orderBy: { scheduledAt: "asc" },
+        select: { id: true, kind: true },
     });
 
     if (hearings.length === 0) return [];
@@ -40,7 +43,11 @@ async function cancelScheduledHearings(
         data: { status: "cancelled" },
     });
 
-    return hearings.map((hearing) => hearing.id);
+    return hearings.map((hearing) => ({
+        id: hearing.id,
+        complaintId,
+        kind: hearing.kind,
+    }));
 }
 
 async function clearHearingNotifications(hearingIds: number[]): Promise<void> {
@@ -483,7 +490,7 @@ const complaintService = {
                 },
             });
 
-            const cancelledHearingIds = closing
+            const cancelledHearings = closing
                 ? await cancelScheduledHearings(tx, id)
                 : [];
             let hearingChanged = false;
@@ -563,11 +570,13 @@ const complaintService = {
                 reference: previous.reference,
                 previousStatus: previous.status,
                 entry,
-                cancelledHearingIds,
+                cancelledHearings,
             };
         });
 
-        await clearHearingNotifications(result.cancelledHearingIds);
+        await clearHearingNotifications(
+            result.cancelledHearings.map((hearing) => hearing.id),
+        );
         return result;
     },
 
@@ -622,7 +631,14 @@ const complaintService = {
         });
     },
 
-    async bulkUpdateStatus(ids: number[], status: ComplaintStatus, userId?: number): Promise<number> {
+    async bulkUpdateStatus(
+        ids: number[],
+        status: ComplaintStatus,
+        userId?: number,
+    ): Promise<{
+        count: number;
+        cancelledHearings: { id: number; complaintId: number; kind: string }[];
+    }> {
         const settings = await settingService.get();
         const deadlines = deadlineConfigFrom(settings);
 
@@ -662,7 +678,14 @@ const complaintService = {
             }
 
             if (changing.length === 0) {
-                return { count: 0, cancelledHearingIds: [] as number[] };
+                return {
+                    count: 0,
+                    cancelledHearings: [] as {
+                        id: number;
+                        complaintId: number;
+                        kind: string;
+                    }[],
+                };
             }
 
             const targetIds = changing.map((row) => row.id);
@@ -687,20 +710,26 @@ const complaintService = {
                 })),
             });
 
-            const cancelledHearingIds: number[] = [];
+            const cancelledHearings: {
+                id: number;
+                complaintId: number;
+                kind: string;
+            }[] = [];
             if (closing) {
                 for (const row of changing) {
-                    cancelledHearingIds.push(
+                    cancelledHearings.push(
                         ...(await cancelScheduledHearings(tx, row.id)),
                     );
                 }
             }
 
-            return { count: targetIds.length, cancelledHearingIds };
+            return { count: targetIds.length, cancelledHearings };
         });
 
-        await clearHearingNotifications(result.cancelledHearingIds);
-        return result.count;
+        await clearHearingNotifications(
+            result.cancelledHearings.map((hearing) => hearing.id),
+        );
+        return result;
     },
 
     async reopenCase(id: number, reason: string, userId?: number) {
@@ -840,7 +869,11 @@ const complaintService = {
                 },
             });
 
-            let cancelledHearingIds: number[] = [];
+            const cancelledHearings: {
+                id: number;
+                complaintId: number;
+                kind: string;
+            }[] = [];
 
             if (dismiss) {
                 if (dismissalNote) {
@@ -855,7 +888,7 @@ const complaintService = {
                     });
                 }
 
-                cancelledHearingIds = await cancelScheduledHearings(tx, id);
+                cancelledHearings.push(...(await cancelScheduledHearings(tx, id)));
             }
 
             return {
@@ -864,11 +897,13 @@ const complaintService = {
                 previousComplaintStatus: existing.status,
                 dismissed: dismiss,
                 dismissalNote,
-                cancelledHearingIds,
+                cancelledHearings,
             };
         });
 
-        await clearHearingNotifications(result.cancelledHearingIds);
+        await clearHearingNotifications(
+            result.cancelledHearings.map((hearing) => hearing.id),
+        );
         return result;
     }
 };

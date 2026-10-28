@@ -45,6 +45,22 @@ const hearingSelect = {
   },
 } satisfies Prisma.HearingSelect;
 
+const KIND_LABEL: Record<string, string> = {
+  mediation: "Mediation",
+  conciliation: "Conciliation",
+  hearing: "Arbitration",
+};
+
+// A session event belongs on the case timeline, and the barangay reads its
+// own clock, so pin the note to Philippine time rather than the server's.
+function formatWhen(date: Date): string {
+  return date.toLocaleString("en-PH", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Manila",
+  });
+}
+
 const hearingService = {
   async list(filters: HearingListFilters = {}): Promise<HearingRow[]> {
     const where: Prisma.HearingWhereInput = {
@@ -113,16 +129,32 @@ const hearingService = {
       settings.hearingDurationMinutes,
     );
 
-    const hearing = await prisma.hearing.create({
-      data: {
-        complaintId: input.complaintId,
-        scheduledAt: input.scheduledAt,
-        kind: input.kind,
-        location: input.location ?? (settings.defaultHearingLocation || null),
-        notes: input.notes,
-        createdById: userId ?? null,
-      },
-      select: { id: true, location: true },
+    const hearing = await prisma.$transaction(async (tx) => {
+      const row = await tx.hearing.create({
+        data: {
+          complaintId: input.complaintId,
+          scheduledAt: input.scheduledAt,
+          kind: input.kind,
+          location: input.location ?? (settings.defaultHearingLocation || null),
+          notes: input.notes,
+          createdById: userId ?? null,
+        },
+        select: { id: true, location: true },
+      });
+
+      // Put the booking on the case timeline so staff see the session date
+      // next to the rest of the case history.
+      await tx.statusUpdate.create({
+        data: {
+          complaintId: input.complaintId,
+          status: complaint.status,
+          hearingAt: input.scheduledAt,
+          internalNote: `${KIND_LABEL[input.kind] ?? "Session"} scheduled for ${formatWhen(input.scheduledAt)}.`,
+          createdById: userId ?? null,
+        },
+      });
+
+      return row;
     });
 
     return {
@@ -135,11 +167,14 @@ const hearingService = {
   async update(
     id: number,
     input: UpdateHearingInput,
+    userId?: number,
   ): Promise<{
     complaintId: number;
     kind: string;
     location: string | null;
+    scheduledAt: Date;
     rescheduled: boolean;
+    reopened: boolean;
     reference: string;
     previousStatus: string;
   }> {
@@ -148,9 +183,10 @@ const hearingService = {
       select: {
         id: true,
         status: true,
+        kind: true,
         complaintId: true,
         scheduledAt: true,
-        complaint: { select: { reference: true } },
+        complaint: { select: { reference: true, status: true } },
       },
     });
 
@@ -164,6 +200,10 @@ const hearingService = {
       input.scheduledAt.getTime() !== existing.scheduledAt.getTime();
     const reopening =
       existing.status === "cancelled" && finalStatus !== "cancelled";
+    // A cancelled session coming back on the calendar is news for the
+    // complainant too, even when the date never moved.
+    const reopened =
+      existing.status === "cancelled" && finalStatus === "scheduled";
 
     // Only check when it will occupy a slot, and either it moved or it's
     // coming back from cancelled.
@@ -182,10 +222,30 @@ const hearingService = {
     if (input.notes !== undefined) data.notes = input.notes;
     if (input.outcome !== undefined) data.outcome = input.outcome;
 
-    const updated = await prisma.hearing.update({
-      where: { id },
-      data,
-      select: { complaintId: true, kind: true, location: true },
+    const finalKind = input.kind ?? existing.kind;
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const row = await tx.hearing.update({
+        where: { id },
+        data,
+        select: { complaintId: true, kind: true, location: true },
+      });
+
+      // A move is a case event: record both the old and new schedule so the
+      // timeline shows what changed, not just when it changed.
+      if (timeChanged) {
+        await tx.statusUpdate.create({
+          data: {
+            complaintId: existing.complaintId,
+            status: existing.complaint.status,
+            hearingAt: finalTime,
+            internalNote: `${KIND_LABEL[finalKind] ?? "Session"} rescheduled from ${formatWhen(existing.scheduledAt)} to ${formatWhen(finalTime)}.`,
+            createdById: userId ?? null,
+          },
+        });
+      }
+
+      return row;
     });
 
     const rescheduled = timeChanged;
@@ -196,7 +256,9 @@ const hearingService = {
 
     return {
       ...updated,
+      scheduledAt: finalTime,
       rescheduled,
+      reopened,
       reference: existing.complaint.reference,
       previousStatus: existing.status,
     };

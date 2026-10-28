@@ -62,7 +62,7 @@ const hearingController = {
     }
 
     const input = validateRequest(updateHearingSchema, req.body);
-    const updated = await hearingService.update(id, input);
+    const updated = await hearingService.update(id, input, req.user?.userId);
     res.json({ success: true });
 
     await auditFromRequest(req, {
@@ -81,16 +81,17 @@ const hearingController = {
       },
     });
 
-    // Text/email the complainant only when the session actually moved. The
-    // saved row supplies the venue, so a date-only save still names it.
-    if (updated.rescheduled && input.scheduledAt && input.status !== "cancelled") {
+    // Text/email the complainant when the session moved or came back after a
+    // cancellation. The saved row supplies the venue and date, so a save that
+    // only flips the status still names where and when.
+    if ((updated.rescheduled || updated.reopened) && input.status !== "cancelled") {
       runSideEffect(
         "notifications: mediation rescheduled",
         complainantNotifier.mediationScheduled(updated.complaintId, {
           kind: updated.kind,
-          scheduledAt: input.scheduledAt,
+          scheduledAt: updated.scheduledAt,
           location: updated.location,
-          rescheduled: true,
+          rescheduled: updated.rescheduled,
         }),
       );
     }

@@ -12,6 +12,26 @@ import { createServiceRecordSchema } from "./complaint.service-record.js";
 import { removeUploadedFiles } from "../../utils/upload.js";
 import { runSideEffect } from "../../utils/side-effect.js";
 
+// Closing a case takes its booked sessions with it. Tell each complainant
+// once, naming the earliest session that was called off.
+function notifyCancelledSessions(
+    cancelled: { complaintId: number; kind: string }[],
+): void {
+    const firstKind = new Map<number, string>();
+    for (const hearing of cancelled) {
+        if (!firstKind.has(hearing.complaintId)) {
+            firstKind.set(hearing.complaintId, hearing.kind);
+        }
+    }
+
+    for (const [complaintId, kind] of firstKind) {
+        runSideEffect(
+            "notifications: mediation cancelled",
+            complainantNotifier.mediationCancelled(complaintId, { kind }),
+        );
+    }
+}
+
 const complaintController = {
 
     async create(req: Request, res: Response): Promise<void> {
@@ -144,6 +164,9 @@ const complaintController = {
                 hearingAt: hearingDate ?? null,
             }),
         );
+
+        // A closing move also cancels the booked session; say so separately.
+        notifyCancelledSessions(updated.cancelledHearings);
     },
 
     async bulkStatus(req: Request, res: Response): Promise<void> {
@@ -159,14 +182,17 @@ const complaintController = {
         }
 
         const updated = await complaintService.bulkUpdateStatus(ids, status, req.user?.userId);
-        res.json({ success: true, updated });
+        res.json({ success: true, updated: updated.count });
 
         await auditFromRequest(req, {
             action: "complaint.bulk_status",
             entityType: "complaint",
-            summary: `Set ${updated} case(s) to "${status}"`,
-            meta: { ids, status, updated },
+            summary: `Set ${updated.count} case(s) to "${status}"`,
+            meta: { ids, status, updated: updated.count },
         });
+
+        // Bulk closes cancel sessions too, and this path has no other notice.
+        notifyCancelledSessions(updated.cancelledHearings);
     },
 
     async reviewEligibility(req: Request, res: Response): Promise<void> {
@@ -210,6 +236,9 @@ const complaintController = {
                 }),
             );
         }
+
+        // An eligibility dismissal closes the case, so booked sessions go too.
+        notifyCancelledSessions(updated.cancelledHearings);
     },
 
     async updatePangkat(req: Request, res: Response): Promise<void> {
