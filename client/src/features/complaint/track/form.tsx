@@ -72,6 +72,9 @@ export default function Track() {
 
   const result = data?.result;
   const filedAt = result?.updates[0]?.createdAt;
+  // The API stays chronological so the current status and filing date are easy
+  // to derive; residents read the timeline newest-first.
+  const history = result ? [...result.updates].reverse() : [];
 
   const downloadReference = () => {
     if (!result) return;
@@ -224,7 +227,7 @@ export default function Track() {
           </Card>
 
           {/* Status history timeline */}
-          {result.updates.length > 0 && (
+          {history.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -234,10 +237,10 @@ export default function Track() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-6">
-                  {result.updates.map((event, index) => (
+                  {history.map((event, index) => (
                     <div key={index} className="relative flex gap-4">
                       {/* Timeline line */}
-                      {index !== result.updates.length - 1 && (
+                      {index !== history.length - 1 && (
                         <div className="absolute left-3 top-8 bottom-[-24px] w-px bg-border" />
                       )}
 
