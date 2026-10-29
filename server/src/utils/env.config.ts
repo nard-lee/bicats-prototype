@@ -22,12 +22,12 @@ export const config = {
   refreshTokenExpiresInDays: Number(optionalEnv('REFRESH_TOKEN_EXPIRES_IN', '30')),
   // SMS is optional: when the secret is blank, no messages are sent.
   unismsSecretKey: optionalEnv('UNISMS_SECRET_KEY', ''),
-  unismsSenderId: optionalEnv('UNISMS_SENDER_ID', 'Unisoft'),
+  unismsSenderId: optionalEnv('UNISMS_SENDER_ID', 'KABAYANIHAN'),
   unismsApiUrl: optionalEnv('UNISMS_API_URL', 'https://unismsapi.com/api/sms'),
   // Email is optional: when the key is blank, no messages are sent.
   brevoApiKey: optionalEnv('BREVO_API_KEY', ''),
   brevoSenderEmail: optionalEnv('BREVO_SENDER_EMAIL', ''),
-  brevoSenderName: optionalEnv('BREVO_SENDER_NAME', 'BICATS'),
+  brevoSenderName: optionalEnv('BREVO_SENDER_NAME', 'Barangay Kabayanihan'),
   brevoApiUrl: optionalEnv('BREVO_API_URL', 'https://api.brevo.com/v3/smtp/email'),
 } as const;
 
