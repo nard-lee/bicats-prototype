@@ -1,11 +1,6 @@
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { useT } from "@/lib/I18n";
 import AssetUpload from "./asset-upload";
+import Group from "./group";
 import type { Update, Values } from "./types";
 
 export default function BrandingSection({
@@ -20,21 +15,14 @@ export default function BrandingSection({
   const { t } = useT();
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
-          {t("settingsBranding")}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <AssetUpload
-          label={t("logoLabel")}
-          hint={t("logoHint")}
-          value={values.logoUrl}
-          onChange={(url) => update("logoUrl", url)}
-          readOnly={!canEdit}
-        />
-      </CardContent>
-    </Card>
+    <Group title={t("settingsBranding")}>
+      <AssetUpload
+        label={t("logoLabel")}
+        hint={t("logoHint")}
+        value={values.logoUrl}
+        onChange={(url) => update("logoUrl", url)}
+        readOnly={!canEdit}
+      />
+    </Group>
   );
 }

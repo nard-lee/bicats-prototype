@@ -147,6 +147,57 @@ const en = {
   typesNote:
     "Note: Criminal cases punishable by imprisonment exceeding one year, or cases where parties reside in different cities/municipalities, are generally outside the authority of the Lupong Tagapamayapa and are endorsed to the proper agency.",
 
+  // home · about
+  aboutTitle: "About this desk",
+  aboutText:
+    "The barangay is where a dispute between neighbours is settled first. This online desk is the intake channel for that process: it records your complaint, issues a reference number, and keeps you informed of the schedule instead of leaving you to go back to the hall to ask.",
+  about1Title: "What it handles",
+  about1Text:
+    "Complaints between residents of the barangay — noise, sanitation, boundary disputes, altercations, threats, unpaid obligations, ordinance violations. The Secretary records the blotter entry and the case is set for mediation.",
+  about2Title: "Who hears it",
+  about2Text:
+    "Mediation is conducted by the Punong Barangay. If mediation does not settle the case, conciliation is held before the Pangkat, a panel of three members taken from the Lupong Tagapamayapa.",
+  about3Title: "What it cannot take up",
+  about3Text:
+    "Criminal cases punishable by imprisonment of more than one year, disputes where the parties live in different cities or municipalities, and complaints by one barangay against a private person. These are endorsed to the proper agency.",
+
+  // home · testimonies
+  testimoniesTitle: "In their words",
+  testimoniesNote: "Sample entries for this prototype.",
+  testimony1Quote:
+    "I filed at night and had a reference number before I closed the laptop. No lining up, and no guessing whether the entry was actually made.",
+  testimony1Name: "R. Mendoza",
+  testimony1Meta: "Complainant, Purok 4",
+  testimony2Quote:
+    "We both got the reminder the day before. We showed up, settled it that same morning, and signed the settlement there.",
+  testimony2Name: "J. Villanueva",
+  testimony2Meta: "Respondent, Purok 2",
+  testimony3Quote:
+    "I could see that the case moved from mediation to the Pangkat without going to the hall every week to ask.",
+  testimony3Name: "A. Reyes",
+  testimony3Meta: "Complainant, Purok 7",
+
+  // home · faq
+  faqTitle: "Frequently asked questions",
+  faq1Q: "Do I have to go to the barangay hall to file?",
+  faq1A:
+    "No. File through this desk and the entry is recorded the same way as a walk-in blotter entry. You will be called for mediation if the complaint proceeds.",
+  faq2Q: "What should I prepare before filing?",
+  faq2A:
+    "Your own contact number, the name and address of the party complained of, when and where the incident happened, and any evidence such as photos or documents. The contact number is also what you will use to track the case later.",
+  faq3Q: "How do I follow my case?",
+  faq3A:
+    "Open the track page and enter your reference number together with the contact number you filed with. Both have to match, so nobody else can read your case with the number alone.",
+  faq4Q: "What happens after I file?",
+  faq4A:
+    "The Secretary records the complaint and issues your reference number. The party complained of is then summoned, and mediation is set before the Punong Barangay. You are notified at each of these steps.",
+  faq5Q: "Is there a fee?",
+  faq5A:
+    "Filing a complaint is free. Not appearing at scheduled hearings without valid cause, however, is dealt with under the Barangay Justice System Act.",
+  faq6Q: "What if we settle, or if we do not?",
+  faq6A:
+    "A settlement is written, signed, and becomes enforceable after ten days if no one appeals. If no settlement is reached, the barangay issues a Certificate to File Action so the case can be brought to the city or municipal court.",
+
   // complaint types (used on Home and in the form)
   type1: "Noise disturbance",
   type2: "Garbage & sanitation",
@@ -199,6 +250,9 @@ const en = {
     "Describe what happened in your own words. Include any witnesses.",
   phNarr: "On the night of...",
   evidence: "Evidence",
+  evOpen: "Open",
+  asFiled: "As filed",
+  historyBy: "updated by",
   evHint: "Photos, videos, receipts, or documents. Up to 5 files, 10 MB each.",
   dropFiles: "Drag files here or browse",
   clearFiles: "Clear files",
@@ -880,6 +934,54 @@ const tl: Record<Key, string> = {
   typesNote:
     "Paalala: Ang mga kasong kriminal na may parusang pagkakakulong na higit sa isang taon, o mga kasong nakatira sa magkaibang lungsod/munisipalidad ang magkabilang panig, ay karaniwang labas sa kapangyarihan ng Lupong Tagapamayapa at ipinapasa sa tamang ahensya.",
 
+  aboutTitle: "Tungkol sa desk na ito",
+  aboutText:
+    "Ang barangay ang unang dadaanin ng away sa pagitan ng mga kapitbahay. Ang online desk na ito ang channel ng pagsasampa: itinatala ang reklamo, may reference number, at nalalaman kung kailan ang hearing sa halip na umuwi sa hall para magtanong.",
+  about1Title: "Ano ang hawak nito",
+  about1Text:
+    "Mga reklamo sa pagitan ng mga residenteng nakatira sa barangay — ingay, kalinisahan, alitan sa hangganan, awayan, banta, hindi nabayarang utang, paglabag sa ordinansa. Itinatala ng Secretary sa blotter at ididinaog ang mediatasyon.",
+  about2Title: "Sino ang naghihiliza",
+  about2Text:
+    "Ang Punong Barangay ang nagdadaog ng mediatasyon. Kung hindi ito may kasunduan, ang conciliation ay sa harap ng Pangkat — tatlong miyembro ng Lupong Tagapamayapa.",
+  about3Title: "Ano ang hindi nito mahahawakan",
+  about3Text:
+    "Mga kasong kriminal na may parusang higit sa isang taon, alitan ng mga panig na nakatira sa magkaibang lungsod o munisipalidad, at reklamo ng isang barangay laban sa pribadong tao. Ipinapasa ang mga ito sa tamang ahensya.",
+
+  testimoniesTitle: "Sa kanilang mga salita",
+  testimoniesNote: "Mga halimbawang entry sa prototype na ito.",
+  testimony1Quote:
+    "Nag-file ako panggabi at may reference number bago ko isinara ang laptop. Walang pila, at hindi na nagtataka kung natalaan ba talaga.",
+  testimony1Name: "R. Mendoza",
+  testimony1Meta: "Nagreklamo, Purok 4",
+  testimony2Quote:
+    "Pareho kaming nabigyan ng paalala ng isang araw bago ang hearing. Dumating kami, napagkasunduan nang umaga na iyon, at doon din kami pumirma.",
+  testimony2Name: "J. Villanueva",
+  testimony2Meta: "Inirereklamo, Purok 2",
+  testimony3Quote:
+    "Nakita kong lumipat ang kaso mula mediatasyon papuntang Pangkat nang hindi umuuwi sa hall kada linggo para magtanong.",
+  testimony3Name: "A. Reyes",
+  testimony3Meta: "Nagreklamo, Purok 7",
+
+  faqTitle: "Mga madalas itanong",
+  faq1Q: "Kailangan ba pumunta sa barangay hall para magfile?",
+  faq1A:
+    "Hindi. Magfile rito at ganoon din ang pagtatala katulad ng direkta sa blotter. Papatawagin lamang kayo kung may mediatasyon ang reklamo.",
+  faq2Q: "Ano ang dapat ihanda bago magfile?",
+  faq2A:
+    "Ang inyong contact number, pangalan at tirahan ng inirereklamo, kailan at saan nangyari ang insidente, at anumang ebidensya tulad ng larawan o dokumento. Ang contact number rin ang gagamitin ninyo sa pagsubaybay.",
+  faq3Q: "Paano ko masusubaybayan ang kaso ko?",
+  faq3A:
+    "Buksan ang tracking page at ilagay ang reference number kasama ang contact number na ginamit ninyo sa pagfile. Kailangang tumugma ang dalawa, kaya hindi ito mabubuksan ng iba sa reference number lamang.",
+  faq4Q: "Ano ang susunod matapos magfile?",
+  faq4A:
+    "Itatala ng Barangay Secretary ang reklamo at ibibigay ang reference number. Papatawagin ang inirereklamo, at ididinaog ang mediatasyon sa harap ng Punong Barangay. Abayan kayo sa bawat ginagawa.",
+  faq5Q: "May bayad ba?",
+  faq5A:
+    "Walang bayad ang pagsasampa ng reklamo. Ang hindi pagdating sa nakatakdang hearing nang may walang dahilan ay hinaharap sa ilalim ng Katarungang Pambarangay.",
+  faq6Q: "Paano kung may kasunduan, o kung wala?",
+  faq6A:
+    "Ang kasunduan ay isusulat at pipirmahan, at magkakaroon ng bisa pagkalipas ng sampung araw kung walang mag-aapela. Kung walang kasunduan, naglalabas ang barangay ng Certificate to File Action para maidala ang kaso sa court.",
+
   type1: "Ingay",
   type2: "Basura at kalinisan",
   type3: "Pakalat-kalat na hayop",
@@ -930,6 +1032,9 @@ const tl: Record<Key, string> = {
     "Isalaysay ang nangyari sa sarili ninyong pananalita. Isama ang mga saksi kung mayroon.",
   phNarr: "Noong gabi ng...",
   evidence: "Ebidensya",
+  evOpen: "Buksan",
+  asFiled: "Gaya ng isinampa",
+  historyBy: "ina-update ni",
   evHint: "Mga larawan, video, resibo, o dokumento. Hanggang 5 files, 10 MB bawat isa.",
   dropFiles: "I-drag ang files dito o mag-browse",
   clearFiles: "Alisin ang mga file",

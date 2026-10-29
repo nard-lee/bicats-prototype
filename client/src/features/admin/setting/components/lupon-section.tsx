@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { readErrorMessage } from "@/lib/api-error";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -165,7 +165,6 @@ function MemberDialog({
           </Button>
         ) : (
           <Button type="button" variant="outline" size="sm">
-            <Plus className="mr-2 h-4 w-4" />
             {t("luponAdd")}
           </Button>
         )}
@@ -259,11 +258,11 @@ export default function LuponSection({ canEdit }: { canEdit: boolean }) {
         ) : members.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("luponEmpty")}</p>
         ) : (
-          <ul className="space-y-2">
+          <ul className="divide-y">
             {members.map((member) => (
               <li
                 key={member.id}
-                className="flex items-center justify-between gap-3 rounded-md border px-3 py-2"
+                className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0"
               >
                 <div className="min-w-0">
                   <p

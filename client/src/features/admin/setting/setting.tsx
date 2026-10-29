@@ -6,19 +6,11 @@ import {
   useNavigation,
   useRouteLoaderData,
 } from "react-router";
-import {
-  AlertCircle,
-  Bell,
-  Building2,
-  CalendarClock,
-  CalendarDays,
-  PenLine,
-  Settings,
-  UsersRound,
-} from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { cn } from "cn";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Card, CardContent } from "@/components/ui/card";
 import { useT } from "@/lib/I18n";
 import type { AdminLoaderData } from "@/layouts/admin/loader";
 import type { SettingsActionResult } from "./action";
@@ -38,12 +30,12 @@ import SignatoriesSection from "./components/signatories-section";
 import { toValues, type FieldErrors, type Values } from "./components/types";
 
 const SECTIONS = [
-  { id: "profile", icon: Building2, label: "barangayProfile" },
-  { id: "signatories", icon: PenLine, label: "settingsSignatories" },
-  { id: "lupon", icon: UsersRound, label: "luponSectionTitle" },
-  { id: "deadlines", icon: CalendarClock, label: "settingsNavDeadlines" },
-  { id: "scheduling", icon: CalendarDays, label: "settingsScheduling" },
-  { id: "notifications", icon: Bell, label: "settingsNavNotifications" },
+  { id: "profile", label: "barangayProfile" },
+  { id: "signatories", label: "settingsSignatories" },
+  { id: "lupon", label: "luponSectionTitle" },
+  { id: "deadlines", label: "settingsNavDeadlines" },
+  { id: "scheduling", label: "settingsScheduling" },
+  { id: "notifications", label: "settingsNavNotifications" },
 ] as const;
 
 type SectionId = (typeof SECTIONS)[number]["id"];
@@ -166,14 +158,9 @@ export default function BarangaySettingsPage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6">
-      <div className="flex items-center gap-4">
-        <div className="flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          <Settings className="size-7" />
-        </div>
-        <div>
-          <h1 className="font-heading text-2xl font-semibold">{t("adminSettings")}</h1>
-          <p className="text-sm text-muted-foreground">{t("settingsSub")}</p>
-        </div>
+      <div>
+        <h1 className="font-heading text-2xl font-semibold">{t("adminSettings")}</h1>
+        <p className="text-sm text-muted-foreground">{t("settingsSub")}</p>
       </div>
 
       <Form method="post" noValidate>
@@ -183,7 +170,7 @@ export default function BarangaySettingsPage() {
             className="min-w-0 lg:sticky lg:top-6"
           >
             <div className="flex gap-1 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:flex-col lg:overflow-visible lg:pb-0">
-              {SECTIONS.map(({ id, icon: Icon, label }) => (
+              {SECTIONS.map(({ id, label }) => (
                 <button
                   key={id}
                   type="button"
@@ -193,13 +180,12 @@ export default function BarangaySettingsPage() {
                   }}
                   aria-current={active === id ? "page" : undefined}
                   className={cn(
-                    "flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm whitespace-nowrap transition-colors",
+                    "shrink-0 rounded-lg px-3 py-2 text-left text-sm whitespace-nowrap transition-colors",
                     active === id
                       ? "bg-muted font-medium text-foreground"
                       : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
                   )}
                 >
-                  <Icon className="size-4" />
                   {t(label)}
                 </button>
               ))}
@@ -218,11 +204,31 @@ export default function BarangaySettingsPage() {
             )}
 
             <fieldset disabled={!canEdit} className="contents">
-              <section hidden={active !== "profile"} className="space-y-6">
-                <IdentitySection values={values} fields={fields} update={update} />
-                <ContactSection values={values} fields={fields} update={update} />
-                <PuroksSection values={values} fields={fields} update={update} />
-                <BrandingSection values={values} update={update} canEdit={canEdit} />
+              <section hidden={active !== "profile"}>
+                <Card>
+                  <CardContent className="space-y-5">
+                    <IdentitySection
+                      values={values}
+                      fields={fields}
+                      update={update}
+                    />
+                    <ContactSection
+                      values={values}
+                      fields={fields}
+                      update={update}
+                    />
+                    <PuroksSection
+                      values={values}
+                      fields={fields}
+                      update={update}
+                    />
+                    <BrandingSection
+                      values={values}
+                      update={update}
+                      canEdit={canEdit}
+                    />
+                  </CardContent>
+                </Card>
               </section>
 
               <section hidden={active !== "signatories"}>

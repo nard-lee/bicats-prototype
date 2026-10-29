@@ -13,6 +13,27 @@ const stepKeys: { title: Key; text: Key }[] = [
   { title: "step4Title", text: "step4Text" },
 ];
 
+const aboutKeys: { title: Key; text: Key }[] = [
+  { title: "about1Title", text: "about1Text" },
+  { title: "about2Title", text: "about2Text" },
+  { title: "about3Title", text: "about3Text" },
+];
+
+const testimonyKeys: { quote: Key; name: Key; meta: Key }[] = [
+  { quote: "testimony1Quote", name: "testimony1Name", meta: "testimony1Meta" },
+  { quote: "testimony2Quote", name: "testimony2Name", meta: "testimony2Meta" },
+  { quote: "testimony3Quote", name: "testimony3Name", meta: "testimony3Meta" },
+];
+
+const faqKeys: { q: Key; a: Key }[] = [
+  { q: "faq1Q", a: "faq1A" },
+  { q: "faq2Q", a: "faq2A" },
+  { q: "faq3Q", a: "faq3A" },
+  { q: "faq4Q", a: "faq4A" },
+  { q: "faq5Q", a: "faq5A" },
+  { q: "faq6Q", a: "faq6A" },
+];
+
 export default function Home() {
   const { t, lang } = useT();
   const { items: notices } = useLoaderData() as PublicNoticesResponse;
@@ -118,8 +139,28 @@ export default function Home() {
         </div>
       </section>
 
+      {/* About */}
+      <section className="border-b">
+        <div className="mx-auto max-w-6xl px-6 py-14">
+          <h2 className="text-2xl font-semibold">{t("aboutTitle")}</h2>
+          <p className="mt-4 max-w-3xl text-sm leading-6 text-muted-foreground">
+            {t("aboutText")}
+          </p>
+          <div className="mt-8 grid gap-x-8 gap-y-8 sm:grid-cols-3">
+            {aboutKeys.map((item) => (
+              <div key={item.title} className="border-t pt-4">
+                <h3 className="text-base font-semibold">{t(item.title)}</h3>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  {t(item.text)}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Notices + complaint types, stacked */}
-      <section>
+      <section className="border-b">
         <div className="mx-auto flex max-w-6xl flex-col gap-12 px-6 py-14">
           <div>
             <h2 className="text-2xl font-semibold">{t("noticesTitle")}</h2>
@@ -152,6 +193,49 @@ export default function Home() {
             <p className="mt-4 text-sm text-muted-foreground">
               {t("typesNote")}
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonies */}
+      <section className="border-b">
+        <div className="mx-auto max-w-3xl px-6 py-14">
+          <h2 className="text-2xl font-semibold">{t("testimoniesTitle")}</h2>
+          <ul className="mt-6 divide-y">
+            {testimonyKeys.map((item) => (
+              <li key={item.name} className="py-6 first:pt-0 last:pb-0">
+                <figure>
+                  <blockquote className="text-sm leading-6">
+                    “{t(item.quote)}”
+                  </blockquote>
+                  <figcaption className="mt-3 text-sm text-muted-foreground">
+                    {t(item.name)} · {t(item.meta)}
+                  </figcaption>
+                </figure>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-6 text-sm text-muted-foreground">
+            {t("testimoniesNote")}
+          </p>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section>
+        <div className="mx-auto max-w-3xl px-6 py-14">
+          <h2 className="text-2xl font-semibold">{t("faqTitle")}</h2>
+          <div className="mt-6 divide-y">
+            {faqKeys.map((item) => (
+              <details key={item.q} className="py-4 first:pt-0 last:pb-0">
+                <summary className="cursor-pointer text-sm font-medium">
+                  {t(item.q)}
+                </summary>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  {t(item.a)}
+                </p>
+              </details>
+            ))}
           </div>
         </div>
       </section>

@@ -1,5 +1,5 @@
 import { useRef, useState, type ChangeEvent } from "react";
-import { Image as ImageIcon, Upload } from "lucide-react";
+import { Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -65,7 +65,6 @@ export default function AssetUpload({
               disabled={uploading}
               onClick={() => inputRef.current?.click()}
             >
-              <Upload className="size-4" />
               {uploading
                 ? t("saving")
                 : value
