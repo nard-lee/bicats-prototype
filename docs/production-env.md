@@ -12,7 +12,7 @@ Treat secrets as "Secret text"; the rest can be plain values.
 | `PORT` | number | Express listen port | Render injects `$PORT`; leave the default. |
 | `NODE_ENV` | `production` | Turns on secure cookies, `trust proxy`, SPA static serving, and the storage guard | `GET /api/health` → `{"ok":true}` |
 | `DATABASE_URL` | `postgresql://…` | Neon Postgres connection string (production branch) | Boot log `==> database: connected` |
-| `CORS_ORIGIN` | `https://bicats-prototype.onrender.com` | Allowed cross-origin `fetch` with credentials | Login POST is not blocked by CORS |
+| `CORS_ORIGIN` | `https://bicats-prototype.onrender.com` | Allowed cross-origin `fetch` with credentials, and the base for tracking links sent to residents | Login POST is not blocked by CORS; a receipt link opens the track page |
 | `JWT_SECRET` | long random string | Signs access tokens | Rotate → all sessions invalidate |
 | `JWT_EXPIRES_IN` | `900` (seconds = 15 min) | Access token lifetime | 401 + silent refresh keeps you logged in |
 | `CSRF_SECRET` | long random string | Double-submit CSRF signing | `GET /api/csrf-token` returns a token; a write request succeeds |
@@ -35,11 +35,11 @@ an env file.
 | --- | --- | --- |
 | `REFRESH_TOKEN_EXPIRES_IN` | `30` (days) | How long a "remember me" session lasts |
 | `UNISMS_SECRET_KEY` | empty → SMS never sent | UniSMS provider key |
-| `UNISMS_SENDER_ID` | `Unisoft` | SMS sender label |
+| `UNISMS_SENDER_ID` | `KABAYANIHAN` | The originator shown on the resident's phone. Carrier limit is 11 characters, so the full "Barangay Kabayanihan" cannot be used; register the chosen ID with UniSMS first |
 | `UNISMS_API_URL` | `https://unismsapi.com/api/sms` | SMS endpoint |
 | `BREVO_API_KEY` | empty → email never sent | Brevo transactional key |
 | `BREVO_SENDER_EMAIL` | empty | From-address on complainant notices |
-| `BREVO_SENDER_NAME` | `BICATS` | From-name |
+| `BREVO_SENDER_NAME` | `Barangay Kabayanihan` | From-name the resident sees. Brevo keys its sender identity on the name + address pair, so re-activate this combination at app.brevo.com/settings/senders or sends are refused |
 | `BREVO_API_URL` | `https://api.brevo.com/v3/smtp/email` | Email endpoint |
 
 A blank key disables the channel: sends are skipped and nothing is written to the
@@ -58,6 +58,23 @@ notifications tab also reads.
   `<uuid>.<jpg|png|webp|pdf|mp4>`. Responses are `immutable` — keys never change
   content, so a stale browser copy is not a support case.
 
+## Outbound messages (SMS + email)
+
+- Session and deadline dates are formatted with `timeZone: "Asia/Manila"`
+  (`server/src/modules/notify/format.ts`). Render containers are UTC, so a
+  message built without it would tell a resident their 9 AM mediation is at
+  1 AM. Do not remove the zone.
+- Every message ends with a tracking link built from `CORS_ORIGIN`
+  (`<CORS_ORIGIN>/track-complaint?ref=YY-MM-NNNN`). That page already accepts
+  `?ref=`, so the link pre-fills the reference. Wrong `CORS_ORIGIN` means every
+  resident link 404s.
+- Resident messages name the barangay, not the system: the SMS sender ID
+  (`KABAYANIHAN`) is the originator and email subjects carry no product prefix.
+- Notices follow the complainant: `Complaint.complainantLang` is stored at
+  intake from the language the public form was in (`en` | `tl`), and every SMS
+  and email uses that language's templates. Staff notes (`publicNote`) are
+  delivered exactly as typed in both languages.
+
 ## Smoke test after each deploy
 
 1. `GET /api/health` → `{"ok":true}` (first call to a sleeping service takes ~60 s).
@@ -66,12 +83,20 @@ notifications tab also reads.
 4. File a public complaint **with one attachment**, then reopen it and view the
    attachment — this is the only path that proves the bucket wiring end to end.
 5. Confirm the new reference is `YY-MM-NNNN` and restarts monthly.
+6. File one complaint with the public form switched to Tagalog — the receipt
+   email arrives in Tagalog, its Manila time is right, and its link opens the
+   track page with the reference filled in.
 
 ## Schema and migrations
 
 - Production was built with `prisma db push`, so it has **no `_prisma_migrations`
   table**. Do not run `pnpm db:deploy` against it — that would try to create
   tables that already exist. Keep `db:push` as the apply step.
+- **Push the schema before deploying code that reads it.** `Complaint.complainantLang`
+  (added 2026-10-29) is written on every public filing, so deploying that build
+  onto a database without the column fails every filing with a 500. With
+  `DATABASE_URL` pointed at the production branch:
+  `pnpm exec prisma db push`.
 - `prisma/migrations/20261029000000_baseline/migration.sql` is a full baseline
   generated from `schema.prisma`; use it for a fresh database or a preview branch.
 - CI regenerates the baseline and fails if it differs from the committed one, so

@@ -9,6 +9,7 @@ import {
   statusUpdateEmail,
 } from "../email/email.messages.js";
 import type { EmailMessage } from "../email/email.types.js";
+import type { MsgLang } from "./format.js";
 import smsService from "../sms/sms.service.js";
 import {
   hearingReminderSms,
@@ -24,6 +25,7 @@ type Target = {
   reference: string;
   contactNormalized: string;
   complainantEmail: string | null;
+  complainantLang: string;
   dueAt: Date | null;
 };
 
@@ -35,9 +37,16 @@ async function findTarget(complaintId: number): Promise<Target | null> {
       reference: true,
       contactNormalized: true,
       complainantEmail: true,
+      complainantLang: true,
       dueAt: true,
     },
   });
+}
+
+// Two languages have templates. Anything stored on a case that isn't one of
+// them reads as English rather than producing a half-translated message.
+function langOf(target: Target): MsgLang {
+  return target.complainantLang === "tl" ? "tl" : "en";
 }
 
 // Fan out to every channel the complainant left us. Each channel is skipped
@@ -107,7 +116,11 @@ const complainantNotifier = {
     const target = await findTarget(complaintId);
     if (!target) return;
 
-    const message = { reference: target.reference, dueAt: target.dueAt };
+    const message = {
+      reference: target.reference,
+      dueAt: target.dueAt,
+      lang: langOf(target),
+    };
     await dispatch(
       target,
       intakeReceivedSms(message),
@@ -131,7 +144,7 @@ const complainantNotifier = {
     const target = await findTarget(complaintId);
     if (!target) return;
 
-    const message = { reference: target.reference, ...input };
+    const message = { reference: target.reference, lang: langOf(target), ...input };
     await dispatch(
       target,
       statusUpdateSms(message),
@@ -158,7 +171,7 @@ const complainantNotifier = {
     const target = await findTarget(complaintId);
     if (!target) return;
 
-    const message = { reference: target.reference, ...input };
+    const message = { reference: target.reference, lang: langOf(target), ...input };
     await dispatch(
       target,
       mediationScheduledSms(message),
@@ -185,7 +198,7 @@ const complainantNotifier = {
     const target = await findTarget(complaintId);
     if (!target) return;
 
-    const message = { reference: target.reference, ...input };
+    const message = { reference: target.reference, lang: langOf(target), ...input };
     await dispatch(
       target,
       mediationCancelledSms(message),
@@ -212,7 +225,7 @@ const complainantNotifier = {
     const target = await findTarget(complaintId);
     if (!target) return;
 
-    const message = { reference: target.reference, ...input };
+    const message = { reference: target.reference, lang: langOf(target), ...input };
     await dispatch(
       target,
       hearingReminderSms(message),

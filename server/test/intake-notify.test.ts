@@ -33,6 +33,33 @@ describe("intake receipt", () => {
     expect(receipt).toHaveBeenCalledWith(complaint.id);
   });
 
+  it("receipts a case filed in Tagalog in Tagalog", async () => {
+    const agent = request.agent(app);
+    const token = await csrfToken(agent);
+    const filed = await submitComplaint(agent, token, {
+      complainantEmail: "filer-tl@bicats.test",
+      complainantLang: "tl",
+    }).expect(200);
+
+    const saved = await prisma.complaint.findUniqueOrThrow({
+      where: { reference: filed.body.reference as string },
+      select: { id: true, complainantLang: true },
+    });
+    expect(saved.complainantLang).toBe("tl");
+
+    vi.spyOn(emailService, "isEmailEnabled").mockReturnValue(true);
+    const sent = vi.spyOn(emailService, "send").mockResolvedValue(true);
+
+    await complainantNotifier.filingReceived(saved.id);
+
+    expect(sent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: "filer-tl@bicats.test",
+        subject: expect.stringContaining("Natanggap ang reklamo"),
+      }),
+    );
+  });
+
   it("leaves an audit trail when the provider refuses the send", async () => {
     const agent = request.agent(app);
     const token = await csrfToken(agent);
