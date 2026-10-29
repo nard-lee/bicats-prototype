@@ -30,10 +30,11 @@ afterAll(() => {
 });
 
 describe("complaint intake", () => {
-  it("files complaints with sequential yearly references and the first deadline", async () => {
+  it("files complaints with sequential monthly references and the first deadline", async () => {
     const agent = request.agent(app);
     const token = await csrfToken(agent);
-    const year = new Date().getFullYear();
+    const now = new Date();
+    const period = `${String(now.getFullYear()).slice(-2)}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
     const first = await submitComplaint(agent, token).expect(200);
     const second = await submitComplaint(agent, token, {
@@ -41,14 +42,10 @@ describe("complaint intake", () => {
     }).expect(200);
 
     expect(first.body).toEqual({
-      reference: expect.stringMatching(
-        new RegExp(`^BK-${year}-000001-[A-Z0-9]{2}$`),
-      ),
+      reference: `${period}-0001`,
       success: true,
     });
-    expect(second.body.reference).toMatch(
-      new RegExp(`^BK-${year}-000002-[A-Z0-9]{2}$`),
-    );
+    expect(second.body.reference).toBe(`${period}-0002`);
 
     const complaint = await prisma.complaint.findUnique({
       where: { reference: first.body.reference as string },
@@ -66,7 +63,7 @@ describe("complaint intake", () => {
     expect(hoursUntilDue).toBeGreaterThan(23);
     expect(hoursUntilDue).toBeLessThan(25);
 
-    const counter = await prisma.referenceCounter.findUnique({ where: { year } });
+    const counter = await prisma.referenceCounter.findUnique({ where: { period } });
     expect(counter?.lastValue).toBe(2);
   });
 

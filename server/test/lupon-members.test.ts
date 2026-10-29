@@ -78,7 +78,7 @@ describe("Lupon roster", () => {
 
     const complaint = await prisma.complaint.create({
       data: {
-        reference: "BK-TEST-PANGKAT",
+        reference: "TEST-PANGKAT",
         complainantName: "Juan Dela Cruz",
         complainantAge: 34,
         complainantPurok: "Session Road",

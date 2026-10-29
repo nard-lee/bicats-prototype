@@ -8,23 +8,23 @@ import {
 
 describe("recent complaint references", () => {
   it("keeps the latest reference first and removes duplicates", () => {
-    rememberReference("BK-2026-000001-K7");
-    rememberReference("BK-2026-000002-M3");
-    rememberReference("BK-2026-000001-K7");
+    rememberReference("26-10-0001");
+    rememberReference("26-10-0002");
+    rememberReference("26-10-0001");
 
     expect(loadRecentReferences()).toEqual([
-      "BK-2026-000001-K7",
-      "BK-2026-000002-M3",
+      "26-10-0001",
+      "26-10-0002",
     ]);
   });
 
   it("caps the list at five entries", () => {
     for (let index = 1; index <= 7; index += 1) {
-      rememberReference(`BK-2026-00000${index}-AA`);
+      rememberReference(`26-10-000${index}`);
     }
 
     expect(loadRecentReferences()).toHaveLength(5);
-    expect(loadRecentReferences()[0]).toBe("BK-2026-000007-AA");
+    expect(loadRecentReferences()[0]).toBe("26-10-0007");
   });
 
   it("ignores corrupted storage and clears on demand", () => {
@@ -32,7 +32,7 @@ describe("recent complaint references", () => {
 
     expect(loadRecentReferences()).toEqual([]);
 
-    rememberReference("BK-2026-000003-Q4");
+    rememberReference("26-10-0003");
     clearRecentReferences();
 
     expect(loadRecentReferences()).toEqual([]);

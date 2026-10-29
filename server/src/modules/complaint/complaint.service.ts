@@ -16,7 +16,7 @@ import type {
     Paginated,
     PangkatMember,
 } from "./complaint.types.js";
-import { getEvidenceUrl, nextReference, normalizePhone } from "./complaint.helpers.js";
+import { getEvidenceUrl, nextReference, normalizePhone, referencePeriod } from "./complaint.helpers.js";
 import settingService from "../setting/setting.service.js";
 import notificationService from "../notification/notification.service.js";
 import {
@@ -74,7 +74,7 @@ const complaintService = {
         const deadlines = deadlineConfigFrom(settings);
 
         return prisma.$transaction(async (tx) => {
-            const reference = await nextReference(tx, new Date().getFullYear());
+            const reference = await nextReference(tx, referencePeriod(new Date()));
 
             return tx.complaint.create({
                 data: {

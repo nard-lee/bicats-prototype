@@ -28,7 +28,7 @@ async function filedComplaintId(): Promise<number> {
 async function directComplaint(status: "mediation" | "settled"): Promise<number> {
   const complaint = await prisma.complaint.create({
     data: {
-      reference: `BK-TEST-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      reference: `TEST-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       complainantName: "Juan Dela Cruz",
       complainantAge: 34,
       complainantPurok: "Session Road",
@@ -79,7 +79,7 @@ describe("mediation management", () => {
 
     expect(created.body).toMatchObject({
       success: true,
-      reference: expect.stringMatching(/^BK-/),
+      reference: expect.stringMatching(/^\d{2}-\d{2}-\d{4}$/),
     });
     const hearingId = created.body.id as number;
 

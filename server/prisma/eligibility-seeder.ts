@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import { prisma } from "../src/db";
+import { formatReference, referencePeriod } from "../src/modules/complaint/complaint.helpers.js";
 
 // Resets the demo complaint data to four cases that exercise every
 // eligibility state (eligible, needs review, outside KP, legacy), five fresh
@@ -12,8 +13,6 @@ import { prisma } from "../src/db";
 
 const UPLOAD_DIR = path.resolve("uploads");
 const DAY_MS = 24 * 60 * 60 * 1000;
-const YEAR = new Date().getFullYear();
-const SUFFIXES = ["Q4", "J9", "M7", "T3", "R2", "D6", "K8", "P5", "W6", "H4", "S9"];
 
 const eligibleAnswers = {
   respondentResidency: "same_barangay",
@@ -324,12 +323,9 @@ async function main() {
     ),
   );
 
-  const counter = await prisma.referenceCounter.upsert({
-    where: { year: YEAR },
-    update: {},
-    create: { year: YEAR, lastValue: 0 },
-  });
-  let sequence = counter.lastValue;
+  // Cases are numbered per month from 0001, continuing after whatever the
+  // live system has already issued this month.
+  const issuedByPeriod = new Map<string, number>();
 
   const settings = await prisma.barangaySettings.findUnique({
     where: { id: 1 },
@@ -345,10 +341,16 @@ async function main() {
 
   const now = new Date();
 
-  for (const [index, sample] of SAMPLES.entries()) {
-    sequence += 1;
-    const reference = `BK-${YEAR}-${String(sequence).padStart(6, "0")}-${SUFFIXES[index]}`;
+  for (const sample of SAMPLES) {
     const createdAt = new Date(now.getTime() - sample.ageDays * DAY_MS);
+    const period = referencePeriod(createdAt);
+    const value =
+      (issuedByPeriod.get(period) ??
+        (await prisma.referenceCounter
+          .findUnique({ where: { period } })
+          .then((c) => c?.lastValue ?? 0))) + 1;
+    issuedByPeriod.set(period, value);
+    const reference = formatReference(period, value);
     const isDismissed = sample.status === "dismissed";
     const servedAt = sample.service
       ? new Date(createdAt.getTime() + sample.service.delayDays * DAY_MS)
@@ -482,10 +484,13 @@ async function main() {
     console.log(`   ↳ ${sample.eligibilityStatus.padEnd(13)} ${reference}`);
   }
 
-  await prisma.referenceCounter.update({
-    where: { year: YEAR },
-    data: { lastValue: sequence },
-  });
+  for (const [period, lastValue] of issuedByPeriod) {
+    await prisma.referenceCounter.upsert({
+      where: { period },
+      update: { lastValue },
+      create: { period, lastValue },
+    });
+  }
 
   console.log(
     `✅ Seeded ${SAMPLES.length} demo complaints (4 eligibility samples + 5 open received + 1 summoned with proof of service + 1 mediation with attendance).`,

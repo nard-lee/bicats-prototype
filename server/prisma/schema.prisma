@@ -102,9 +102,9 @@ model LuponMember {
   @@index([isActive, fullName])
 }
 
-// ---- Per-year sequential reference counter (BK-<year>-000001-<check>) ----
+// ---- Per-month sequential reference counter (26-10-0001) ----
 model ReferenceCounter {
-  year      Int      @id
+  period    String   @id // YY-MM of the month being numbered
   lastValue Int
   createdAt DateTime @default(now())
 }
@@ -112,7 +112,7 @@ model ReferenceCounter {
 // ---- Complaints ----
 model Complaint {
   id        Int    @id @default(autoincrement())
-  reference String @unique // e.g. BK-2026-000001-K7
+  reference String @unique // e.g. 26-10-0001
 
   // Complainant
   complainantName    String

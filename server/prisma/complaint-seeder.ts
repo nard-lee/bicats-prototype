@@ -1,9 +1,13 @@
 import "dotenv/config";
 import fs from "node:fs";
 import path from "node:path";
-import { randomInt, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import zlib from "node:zlib";
 import { prisma } from "../src/db";
+import {
+  formatReference,
+  referencePeriod,
+} from "../src/modules/complaint/complaint.helpers.js";
 import { faker } from "@faker-js/faker";
 
 const COMPLAINT_TYPES = [
@@ -197,19 +201,17 @@ async function main() {
   await prisma.notice.deleteMany();
   await prisma.auditLog.deleteMany();
 
-  // Start the demo dataset from BK-<year>-000001 again.
-  const year = new Date().getFullYear();
-  await prisma.referenceCounter.upsert({
-    where: { year },
-    update: { lastValue: 0 },
-    create: { year, lastValue: 0 },
-  });
+  // Demo cases are numbered per month from 0001, like live filings, so a
+  // reseed leaves the counters just past the last reference it issued.
+  const issuedByPeriod = new Map<string, number>();
 
-  // Same alphabet as complaint.service for the public check suffix.
-  const CHECK_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
-  const checkSuffix = () =>
-    CHECK_ALPHABET.charAt(randomInt(CHECK_ALPHABET.length)) +
-    CHECK_ALPHABET.charAt(randomInt(CHECK_ALPHABET.length));
+  function seedReference(createdAt: Date): string {
+    const period = referencePeriod(createdAt);
+    const value = (issuedByPeriod.get(period) ?? 0) + 1;
+    issuedByPeriod.set(period, value);
+
+    return formatReference(period, value);
+  }
 
   const settings = await prisma.barangaySettings.findUnique({
     where: { id: 1 },
@@ -255,8 +257,6 @@ async function main() {
     console.log(`✅ Seeded ${roster.length} Lupon members.`);
   }
 
-  let sequence = 0;
-
   // One case per lifecycle stage so every screen (list, calendar, mediation,
   // reports) has something real to show.
   type SeedPlan = {
@@ -291,8 +291,7 @@ async function main() {
     const contact = faker.phone.number({ style: "international" });
     const evidence = await makeEvidence();
 
-    sequence += 1;
-    const reference = `BK-${year}-${String(sequence).padStart(6, "0")}-${checkSuffix()}`;
+    const reference = seedReference(createdAt);
 
     // Roughly three in five cases have already been opened by staff.
     const openedAt =
@@ -509,10 +508,13 @@ async function main() {
     });
   }
 
-  await prisma.referenceCounter.update({
-    where: { year },
-    data: { lastValue: sequence },
-  });
+  for (const [period, lastValue] of issuedByPeriod) {
+    await prisma.referenceCounter.upsert({
+      where: { period },
+      update: { lastValue },
+      create: { period, lastValue },
+    });
+  }
 
   console.log(
     `✅ Seeded ${plan.length} complaints with evidence (mixed freshness/statuses).`,

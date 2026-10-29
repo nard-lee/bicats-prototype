@@ -6,12 +6,10 @@ import {
   useSearchParams,
 } from "react-router";
 import {
-  Calendar,
   CheckCircle2,
   Download,
   FileCheck2,
   FileText,
-  Notebook,
   Send,
   Users,
   XCircle,
@@ -114,7 +112,7 @@ export default function Track() {
             name="reference"
             value={reference}
             onChange={(event) => setReference(event.target.value)}
-            placeholder="BK-2026-000001-K7"
+            placeholder="26-10-0001"
             autoComplete="off"
             spellCheck={false}
             required
@@ -181,7 +179,7 @@ export default function Track() {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
-                <label className="text-md font-medium text-muted-foreground">
+                <label className="text-sm font-medium text-muted-foreground">
                   {t("refNumber")}
                 </label>
                 <div className="flex min-w-0 items-center gap-2">
@@ -204,7 +202,7 @@ export default function Track() {
               </div>
               <Separator />
               <div className="flex items-center justify-between">
-                <label className="text-md font-medium text-muted-foreground">
+                <label className="text-sm font-medium text-muted-foreground">
                   {t("currentStatus")}
                 </label>
                 <Badge variant="outline" className="font-bold">
@@ -251,32 +249,23 @@ export default function Track() {
                           <Badge variant="outline" className="font-bold">
                             {statusLabel(event.status)}
                           </Badge>
-                          <p className="text-md text-muted-foreground">
+                          <p className="text-sm text-muted-foreground">
                             {fmt(event.createdAt)}
                           </p>
                         </div>
 
                         {(event.publicNote || event.hearingAt) && (
-                          <div className="text-md">
+                          <div className="space-y-1">
                             {event.publicNote && (
-                              <div className="flex items-center gap-2">
-                                <Notebook className="h-4 w-4" />
-                                <p className="text-foreground/80 leading-relaxed">
-                                  {event.publicNote}
-                                </p>
-                              </div>
+                              <p className="text-sm leading-relaxed text-foreground/80">
+                                {event.publicNote}
+                              </p>
                             )}
 
                             {event.hearingAt && (
-                              <>
-                                {event.publicNote && <Separator className="my-2" />}
-                                <div className="flex items-center gap-2 font-medium text-primary">
-                                  <Calendar className="h-4 w-4" />
-                                  <span>
-                                    {t("hearing")}: {fmt(event.hearingAt)}
-                                  </span>
-                                </div>
-                              </>
+                              <p className="text-sm font-medium">
+                                {t("hearing")}: {fmt(event.hearingAt)}
+                              </p>
                             )}
                           </div>
                         )}
