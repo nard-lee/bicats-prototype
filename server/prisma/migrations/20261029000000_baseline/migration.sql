@@ -75,6 +75,7 @@ CREATE TABLE "Complaint" (
     "contactNormalized" TEXT NOT NULL,
     "complainantEmail" TEXT,
     "complainantAddress" TEXT NOT NULL,
+    "complainantLang" TEXT NOT NULL DEFAULT 'en',
     "respondentName" TEXT NOT NULL,
     "respondentAddress" TEXT,
     "relationship" TEXT,

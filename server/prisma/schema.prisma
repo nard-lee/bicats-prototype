@@ -122,6 +122,9 @@ model Complaint {
   contactNormalized  String
   complainantEmail   String? // optional; used for email updates
   complainantAddress String
+  // Language the filing form was in when the case came in; picks the SMS and
+  // email templates. Existing cases default to English.
+  complainantLang    String @default("en") // "en" | "tl"
 
   // Respondent
   respondentName    String

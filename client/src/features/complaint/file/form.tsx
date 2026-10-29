@@ -161,7 +161,7 @@ function Field({
 }
 
 export default function FileComplaint() {
-  const { t } = useT();
+  const { t, lang } = useT();
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<File[]>([]);
@@ -334,6 +334,10 @@ export default function FileComplaint() {
           if (blocked) event.preventDefault();
         }}
       >
+
+        {/* SMS and email about this case go out in whichever language the
+            filer read the form in. */}
+        <input type="hidden" name="complainantLang" value={lang} />
 
         {/* 00 Eligibility screening */}
         <section className="overflow-hidden rounded-xl border bg-card shadow-sm">

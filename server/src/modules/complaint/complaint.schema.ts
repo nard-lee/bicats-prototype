@@ -66,6 +66,10 @@ export const createComplaintSchema = z
         incidentPlace: z.string().trim().min(2).max(200),
         narrative: z.string().trim().min(10).max(5000),
 
+        // The language the filing form was in. A stale bundle that never sends
+        // it just gets English notices.
+        complainantLang: z.enum(["en", "tl"]).default("en"),
+
         ...intakeEligibilitySchema.shape,
 
         consent: z.literal("on", { error: "You must agree before submitting" }),

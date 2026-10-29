@@ -87,6 +87,7 @@ const complaintService = {
                     contactNormalized: normalizePhone(input.complainantContact),
                     complainantEmail: input.complainantEmail,
                     complainantAddress: input.complainantAddress,
+                    complainantLang: input.complainantLang,
 
                     respondentName: input.respondentName,
                     respondentAddress: input.respondentAddress || null,
