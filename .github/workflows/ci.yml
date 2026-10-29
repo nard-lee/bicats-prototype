@@ -54,6 +54,14 @@ jobs:
       - name: Generate Prisma client
         working-directory: server
         run: pnpm db:generate
+      - name: Migrations match the schema
+        working-directory: server
+        # The baseline is generated from schema.prisma, so a schema edit that
+        # never reaches prisma/migrations fails here instead of surprising a
+        # later `prisma migrate deploy`.
+        run: |
+          pnpm db:baseline
+          git diff --exit-code prisma/migrations
       - name: Typecheck
         working-directory: server
         run: pnpm typecheck

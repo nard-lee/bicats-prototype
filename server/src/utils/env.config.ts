@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { storageEnabled } from './storage.js';
 
 function requireEnv(key: string): string {
   const value = process.env[key];
@@ -29,3 +30,12 @@ export const config = {
   brevoSenderName: optionalEnv('BREVO_SENDER_NAME', 'BICATS'),
   brevoApiUrl: optionalEnv('BREVO_API_URL', 'https://api.brevo.com/v3/smtp/email'),
 } as const;
+
+// Host filesystems are disposable — a redeploy wipes server/uploads — so
+// evidence would be written to storage that outlives no restart. Refuse to
+// boot rather than accept uploads that are scheduled to disappear.
+if (config.nodeEnv === "production" && !storageEnabled()) {
+  throw new Error(
+    "Object storage is not configured. Set AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_ENDPOINT_URL_S3 and STORAGE_BUCKET before running in production.",
+  );
+}
