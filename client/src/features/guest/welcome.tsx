@@ -99,21 +99,22 @@ export default function Home() {
       <section className="border-b">
         <div className="mx-auto max-w-6xl px-6 py-14">
           <h2 className="text-2xl font-semibold">{t("howTitle")}</h2>
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <ol className="mt-8 grid gap-x-8 gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
             {stepKeys.map((s, i) => (
-              <Card key={s.title}>
-                <CardHeader>
-                  <p className="text-2xl font-semibold text-muted-foreground">
+              <li key={s.title} className="border-t pt-4">
+                <h3 className="text-base font-semibold">
+                  <span
+                    aria-hidden="true"
+                    className="mr-2 text-sm tabular-nums text-muted-foreground"
+                  >
                     {String(i + 1).padStart(2, "0")}
-                  </p>
-                  <CardTitle className="text-base">{t(s.title)}</CardTitle>
-                </CardHeader>
-                <CardContent className="text-sm text-muted-foreground">
-                  {t(s.text)}
-                </CardContent>
-              </Card>
+                  </span>
+                  {t(s.title)}
+                </h3>
+                <p className="mt-2 text-sm text-muted-foreground">{t(s.text)}</p>
+              </li>
             ))}
-          </div>
+          </ol>
         </div>
       </section>
 
@@ -145,13 +146,9 @@ export default function Home() {
 
           <div>
             <h2 className="text-2xl font-semibold">{t("typesTitle")}</h2>
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              {complaintTypeKeys.map((k) => (
-                <div key={k} className="rounded-md border px-4 py-3 text-sm">
-                  {t(k)}
-                </div>
-              ))}
-            </div>
+            <p className="mt-4 max-w-3xl text-sm leading-6">
+              {complaintTypeKeys.map((k) => t(k)).join(" · ")}
+            </p>
             <p className="mt-4 text-sm text-muted-foreground">
               {t("typesNote")}
             </p>

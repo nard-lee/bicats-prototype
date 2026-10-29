@@ -5,6 +5,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useT } from "@/lib/I18n";
+import { DOT_ACTIVE, DOT_NEUTRAL } from "@/lib/status";
 import type { SettingsChannels } from "../loader";
 
 export default function ChannelStatus({
@@ -22,7 +23,7 @@ export default function ChannelStatus({
       <CardContent className="space-y-3 text-sm">
         <div className="flex items-start gap-2">
           <span
-            className={`mt-1.5 size-2 shrink-0 rounded-full ${channels.sms ? "bg-emerald-500" : "bg-muted-foreground/40"}`}
+            className={`mt-1.5 size-2 shrink-0 rounded-full ${channels.sms ? DOT_ACTIVE : DOT_NEUTRAL}`}
           />
           <p className={channels.sms ? "" : "text-muted-foreground"}>
             {channels.sms ? t("smsConfigured") : t("smsMissing")}
@@ -30,7 +31,7 @@ export default function ChannelStatus({
         </div>
         <div className="flex items-start gap-2">
           <span
-            className={`mt-1.5 size-2 shrink-0 rounded-full ${channels.email ? "bg-emerald-500" : "bg-muted-foreground/40"}`}
+            className={`mt-1.5 size-2 shrink-0 rounded-full ${channels.email ? DOT_ACTIVE : DOT_NEUTRAL}`}
           />
           <p className={channels.email ? "" : "text-muted-foreground"}>
             {channels.email ? t("emailConfigured") : t("emailMissing")}

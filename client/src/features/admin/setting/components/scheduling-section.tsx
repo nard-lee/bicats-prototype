@@ -1,4 +1,3 @@
-import { CalendarClock } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -37,8 +36,7 @@ export default function SchedulingSection({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <CalendarClock className="size-4 text-primary" />
+        <CardTitle>
           {t("settingsScheduling")}
         </CardTitle>
         <CardDescription>{t("settingsSchedulingHint")}</CardDescription>

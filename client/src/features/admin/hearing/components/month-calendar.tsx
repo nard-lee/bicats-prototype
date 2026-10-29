@@ -2,7 +2,8 @@ import type { Dispatch, SetStateAction } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "cn";
-import { KIND_STYLE, OVERDUE_STYLE } from "../labels";
+import { DOT_ACTION, STATUS_ACTION, STATUS_ACTIVE } from "@/lib/status";
+import { KIND_ABBREV, KIND_LABEL } from "../labels";
 import type { HearingItem } from "../loader";
 import { STATUS_DOT, WEEKDAYS, dayKey } from "./constants";
 
@@ -43,7 +44,7 @@ export default function MonthCalendar({
           <div className="flex flex-wrap items-center justify-end gap-2">
             <Badge variant="secondary">{scheduledCount} scheduled</Badge>
             {overdueCount > 0 && (
-              <Badge className={cn("border", OVERDUE_STYLE)}>
+              <Badge className={cn("border", STATUS_ACTION)}>
                 {overdueCount} overdue
               </Badge>
             )}
@@ -129,27 +130,30 @@ export default function MonthCalendar({
                     }}
                     className={cn(
                       "hidden cursor-pointer truncate rounded border px-1.5 py-0.5 text-xs font-medium transition-colors hover:ring-1 hover:ring-foreground/25 sm:block",
-                      // Finished sessions drop the type color so they read as
-                      // done; only live and failed ones stand out.
+                      // One ink for a session still to come; finished ones recede.
+                      // There is no room for the kind and no second color to
+                      // spend on it, so the chip spells it in three letters.
                       hearing.status === "completed" || hearing.status === "cancelled"
                         ? "border-border bg-muted/60 text-muted-foreground"
-                        : KIND_STYLE[hearing.kind],
+                        : STATUS_ACTIVE,
                       hearing.status === "cancelled" && "line-through opacity-60",
-                      hearing.overdue && "border-amber-500/60 ring-1 ring-amber-500/40",
+                      hearing.overdue &&
+                        "border-destructive/60 ring-1 ring-destructive/40",
                     )}
                     title={
                       hearing.overdue
-                        ? `${fmtTime(hearing.scheduledAt)} ${hearing.reference} — Overdue: no outcome recorded`
-                        : `${fmtTime(hearing.scheduledAt)} ${hearing.reference}`
+                        ? `${KIND_LABEL[hearing.kind]} ${fmtTime(hearing.scheduledAt)} ${hearing.reference} — Overdue: no outcome recorded`
+                        : `${KIND_LABEL[hearing.kind]} ${fmtTime(hearing.scheduledAt)} ${hearing.reference}`
                     }
                   >
                     <span
                       className={cn(
                         "inline-block h-1.5 w-1.5 -translate-y-px rounded-full",
-                        hearing.overdue ? "bg-amber-500" : STATUS_DOT[hearing.status],
+                        hearing.overdue ? DOT_ACTION : STATUS_DOT[hearing.status],
                       )}
                       aria-hidden
                     />{" "}
+                    {KIND_ABBREV[hearing.kind]}{" "}
                     <span className="tabular-nums">{fmtTime(hearing.scheduledAt)}</span>{" "}
                     {hearing.reference}
                   </span>
@@ -162,7 +166,7 @@ export default function MonthCalendar({
                         key={hearing.id}
                         className={cn(
                           "h-1.5 w-1.5 rounded-full",
-                          hearing.overdue ? "bg-amber-500" : STATUS_DOT[hearing.status],
+                          hearing.overdue ? DOT_ACTION : STATUS_DOT[hearing.status],
                           hearing.status === "cancelled" && "opacity-50",
                         )}
                       />

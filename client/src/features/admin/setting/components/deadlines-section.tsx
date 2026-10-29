@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Clock, Plus, X } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -45,8 +45,7 @@ export default function DeadlinesSection({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Clock className="size-4 text-primary" />
+        <CardTitle>
           {t("settingsDeadlines")}
         </CardTitle>
       </CardHeader>

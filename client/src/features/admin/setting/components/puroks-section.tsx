@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MapPin, Plus, X } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,8 +40,7 @@ export default function PuroksSection({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <MapPin className="size-4 text-primary" />
+        <CardTitle>
           {t("settingsPuroks")}
         </CardTitle>
         <CardDescription>{t("puroksHint")}</CardDescription>

@@ -79,14 +79,12 @@ export default function CreateUser() {
                         {(actionData?.message ||
                             (actionData?.error && !actionData.message)) && (
 
-                                <Alert>
+                                <Alert variant="destructive">
                                     <AlertCircle className="mt-0.5 size-5 shrink-0" />
                                     <AlertTitle>{actionData.message || t(actionData.error!)}</AlertTitle>
                                     <AlertDescription>
                                         {Object.keys(fields).length > 0 && (
-                                            <p className="text-sm">
-                                                Please review the highlighted fields below.
-                                            </p>
+                                            <p className="text-sm">{t("reviewFields")}</p>
                                         )}
                                     </AlertDescription>
                                 </Alert>

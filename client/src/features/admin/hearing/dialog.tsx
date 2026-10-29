@@ -21,6 +21,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { api } from "@/lib/api";
+import { cn } from "cn";
+import { STATUS_ACTION } from "@/lib/status";
 import DateTimePicker from "@/components/ui/date-time-picker";
 import { toLocalInput } from "@/lib/datetime";
 import { KIND_LABEL, STATUS_LABEL } from "./labels";
@@ -117,6 +119,9 @@ export default function HearingDialog({
   const [notes, setNotes] = useState(editing?.notes ?? "");
   const [outcome, setOutcome] = useState(editing?.outcome ?? "");
   const [saving, setSaving] = useState(false);
+  // Cancelling texts the complainant that their session is off, so it takes
+  // two deliberate clicks rather than the one that closes a dialog does.
+  const [confirmCancel, setConfirmCancel] = useState(false);
 
   // Completed / no show mean the session already took place, which is what
   // makes a past date acceptable.
@@ -217,7 +222,7 @@ export default function HearingDialog({
         </DialogHeader>
 
         {editing?.overdue && (
-          <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-800 dark:text-amber-300">
+          <div className={cn("rounded-md border px-3 py-2 text-sm", STATUS_ACTION)}>
             This session date has passed with no outcome recorded. Set the status to
             Completed or No show, or pick a new date to reschedule it.
           </div>
@@ -343,41 +348,74 @@ export default function HearingDialog({
             </div>
           )}
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
-              Cancel
-            </Button>
-            {editing && editing.status === "scheduled" && !caseClosed && (
-              <Button
-                type="button"
-                variant="outline"
-                className="text-destructive hover:text-destructive"
-                disabled={saving}
-                onClick={async () => {
-                  setSaving(true);
-                  try {
-                    await api.delete(`/hearings/${editing.id}`);
-                    toast.success("Mediation cancelled.");
-                    onSaved();
-                  } catch (err) {
-                    toast.error(readErrorMessage(err, "Something went wrong."));
-                  } finally {
-                    setSaving(false);
-                  }
-                }}
-              >
-                Cancel mediation
-              </Button>
+          <DialogFooter className="flex-col items-stretch gap-2 sm:flex-row sm:items-center">
+            {confirmCancel ? (
+              <div className="flex flex-1 flex-wrap items-center gap-2 sm:flex-none">
+                <span className="text-sm text-destructive">
+                  Cancel this {KIND_LABEL[kind].toLowerCase()}? Staff and the
+                  complainant are told.
+                </span>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  disabled={saving}
+                  onClick={async () => {
+                    if (!editing) return;
+                    setSaving(true);
+                    try {
+                      await api.delete(`/hearings/${editing.id}`);
+                      toast.success("Mediation cancelled.");
+                      onSaved();
+                    } catch (err) {
+                      toast.error(readErrorMessage(err, "Something went wrong."));
+                      setSaving(false);
+                      setConfirmCancel(false);
+                    }
+                  }}
+                >
+                  {saving ? "Cancelling..." : "Yes, cancel it"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={saving}
+                  onClick={() => setConfirmCancel(false)}
+                >
+                  Keep it
+                </Button>
+              </div>
+            ) : (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onClose}
+                  disabled={saving}
+                >
+                  Close
+                </Button>
+                {editing && editing.status === "scheduled" && !caseClosed && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="text-destructive hover:text-destructive"
+                    disabled={saving}
+                    onClick={() => setConfirmCancel(true)}
+                  >
+                    Cancel session
+                  </Button>
+                )}
+                <Button type="submit" disabled={saving || !complaintId}>
+                  {saving
+                    ? "Saving..."
+                    : editing
+                      ? "Save changes"
+                      : held
+                        ? "Record session"
+                        : "Schedule"}
+                </Button>
+              </>
             )}
-            <Button type="submit" disabled={saving || !complaintId}>
-              {saving
-                ? "Saving..."
-                : editing
-                  ? "Save changes"
-                  : held
-                    ? "Record session"
-                    : "Schedule"}
-            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

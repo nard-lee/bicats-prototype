@@ -1,4 +1,4 @@
-import { Clock, Phone } from "lucide-react";
+import { Clock } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -22,8 +22,7 @@ export default function ContactSection({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Phone className="size-4 text-primary" />
+        <CardTitle>
           {t("settingsContact")}
         </CardTitle>
       </CardHeader>

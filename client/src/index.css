@@ -30,6 +30,10 @@
     --chart-3: oklch(0.666 0.179 58.318);
     --chart-4: oklch(0.555 0.163 48.998);
     --chart-5: oklch(0.473 0.137 46.201);
+    /* Status color budget: one ink for anything live, red for what needs
+       action, neutral for the rest. Deeper than --primary in light mode so
+       status text clears the contrast floor; the pale gold end in dark. */
+    --status-ink: oklch(0.473 0.137 46.201);
     --radius: 0.625rem;
     --sidebar: oklch(0.985 0 0);
     --sidebar-foreground: oklch(0.145 0.008 326);
@@ -65,6 +69,7 @@
     --chart-3: oklch(0.666 0.179 58.318);
     --chart-4: oklch(0.555 0.163 48.998);
     --chart-5: oklch(0.473 0.137 46.201);
+    --status-ink: oklch(0.879 0.169 91.605);
     --sidebar: oklch(0.212 0.019 322.12);
     --sidebar-foreground: oklch(0.985 0 0);
     --sidebar-primary: oklch(0.769 0.188 70.08);
@@ -87,6 +92,7 @@
     --color-sidebar-foreground: var(--sidebar-foreground);
     --color-sidebar: var(--sidebar);
     --color-chart-5: var(--chart-5);
+    --color-status-ink: var(--status-ink);
     --color-chart-4: var(--chart-4);
     --color-chart-3: var(--chart-3);
     --color-chart-2: var(--chart-2);

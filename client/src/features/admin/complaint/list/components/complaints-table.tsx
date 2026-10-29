@@ -10,6 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useT, type Key } from "@/lib/I18n";
+import { STATUS_ACTION } from "@/lib/status";
 import { complaintTypeLabel } from "../../type-label";
 import type { ComplaintListItem, ComplaintStatus } from "../loader";
 import EmptyState from "./empty-state";
@@ -124,7 +125,7 @@ export default function ComplaintsTable({
                       </Badge>
                     )}
                     {isDueSoon(c) && (
-                      <Badge className="h-5 border-transparent bg-amber-500 px-1.5 tracking-wide text-white uppercase hover:bg-amber-500">
+                      <Badge className={cn("border px-1.5 tracking-wide uppercase", STATUS_ACTION)}>
                         {t("dueSoon")}
                       </Badge>
                     )}
@@ -204,7 +205,7 @@ export default function ComplaintsTable({
                         </Badge>
                       )}
                       {isDueSoon(c) && (
-                        <Badge className="h-5 border-transparent bg-amber-500 px-1.5 tracking-wide text-white uppercase hover:bg-amber-500">
+                        <Badge className={cn("border px-1.5 tracking-wide uppercase", STATUS_ACTION)}>
                           {t("dueSoon")}
                         </Badge>
                       )}

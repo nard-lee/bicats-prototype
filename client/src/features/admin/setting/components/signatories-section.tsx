@@ -1,4 +1,3 @@
-import { PenLine } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -24,8 +23,7 @@ export default function SignatoriesSection({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <PenLine className="size-4 text-primary" />
+        <CardTitle>
           {t("settingsSignatories")}
         </CardTitle>
         <CardDescription>{t("settingsSignatoriesDesc")}</CardDescription>

@@ -1,9 +1,24 @@
 import type { AttendanceStatus, HearingKind, HearingStatus } from "./loader";
+import {
+  DOT_ACTION,
+  DOT_NEUTRAL,
+  STATUS_ACTION,
+  STATUS_ACTIVE,
+  STATUS_NEUTRAL,
+} from "@/lib/status";
 
 export const KIND_LABEL: Record<HearingKind, string> = {
   mediation: "Mediation",
   conciliation: "Conciliation",
   hearing: "Arbitration",
+};
+
+// The calendar chip has room for neither the kind nor a color per kind, so it
+// gets three letters instead.
+export const KIND_ABBREV: Record<HearingKind, string> = {
+  mediation: "Med",
+  conciliation: "Con",
+  hearing: "Arb",
 };
 
 export const STATUS_LABEL: Record<HearingStatus, string> = {
@@ -13,26 +28,14 @@ export const STATUS_LABEL: Record<HearingStatus, string> = {
   no_show: "No show",
 };
 
-export const KIND_STYLE: Record<HearingKind, string> = {
-  mediation:
-    "border-violet-500/20 bg-violet-500/15 text-violet-700 dark:text-violet-300",
-  conciliation:
-    "border-indigo-500/20 bg-indigo-500/15 text-indigo-700 dark:text-indigo-300",
-  hearing:
-    "border-sky-500/20 bg-sky-500/15 text-sky-700 dark:text-sky-300",
-};
-
 export const STATUS_STYLE: Record<HearingStatus, string> = {
-  scheduled: "border-primary/20 bg-primary/10 text-primary",
-  completed: "border-border bg-muted text-muted-foreground",
-  cancelled: "border-border bg-muted text-muted-foreground line-through",
-  // A recorded negative outcome (red) is visually distinct from the
-  // amber "needs action" overdue state.
-  no_show: "border-red-500/25 bg-red-500/10 text-red-700 dark:text-red-300",
+  scheduled: STATUS_ACTIVE,
+  completed: STATUS_NEUTRAL,
+  cancelled: `${STATUS_NEUTRAL} line-through`,
+  // A recorded negative outcome shares the red of a session that still needs
+  // one; the word says which.
+  no_show: STATUS_ACTION,
 };
-
-export const OVERDUE_STYLE =
-  "border-amber-500/30 bg-amber-500/15 text-amber-700 dark:text-amber-300 ring-1 ring-amber-500/40";
 
 export const ATTENDANCE_LABEL: Record<AttendanceStatus, string> = {
   present: "Present",
@@ -40,19 +43,18 @@ export const ATTENDANCE_LABEL: Record<AttendanceStatus, string> = {
   excused: "Excused",
 };
 
+// Only a non-attendance is a problem; showing up and being excused are both
+// settled, so neither gets a color.
 export const ATTENDANCE_STYLE: Record<AttendanceStatus, string> = {
-  present:
-    "border-emerald-500/20 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
-  absent:
-    "border-red-500/25 bg-red-500/10 text-red-700 dark:text-red-300",
-  excused:
-    "border-amber-500/30 bg-amber-500/15 text-amber-700 dark:text-amber-300",
+  present: STATUS_NEUTRAL,
+  absent: STATUS_ACTION,
+  excused: STATUS_NEUTRAL,
 };
 
 export const ATTENDANCE_DOT: Record<AttendanceStatus, string> = {
-  present: "bg-emerald-500",
-  absent: "bg-red-500",
-  excused: "bg-amber-500",
+  present: DOT_NEUTRAL,
+  absent: DOT_ACTION,
+  excused: DOT_NEUTRAL,
 };
 
 const attendanceWord: Record<AttendanceStatus, string> = {

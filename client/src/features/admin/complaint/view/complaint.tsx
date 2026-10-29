@@ -2,6 +2,7 @@ import { useState, type ReactNode } from "react";
 import { useLoaderData, useRevalidator, useRouteLoaderData, Link } from "react-router";
 import { cn } from "cn";
 import { CASE_WRITE_ROLES, type Role } from "@/lib/roles";
+import { STATUS_ACTION } from "@/lib/status";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -238,7 +239,7 @@ export default function ComplaintView() {
               {eligibilityHold ? (
                 <Badge
                   variant="outline"
-                  className="gap-1 border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                  className={cn("gap-1", STATUS_ACTION)}
                 >
                   <ShieldAlert className="h-3 w-3" />
                   {t(eligibilityFlagKey)}
@@ -452,10 +453,7 @@ export default function ComplaintView() {
           {history.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-muted-foreground" />
-                  {t("statusHistory")}
-                </CardTitle>
+                <CardTitle>{t("statusHistory")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="mb-4 text-sm text-muted-foreground tabular-nums">

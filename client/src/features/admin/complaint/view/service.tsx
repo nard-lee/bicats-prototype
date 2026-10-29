@@ -36,15 +36,16 @@ import { api } from "@/lib/api";
 import { toLocalInput } from "@/lib/datetime";
 import { useT, type Key } from "@/lib/I18n";
 import type { ComplaintDetail, ServiceResult } from "./loader";
+import { STATUS_ACTION, STATUS_ACTIVE } from "@/lib/status";
 
 const CLOSED_STATUSES = ["settled", "certified", "dismissed"];
 
+// A summons that landed keeps the case running; one that didn't is a problem
+// the office has to take up again.
 const RESULT_STYLE: Record<ServiceResult, string> = {
-  received:
-    "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
-  refused:
-    "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300",
-  not_found: "border-destructive/30 bg-destructive/10 text-destructive",
+  received: STATUS_ACTIVE,
+  refused: STATUS_ACTION,
+  not_found: STATUS_ACTION,
 };
 
 const RESULT_KEY: Record<ServiceResult, Key> = {
@@ -165,7 +166,7 @@ function RecordServiceModal({
           </div>
 
           {caseStatus === "summoned" && result === "received" && (
-            <p className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-300">
+            <p className={cn("rounded-md border p-3 text-sm", STATUS_ACTIVE)}>
               {t("serviceDeadlineHint")}
             </p>
           )}
@@ -220,10 +221,7 @@ export default function ServiceRecordCard({
       <CardHeader>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <CardTitle className="flex items-center gap-2">
-              <MailCheck className="h-5 w-5 text-muted-foreground" />
-              {t("serviceTitle")}
-            </CardTitle>
+            <CardTitle>{t("serviceTitle")}</CardTitle>
             <CardDescription>{t("serviceDesc")}</CardDescription>
           </div>
           {canWrite && !isClosed && (

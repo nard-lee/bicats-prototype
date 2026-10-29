@@ -1,4 +1,5 @@
 import type { HearingItem } from "../loader";
+import { DOT_ACTION, DOT_ACTIVE, DOT_NEUTRAL } from "@/lib/status";
 
 export type HearingView = "month" | "overdue" | "upcoming" | "week";
 
@@ -23,10 +24,10 @@ export const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 // Chip dot colors for the calendar. Finished sessions (completed or
 // cancelled) recede to gray; only live and failed ones carry a color.
 export const STATUS_DOT: Record<HearingItem["status"], string> = {
-  scheduled: "bg-primary",
-  completed: "bg-muted-foreground",
-  cancelled: "bg-muted-foreground",
-  no_show: "bg-red-500",
+  scheduled: DOT_ACTIVE,
+  completed: DOT_NEUTRAL,
+  cancelled: DOT_NEUTRAL,
+  no_show: DOT_ACTION,
 };
 
 export const PAGE_SIZE = 10;

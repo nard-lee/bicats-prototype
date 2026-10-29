@@ -301,10 +301,7 @@ export default function PangkatCard({
       <CardHeader>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <CardTitle className="flex items-center gap-2">
-              <Scale className="h-5 w-5 text-muted-foreground" />
-              {t("pangkatTitle")}
-            </CardTitle>
+            <CardTitle>{t("pangkatTitle")}</CardTitle>
             <CardDescription>{t("pangkatDesc")}</CardDescription>
           </div>
           {canWrite && complaint.status === "conciliation" && (

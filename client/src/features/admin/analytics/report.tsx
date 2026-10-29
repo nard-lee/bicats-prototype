@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useLoaderData } from "react-router";
 import { useT, type Key } from "@/lib/I18n";
 import { api } from "@/lib/api";
+import { Button } from "@/components/ui/button";
 import { csvCell } from "@/lib/csv";
 import ScopeControls from "./components/scope-controls";
 import StatCards from "./components/stat-cards";
@@ -74,6 +75,8 @@ export default function AdminReport() {
 
   const [scopeValue, setScopeValue] = useState(`${thisMonth}~${thisMonth}`);
   const [digest, setDigest] = useState<DigestData | null>(null);
+  const [digestFailed, setDigestFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const scope = scopeValue.split("~");
   const from = scope[0] ?? thisMonth;
   const to = scope[1] ?? thisMonth;
@@ -84,15 +87,21 @@ export default function AdminReport() {
       .get(`analytics/digest?from=${from}&to=${to}`)
       .json<DigestData>()
       .then((d) => {
-        if (active) setDigest(d);
+        if (!active) return;
+        setDigest(d);
+        setDigestFailed(false);
       })
       .catch(() => {
-        if (active) setDigest(null);
+        // A failed fetch is not an empty month: the strip says which it was.
+        if (active) {
+          setDigest(null);
+          setDigestFailed(true);
+        }
       });
     return () => {
       active = false;
     };
-  }, [from, to]);
+  }, [from, to, attempt]);
 
   const locale = lang === "tl" ? "fil-PH" : "en-PH";
 
@@ -226,7 +235,21 @@ export default function AdminReport() {
         </header>
 
         {/* The chosen scope, in one strip */}
-        <StatCards kpis={kpis} />
+        {digestFailed ? (
+          <section className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-destructive/30 bg-card px-4 py-3">
+            <p className="text-sm text-destructive">{t("anDigestFailed")}</p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setAttempt((n) => n + 1)}
+            >
+              {t("anRetry")}
+            </Button>
+          </section>
+        ) : (
+          <StatCards kpis={kpis} loading={!digest} />
+        )}
 
         {/* What the chosen scope looks like */}
         <section className="grid gap-6 lg:grid-cols-2">

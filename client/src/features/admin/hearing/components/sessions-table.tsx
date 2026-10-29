@@ -13,12 +13,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "cn";
+import { STATUS_ACTION, STATUS_NEUTRAL } from "@/lib/status";
 import {
   ATTENDANCE_DOT,
   attendanceSummary,
   KIND_LABEL,
-  KIND_STYLE,
-  OVERDUE_STYLE,
   STATUS_LABEL,
   STATUS_STYLE,
 } from "../labels";
@@ -124,7 +123,7 @@ export default function SessionsTable({
                       )}
                     </TableCell>
                     <TableCell className="hidden lg:table-cell">
-                      <Badge className={cn("border", KIND_STYLE[hearing.kind])}>
+                      <Badge className={cn("border", STATUS_NEUTRAL)}>
                         {KIND_LABEL[hearing.kind]}
                       </Badge>
                     </TableCell>
@@ -133,7 +132,7 @@ export default function SessionsTable({
                         className={cn(
                           "border",
                           hearing.overdue
-                            ? OVERDUE_STYLE
+                            ? STATUS_ACTION
                             : STATUS_STYLE[hearing.status],
                         )}
                       >

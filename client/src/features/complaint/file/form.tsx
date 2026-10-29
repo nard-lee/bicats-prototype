@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   Form,
   Link,
@@ -31,6 +31,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import DateTimePicker from "@/components/ui/date-time-picker";
 import { complaintTypeKeys, useT } from "@/lib/I18n";
+import { STATUS_ACTION, STATUS_ACTIVE } from "@/lib/status";
 import type { ActionResult } from "./action";
 import type { FileComplaintLoaderData } from "./loader";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -138,11 +139,13 @@ function Section({
 }
 
 function Field({
+  id,
   label,
   hint,
   full,
   children,
 }: {
+  id?: string;
   label: string;
   hint?: string;
   full?: boolean;
@@ -150,7 +153,7 @@ function Field({
 }) {
   return (
     <div className={`space-y-2 ${full ? "sm:col-span-2" : ""}`}>
-      <Label>{label}</Label>
+      <Label htmlFor={id}>{label}</Label>
       {children}
       {hint && <p className="text-sm text-muted-foreground">{hint}</p>}
     </div>
@@ -226,6 +229,17 @@ export default function FileComplaint() {
   const { puroks } = useLoaderData() as FileComplaintLoaderData;
   const fields = actionData?.fields ?? {};
 
+  // A rejected filing shouldn't send a complainant hunting through a long form:
+  // jump to the first field the office flagged.
+  useEffect(() => {
+    const [firstInvalid] = Object.keys(actionData?.fields ?? {});
+    if (!firstInvalid) return;
+    const control = document.getElementById(firstInvalid);
+    if (!control) return;
+    control.scrollIntoView({ block: "center", behavior: "smooth" });
+    control.focus({ preventScroll: true });
+  }, [actionData]);
+
   const reference = actionData?.reference;
 
   if (actionData?.success && reference) {
@@ -255,7 +269,7 @@ export default function FileComplaint() {
           </p>
 
           {screening === "needs_review" && (
-            <p className="mt-3 rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-300">
+            <p className={cn("mt-3 rounded-md border p-3 text-sm", STATUS_ACTION)}>
               {t("eligSuccessReview")}
             </p>
           )}
@@ -504,21 +518,21 @@ export default function FileComplaint() {
             )}
 
             {screening === "eligible" && (
-              <div className="flex items-start gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-700 sm:col-span-2 dark:text-emerald-300">
+              <div className={cn("flex items-start gap-3 rounded-lg border p-4 text-sm sm:col-span-2", STATUS_ACTIVE)}>
                 <ShieldCheck className="mt-0.5 size-5 shrink-0" />
                 <p>{t("eligEligible")}</p>
               </div>
             )}
 
             {screening === "needs_review" && (
-              <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-700 sm:col-span-2 dark:text-amber-300">
+              <div className={cn("flex items-start gap-3 rounded-lg border p-4 text-sm sm:col-span-2", STATUS_ACTION)}>
                 <ShieldAlert className="mt-0.5 size-5 shrink-0" />
                 <p>{t("eligNeedsReview")}</p>
               </div>
             )}
 
             {screening === "outside_kp" && (
-              <div className="flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive sm:col-span-2">
+              <div className={cn("flex items-start gap-3 rounded-lg border p-4 text-sm sm:col-span-2", STATUS_ACTION)}>
                 <ShieldAlert className="mt-0.5 size-5 shrink-0" />
                 <p>{t("eligOutside")}</p>
               </div>
@@ -528,27 +542,30 @@ export default function FileComplaint() {
 
         {/* 01 Complainant */}
         <Section number="01" title={t("s1Title")} subtitle={t("s1Sub")}>
-          <Field label={t("fullName")}>
+          <Field id="complainantName" label={t("fullName")}>
             <Input
+              id="complainantName"
               name="complainantName"
               placeholder="Juan A. Dela Cruz"
               aria-invalid={!!fields.complainantName}
             />
             <FieldError message={fields.complainantName} />
           </Field>
-          <Field label={t("age")}>
+          <Field id="complainantAge" label={t("age")}>
             <Input
+              id="complainantAge"
               name="complainantAge"
               type="number"
+              inputMode="numeric"
               min={1}
               placeholder="34"
               aria-invalid={!!fields.complainantAge}
             />
             <FieldError message={fields.complainantAge} />
           </Field>
-          <Field label={t("purok")}>
+          <Field id="complainantPurok" label={t("purok")}>
             <Select name="complainantPurok">
-              <SelectTrigger className="w-full">
+              <SelectTrigger id="complainantPurok" className="w-full">
                 <SelectValue placeholder={t("selectPurok")} />
               </SelectTrigger>
               <SelectContent>
@@ -561,26 +578,37 @@ export default function FileComplaint() {
             </Select>
             <FieldError message={fields.complainantPurok} />
           </Field>
-          <Field label={t("contactNumber")}>
+          <Field id="complainantContact" label={t("contactNumber")}>
             <Input
+              id="complainantContact"
               name="complainantContact"
               type="tel"
+              inputMode="tel"
+              autoComplete="tel"
               placeholder="0917 000 0000"
               aria-invalid={!!fields.complainantContact}
             />
             <FieldError message={fields.complainantContact} />
           </Field>
-          <Field label={t("email") + " (optional)"} hint={t("emailHint")}>
+          <Field
+            id="complainantEmail"
+            label={t("emailOptional")}
+            hint={t("emailHint")}
+          >
             <Input
+              id="complainantEmail"
               name="complainantEmail"
               type="email"
+              inputMode="email"
+              autoComplete="email"
               placeholder="juan@email.com"
               aria-invalid={!!fields.complainantEmail}
             />
             <FieldError message={fields.complainantEmail} />
           </Field>
-          <Field label={t("address")} full>
+          <Field id="complainantAddress" label={t("address")} full>
             <Input
+              id="complainantAddress"
               name="complainantAddress"
               placeholder="Blk / Lot / Street"
               aria-invalid={!!fields.complainantAddress}
@@ -591,24 +619,32 @@ export default function FileComplaint() {
 
         {/* 02 Respondent */}
         <Section number="02" title={t("s2Title")} subtitle={t("s2Sub")}>
-          <Field label={t("respName")}>
+          <Field id="respondentName" label={t("respName")}>
             <Input
+              id="respondentName"
               name="respondentName"
               placeholder={t("phRespName")}
               aria-invalid={!!fields.respondentName}
             />
             <FieldError message={fields.respondentName} />
           </Field>
-          <Field label={t("respAddress") + " (optional)"}>
+          <Field id="respondentAddress" label={t("respAddressOptional")}>
             <Input
+              id="respondentAddress"
               name="respondentAddress"
               placeholder="Blk / Lot / Street"
               aria-invalid={!!fields.respondentAddress}
             />
             <FieldError message={fields.respondentAddress} />
           </Field>
-          <Field label={t("relationship") + " (optional)"} hint={t("relHint")} full>
+          <Field
+            id="relationship"
+            label={t("relationshipOptional")}
+            hint={t("relHint")}
+            full
+          >
             <Input
+              id="relationship"
               name="relationship"
               placeholder={t("phRel")}
               aria-invalid={!!fields.relationship}
@@ -619,13 +655,13 @@ export default function FileComplaint() {
 
         {/* 03 Incident */}
         <Section number="03" title={t("s3Title")} subtitle={t("s3Sub")}>
-          <Field label={t("complaintType")}>
+          <Field id="complaintType" label={t("complaintType")}>
             <Select
               name="complaintType"
               value={complaintType}
               onValueChange={setComplaintType}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger id="complaintType" className="w-full">
                 <SelectValue placeholder={t("selectType")} />
               </SelectTrigger>
               <SelectContent>
@@ -639,8 +675,9 @@ export default function FileComplaint() {
             <FieldError message={fields.complaintType} />
           </Field>
           {complaintType === "type12" && (
-            <Field label={t("otherType")} hint={t("otherTypeHint")} full>
+            <Field id="complaintTypeOther" label={t("otherType")} hint={t("otherTypeHint")} full>
               <Input
+                id="complaintTypeOther"
                 name="complaintTypeOther"
                 required
                 maxLength={150}
@@ -650,8 +687,9 @@ export default function FileComplaint() {
               <FieldError message={fields.complaintTypeOther} />
             </Field>
           )}
-          <Field label={t("incidentAt")}>
+          <Field id="incidentAt" label={t("incidentAt")}>
             <DateTimePicker
+              id="incidentAt"
               value={incidentAt}
               onChange={setIncidentAt}
               aria-invalid={!!fields.incidentAt}
@@ -659,16 +697,18 @@ export default function FileComplaint() {
             <input type="hidden" name="incidentAt" value={incidentAt} />
             <FieldError message={fields.incidentAt} />
           </Field>
-          <Field label={t("place")} full>
+          <Field id="incidentPlace" label={t("place")} full>
             <Input
+              id="incidentPlace"
               name="incidentPlace"
               placeholder={t("phPlace")}
               aria-invalid={!!fields.incidentPlace}
             />
             <FieldError message={fields.incidentPlace} />
           </Field>
-          <Field label={t("narrative")} hint={t("narrHint")} full>
+          <Field id="narrative" label={t("narrative")} hint={t("narrHint")} full>
             <Textarea
+              id="narrative"
               name="narrative"
               rows={7}
               placeholder={t("phNarr")}
@@ -677,7 +717,7 @@ export default function FileComplaint() {
             <FieldError message={fields.narrative} />
           </Field>
 
-          <Field label={t("evidence")} hint={t("evHint")} full>
+          <Field id="evidence" label={t("evidence")} hint={t("evHint")} full>
             <label className="relative flex cursor-pointer flex-col items-center gap-2 rounded-md border-2 border-dashed bg-muted/50 px-4 py-10 text-center text-sm">
               <Upload className="size-6 text-muted-foreground" />
               <span>{t("dropFiles")}</span>
@@ -685,6 +725,7 @@ export default function FileComplaint() {
                 <Paperclip className="size-3" /> {ALLOWED_LABEL}
               </span>
               <input
+                id="evidence"
                 ref={inputRef}
                 type="file"
                 name="evidence"
@@ -734,14 +775,12 @@ export default function FileComplaint() {
         {(actionData?.message ||
           (actionData?.error && !actionData.message)) && (
 
-            <Alert>
+            <Alert variant="destructive">
               <AlertCircle className="mt-0.5 size-5 shrink-0" />
               <AlertTitle>{actionData.message || t(actionData.error!)}</AlertTitle>
               <AlertDescription>
                 {Object.keys(fields).length > 0 && (
-                  <p className="text-sm">
-                    Please review the highlighted fields.
-                  </p>
+                  <p className="text-sm">{t("reviewFields")}</p>
                 )}
               </AlertDescription>
             </Alert>

@@ -128,7 +128,7 @@ export function StageAdvanceDialog({ complaintId, currentStatus, onSuccess }: St
           {target && (
             <div className="space-y-4 rounded-lg border bg-muted/30 p-3">
               {closing ? (
-                <p className="flex items-start gap-2 text-sm text-amber-700 dark:text-amber-300">
+                <p className="flex items-start gap-2 text-sm text-status-ink">
                   <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                   {t("updClosingNote")}
                 </p>

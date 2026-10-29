@@ -1,4 +1,3 @@
-import { Building2 } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -23,8 +22,7 @@ export default function IdentitySection({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Building2 className="size-4 text-primary" />
+        <CardTitle>
           {t("settingsIdentity")}
         </CardTitle>
         <CardDescription>{t("settingsLetterhead")}</CardDescription>

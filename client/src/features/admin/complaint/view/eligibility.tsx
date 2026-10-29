@@ -38,18 +38,18 @@ import type {
   EligibilityAnswers,
   EligibilityStatus,
 } from "./loader";
+import { STATUS_ACTION, STATUS_ACTIVE, STATUS_NEUTRAL } from "@/lib/status";
 
 const CLOSED_STATUSES: ComplaintStatus[] = ["settled", "certified", "dismissed"];
 
+// A case the office still has to rule on is red; a case it has ruled on is a
+// record. "Eligible" is the one live outcome the accent is for.
 const STATUS_STYLE: Record<EligibilityStatus, string> = {
-  unreviewed: "border-muted-foreground/30 bg-muted text-muted-foreground",
-  eligible:
-    "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
-  needs_review:
-    "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300",
-  outside_kp: "border-destructive/30 bg-destructive/10 text-destructive",
-  rejected:
-    "border-rose-600/40 bg-rose-600/15 text-rose-700 dark:text-rose-300",
+  unreviewed: STATUS_NEUTRAL,
+  eligible: STATUS_ACTIVE,
+  needs_review: STATUS_ACTION,
+  outside_kp: STATUS_ACTION,
+  rejected: STATUS_ACTION,
 };
 
 const STATUS_KEY: Record<EligibilityStatus, Key> = {
@@ -220,7 +220,7 @@ function ReviewEligibilityModal({
           </div>
 
           {willDismiss && (
-            <p className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+            <p className={cn("rounded-md border p-3 text-sm", STATUS_ACTION)}>
               {status === "rejected"
                 ? t("eligRejectWarning")
                 : t("eligDismissWarning")}
@@ -271,19 +271,15 @@ export default function EligibilityCard({
   return (
     <Card
       className={cn(
-        complaint.eligibilityStatus === "needs_review" &&
-          "border-amber-500/40",
-        complaint.eligibilityStatus === "outside_kp" && "border-destructive/40",
-        complaint.eligibilityStatus === "rejected" && "border-destructive/40",
+        ["needs_review", "outside_kp", "rejected"].includes(
+          complaint.eligibilityStatus,
+        ) && "border-destructive/40",
       )}
     >
       <CardHeader>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <CardTitle className="flex items-center gap-2">
-              <ShieldCheck className="h-5 w-5 text-muted-foreground" />
-              {t("eligStaffTitle")}
-            </CardTitle>
+            <CardTitle>{t("eligStaffTitle")}</CardTitle>
             <CardDescription>{t("eligStaffDesc")}</CardDescription>
           </div>
           <Badge className={cn("border", STATUS_STYLE[complaint.eligibilityStatus])}>
@@ -332,7 +328,7 @@ export default function EligibilityCard({
         )}
 
         {complaint.eligibilityReason && (
-          <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3">
+          <div className="rounded-md border border-destructive/30 p-3">
             <p className="text-sm font-medium tracking-wide text-destructive uppercase">
               {t("eligRejectionReason")}
             </p>

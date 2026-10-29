@@ -1,4 +1,3 @@
-import { Image as ImageIcon } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -23,8 +22,7 @@ export default function BrandingSection({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <ImageIcon className="size-4 text-primary" />
+        <CardTitle>
           {t("settingsBranding")}
         </CardTitle>
       </CardHeader>

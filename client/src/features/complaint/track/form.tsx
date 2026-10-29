@@ -230,10 +230,7 @@ export default function Track() {
           {history.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-muted-foreground" />
-                  {t("statusHistory")}
-                </CardTitle>
+                <CardTitle>{t("statusHistory")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-6">

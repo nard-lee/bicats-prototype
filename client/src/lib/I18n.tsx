@@ -83,6 +83,9 @@ const en = {
   anDigest: "Monthly Digest",
   anDigestDesc: "The numbers the council needs for the chosen month, in one view.",
   anDigestFiled: "Filed",
+  anDigestFailed:
+    "The report couldn't be loaded. Check the connection and try again.",
+  anRetry: "Try again",
   anDigestResolved: "Resolved",
   anDigestAvgTime: "Avg. Resolution Time",
   anDigestSessions: "Sessions Held",
@@ -178,7 +181,9 @@ const en = {
   respName: "Name of respondent",
   phRespName: "Name or 'Unknown'",
   respAddress: "Respondent's purok / address",
+  respAddressOptional: "Respondent's purok / address (optional)",
   relationship: "Relationship to you",
+  relationshipOptional: "Relationship to you (optional)",
   relHint: "For example: neighbor, relative, unrelated.",
   phRel: "Neighbor",
   complaintType: "Type of complaint",
@@ -269,6 +274,7 @@ const en = {
   regSub: "For officials and staff only — approved by the Punong Barangay",
   position: "Position",
   email: "Email address",
+  emailOptional: "Email address (optional)",
   confirm: "Confirm",
   agree:
     "I agree to the system's terms and understand that my account will be reviewed by the Punong Barangay before it is activated.",
@@ -445,6 +451,9 @@ const en = {
   notifications: "Notifications",
   noNotifications: "You're all caught up.",
   markAllRead: "Mark all read",
+  notifMarkFailed: "Couldn't update your notifications.",
+  notifLoadFailed:
+    "Couldn't load your notifications. Close this and tap the bell again.",
   notifNew: "New",
   trackPhase: "Where your case is now",
   ph_received:
@@ -809,6 +818,9 @@ const tl: Record<Key, string> = {
   anDigest: "Buwanang Buod",
   anDigestDesc: "Mga numerong kailangan ng konseho sa napiling buwan, sa iisang tingin.",
   anDigestFiled: "Naihain",
+  anDigestFailed:
+    "Hindi ma-load ang ulat. Suriin ang koneksyon at subukang muli.",
+  anRetry: "Subukang muli",
   anDigestResolved: "Naresolba",
   anDigestAvgTime: "Karaniwang Panahon ng Pagresolba",
   anDigestSessions: "Mga Sesyong Naganap",
@@ -900,7 +912,9 @@ const tl: Record<Key, string> = {
   respName: "Pangalan ng inirereklamo",
   phRespName: "Pangalan o 'Hindi kilala'",
   respAddress: "Purok / address ng inirereklamo",
+  respAddressOptional: "Purok / address ng inirereklamo (opsyonal)",
   relationship: "Relasyon sa inyo",
+  relationshipOptional: "Relasyon sa inyo (opsyonal)",
   relHint: "Halimbawa: kapitbahay, kamag-anak, walang kaugnayan.",
   phRel: "Kapitbahay",
   complaintType: "Uri ng reklamo",
@@ -989,6 +1003,7 @@ const tl: Record<Key, string> = {
   regSub: "Para sa mga opisyal at kawani lamang — aprubado ng Punong Barangay",
   position: "Posisyon",
   email: "Email address",
+  emailOptional: "Email address (opsyonal)",
   confirm: "Kumpirmahin",
   agree:
     "Sumasang-ayon ako sa mga tuntunin ng system at kinikilala na ang aking account ay susuriin ng Punong Barangay bago ma-activate.",
@@ -1167,6 +1182,9 @@ const tl: Record<Key, string> = {
   notifications: "Mga Abiso",
   noNotifications: "Wala kang bagong abiso.",
   markAllRead: "Markahan lahat na nabasa",
+  notifMarkFailed: "Hindi na-update ang mga abiso mo.",
+  notifLoadFailed:
+    "Hindi ma-load ang mga abiso mo. Isara ito at pindutin muli ang kampanilya.",
   notifNew: "Bago",
   trackPhase: "Kung nasaan na ang kaso mo",
   ph_received:

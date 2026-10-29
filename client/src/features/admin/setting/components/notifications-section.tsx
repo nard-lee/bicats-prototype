@@ -1,4 +1,3 @@
-import { BellRing } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -29,8 +28,7 @@ export default function NotificationsSection({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <BellRing className="size-4 text-primary" />
+        <CardTitle>
           {t("settingsNotifications")}
         </CardTitle>
         <CardDescription>{t("notificationsHint")}</CardDescription>

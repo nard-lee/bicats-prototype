@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { readErrorMessage } from "@/lib/api-error";
-import { Pencil, Plus, Trash2, UsersRound } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -244,8 +244,7 @@ export default function LuponSection({ canEdit }: { canEdit: boolean }) {
       <CardHeader>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <CardTitle className="flex items-center gap-2">
-              <UsersRound className="size-4 text-primary" />
+            <CardTitle>
               {t("luponSectionTitle")}
             </CardTitle>
             <CardDescription>{t("luponSectionDesc")}</CardDescription>

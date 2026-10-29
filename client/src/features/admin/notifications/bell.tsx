@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router";
 import { Bell, CheckCheck } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
 import { useT } from "@/lib/I18n";
+import { DOT_ACTION, DOT_ACTIVE, DOT_NEUTRAL } from "@/lib/status";
 
 type Notification = {
   id: number;
@@ -19,24 +22,30 @@ type Notification = {
 type Payload = { items: Notification[]; unread: number };
 
 const dotColor = (type: string) => {
-  if (type === "overdue" || type === "escalation") return "bg-destructive";
-  if (type === "hearing_overdue") return "bg-amber-500";
-  if (type === "reminder") return "bg-amber-500";
-  if (type === "new_complaint") return "bg-blue-500";
-  return "bg-muted-foreground";
+  if (type === "overdue" || type === "escalation" || type === "hearing_overdue")
+    return DOT_ACTION;
+  if (type === "reminder" || type === "new_complaint") return DOT_ACTIVE;
+  return DOT_NEUTRAL;
 };
 
 export default function NotificationsBell() {
   const { t, lang } = useT();
   const { pathname } = useLocation();
   const [data, setData] = useState<Payload>({ items: [], unread: 0 });
+  // Distinguishes "nothing yet" from "nothing at all" so the panel never
+  // claims you're caught up on a request that is still in flight or failed.
+  const [loadState, setLoadState] = useState<"loading" | "ready" | "failed">(
+    "loading",
+  );
   const [open, setOpen] = useState(false);
 
   const load = useCallback(async () => {
     try {
       setData(await api.get("notifications").json<Payload>());
+      setLoadState("ready");
     } catch {
       /* not signed in / offline, keep last state */
+      setLoadState("failed");
     }
   }, []);
 
@@ -84,7 +93,9 @@ export default function NotificationsBell() {
     try {
       await api.post("notifications/read-all");
     } catch {
-      /* ignore */
+      // The dots would otherwise stay cleared until the next refresh.
+      toast.error(t("notifMarkFailed"));
+      void load();
     }
   };
 
@@ -102,7 +113,8 @@ export default function NotificationsBell() {
     try {
       await api.patch(`notifications/${id}/read`);
     } catch {
-      /* ignore */
+      toast.error(t("notifMarkFailed"));
+      void load();
     }
   };
 
@@ -118,6 +130,7 @@ export default function NotificationsBell() {
         variant="ghost"
         size="icon"
         aria-label={t("notifications")}
+        aria-expanded={open}
         className="relative"
         onClick={() => {
           setOpen((o) => !o);
@@ -135,7 +148,7 @@ export default function NotificationsBell() {
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 z-50 mt-2 w-[22rem] overflow-hidden rounded-lg border bg-popover text-popover-foreground shadow-md sm:w-96">
+          <div className="absolute right-0 z-50 mt-2 w-[min(22rem,calc(100vw-1.5rem))] overflow-hidden rounded-lg border bg-popover text-popover-foreground shadow-md sm:w-96">
             <div className="flex items-center justify-between border-b px-4 py-3">
               <span className="text-base font-semibold">{t("notifications")}</span>
               {data.unread > 0 && (
@@ -151,7 +164,16 @@ export default function NotificationsBell() {
             </div>
 
             <div className="max-h-[28rem] overflow-y-auto">
-              {data.items.length === 0 ? (
+              {loadState === "loading" ? (
+                <div className="px-4 py-6" aria-hidden="true">
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="mt-3 h-4 w-1/2" />
+                </div>
+              ) : loadState === "failed" ? (
+                <p className="px-4 py-10 text-center text-sm text-muted-foreground">
+                  {t("notifLoadFailed")}
+                </p>
+              ) : data.items.length === 0 ? (
                 <p className="px-4 py-10 text-center text-sm text-muted-foreground">
                   {t("noNotifications")}
                 </p>

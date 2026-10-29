@@ -10,6 +10,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { cn } from "cn";
 import { useT, type Key } from "@/lib/I18n";
+import { DOT_ACTIVE, DOT_NEUTRAL, STATUS_ACTION } from "@/lib/status";
 import type { Overview } from "./loader";
 
 const STATUS_ORDER = [
@@ -22,15 +23,12 @@ const STATUS_ORDER = [
   "dismissed",
 ] as const;
 
-const STATUS_DOT: Record<string, string> = {
-  received: "bg-sky-500",
-  summoned: "bg-amber-500",
-  mediation: "bg-violet-500",
-  conciliation: "bg-indigo-500",
-  settled: "bg-emerald-500",
-  certified: "bg-teal-500",
-  dismissed: "bg-rose-500",
-};
+// The bar and legend split by whether a case still needs the office, not by
+// stage: seven hues asked the eye to remember a legend, and the word beside
+// each dot already names the stage.
+const OPEN_STATUSES = ["received", "summoned", "mediation", "conciliation"];
+const statusDot = (status: string) =>
+  OPEN_STATUSES.includes(status) ? DOT_ACTIVE : DOT_NEUTRAL;
 
 const NOW = new Date();
 
@@ -159,7 +157,7 @@ export default function AdminOverview() {
                       variant={item.risk === "overdue" ? "destructive" : "secondary"}
                       className={
                         item.risk === "due_soon"
-                          ? "border-transparent bg-amber-500 text-white"
+                          ? cn("border", STATUS_ACTION)
                           : ""
                       }
                     >
@@ -274,7 +272,7 @@ export default function AdminOverview() {
                   return (
                     <div
                       key={status}
-                      className={cn("h-full", STATUS_DOT[status])}
+                      className={cn("h-full", statusDot(status))}
                       style={{ width: `${(count / statusTotal) * 100}%` }}
                       title={`${t(`st_${status}` as Key)}: ${count}`}
                     />
@@ -285,7 +283,7 @@ export default function AdminOverview() {
                 {statuses.map((status) => (
                   <span key={status} className="flex items-center gap-1.5">
                     <span
-                      className={cn("size-2 rounded-full", STATUS_DOT[status])}
+                      className={cn("size-2 rounded-full", statusDot(status))}
                     />
                     <span className="text-muted-foreground">
                       {t(`st_${status}` as Key)}
