@@ -80,6 +80,7 @@ export async function settingsAction({
   for (const key of BOOLEAN_FIELDS) payload[key] = form.get(key) === "true";
   payload.holidays = parseList(form.get("holidays"));
   payload.puroks = parseList(form.get("puroks"));
+  payload.officials = parseList(form.get("officials"));
 
   try {
     const settings = await api

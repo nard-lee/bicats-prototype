@@ -1,4 +1,4 @@
-import "dotenv/config";
+import "../src/utils/load-env.js";
 import fs from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
@@ -21,6 +21,36 @@ const RECEIVED_DEADLINE_DAYS = 1;
 const SUMMONED_DEADLINE_DAYS = 5;
 const MEDIATION_DEADLINE_DAYS = 30;
 const CONCILIATION_DEADLINE_DAYS = 15;
+
+// A Lupong Tagapamayapa seats 11 (RA 7160 §403). The numbers are fake.
+const LUPON_DEMO_MEMBERS = [
+  { fullName: "Elena Bautista", contact: "0917 555 0101" },
+  { fullName: "Ramon Salazar", contact: "0917 555 0102" },
+  { fullName: "Cecilia Dizon", contact: "0917 555 0103" },
+  { fullName: "Ferdinand Ocampo", contact: "0917 555 0104" },
+  { fullName: "Gloria Villanueva", contact: "0917 555 0105" },
+  { fullName: "Nestor Aquino", contact: "0917 555 0106" },
+  { fullName: "Marisol Del Rosario", contact: "0917 555 0107" },
+  { fullName: "Danilo Mendoza", contact: "0917 555 0108" },
+  { fullName: "Rowena Villamor", contact: "0917 555 0109" },
+  { fullName: "Alfredo Tan", contact: "0917 555 0110" },
+  { fullName: "Teresa Bagtas", contact: "0917 555 0111" },
+];
+
+// The Sangguniang Barangay as the public site lists it: PB, Vice PB, seven
+// Kagawad, and the SK Chairperson. Names may repeat the Lupon roster.
+const BARANGAY_DEMO_OFFICIALS = [
+  "Hon. Mario D. Santos — Punong Barangay",
+  "Hon. Reynaldo Rivera — Vice Punong Barangay",
+  "Hon. Lorna Villanueva — Kagawad",
+  "Hon. Ernesto Del Rosario — Kagawad",
+  "Hon. Maricel Bautista — Kagawad",
+  "Hon. Alfredo Tan — Kagawad",
+  "Hon. Daisy Mendoza — Kagawad",
+  "Hon. Ramon Salazar — Kagawad",
+  "Hon. Cecilia Dizon — Kagawad",
+  "Hon. Kristine Alegre — SK Chairperson",
+];
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -232,29 +262,37 @@ async function main() {
 
   // ---- Lupon roster, kept across reseeds so staff edits survive ----
   const rosterSelect = { id: true, fullName: true } as const;
-  let roster = await prisma.luponMember.findMany({
-    where: { isActive: true },
-    orderBy: { id: "asc" },
-    select: rosterSelect,
-  });
-
-  if (roster.length === 0) {
-    await prisma.luponMember.createMany({
-      data: [
-        { fullName: "Elena Bautista", contact: "0917 555 0101" },
-        { fullName: "Ramon Salazar", contact: "0917 555 0102" },
-        { fullName: "Cecilia Dizon", contact: "0917 555 0103" },
-        { fullName: "Ferdinand Ocampo", contact: "0917 555 0104" },
-        { fullName: "Gloria Villanueva", contact: "0917 555 0105" },
-        { fullName: "Nestor Aquino", contact: "0917 555 0106" },
-      ],
-    });
-    roster = await prisma.luponMember.findMany({
+  const readRoster = () =>
+    prisma.luponMember.findMany({
       where: { isActive: true },
       orderBy: { id: "asc" },
       select: rosterSelect,
     });
-    console.log(`✅ Seeded ${roster.length} Lupon members.`);
+  let roster = await readRoster();
+
+  if (roster.length < LUPON_DEMO_MEMBERS.length) {
+    const listed = new Set(roster.map((member) => member.fullName));
+    const missing = LUPON_DEMO_MEMBERS.filter(
+      (member) => !listed.has(member.fullName),
+    ).slice(0, LUPON_DEMO_MEMBERS.length - roster.length);
+    if (missing.length > 0) {
+      await prisma.luponMember.createMany({ data: missing });
+      roster = await readRoster();
+      console.log(`✅ Seeded ${roster.length} Lupon members.`);
+    }
+  }
+
+  // ---- Published council roster, only while the site has none ----
+  const publishedOfficials = await prisma.barangaySettings
+    .findUnique({ where: { id: 1 }, select: { officials: true } })
+    .then((row) => row?.officials ?? []);
+  if (publishedOfficials.length === 0) {
+    await prisma.barangaySettings.upsert({
+      where: { id: 1 },
+      update: { officials: BARANGAY_DEMO_OFFICIALS },
+      create: { id: 1, officials: BARANGAY_DEMO_OFFICIALS },
+    });
+    console.log(`✅ Seeded ${BARANGAY_DEMO_OFFICIALS.length} barangay officials.`);
   }
 
   // One case per lifecycle stage so every screen (list, calendar, mediation,

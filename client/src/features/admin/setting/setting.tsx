@@ -23,6 +23,7 @@ import IdentitySection from "./components/identity-section";
 import LetterheadPreview from "./components/letterhead-preview";
 import LuponSection from "./components/lupon-section";
 import NotificationsSection from "./components/notifications-section";
+import OfficialsSection from "./components/officials-section";
 import PuroksSection from "./components/puroks-section";
 import SaveBar from "./components/save-bar";
 import SchedulingSection from "./components/scheduling-section";
@@ -66,6 +67,7 @@ const FIELD_SECTIONS: Record<string, SectionId> = {
   secretaryTitle: "signatories",
   punongSignatureUrl: "signatories",
   secretarySignatureUrl: "signatories",
+  officials: "signatories",
   deadlineReceived: "deadlines",
   deadlineSummoned: "deadlines",
   deadlineMediation: "deadlines",
@@ -233,12 +235,23 @@ export default function BarangaySettingsPage() {
 
               <section hidden={active !== "signatories"}>
                 <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-                  <SignatoriesSection
-                    values={values}
-                    fields={fields}
-                    update={update}
-                    canEdit={canEdit}
-                  />
+                  <div className="min-w-0 space-y-6">
+                    <SignatoriesSection
+                      values={values}
+                      fields={fields}
+                      update={update}
+                      canEdit={canEdit}
+                    />
+                    <Card>
+                      <CardContent className="space-y-5">
+                        <OfficialsSection
+                          values={values}
+                          fields={fields}
+                          update={update}
+                        />
+                      </CardContent>
+                    </Card>
+                  </div>
                   <div className="xl:sticky xl:top-6">
                     <LetterheadPreview values={values} />
                   </div>
@@ -292,6 +305,12 @@ export default function BarangaySettingsPage() {
                 type="hidden"
                 name="puroks"
                 value={JSON.stringify(values.puroks)}
+                readOnly
+              />
+              <input
+                type="hidden"
+                name="officials"
+                value={JSON.stringify(values.officials)}
                 readOnly
               />
               {(

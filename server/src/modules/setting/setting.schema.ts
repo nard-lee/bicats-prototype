@@ -46,6 +46,12 @@ export const updateSettingsSchema = z
       .max(30)
       .transform((names) => [...new Set(names)])
       .refine((names) => names.length >= 1, "Add at least one purok"),
+    // Empty is allowed: the roster is simply not published then. Blank rows are
+    // dropped rather than rejected, since the list is edited one row at a time.
+    officials: z
+      .array(z.string().trim().max(200))
+      .max(25, "List at most 25 officials")
+      .transform((entries) => [...new Set(entries.filter(Boolean))]),
     documentOfficeLine: z
       .string()
       .trim()

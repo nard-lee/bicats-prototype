@@ -113,7 +113,18 @@ const en = {
     "Report your concerns to your barangay without having to line up. Every submission is recorded in the barangay blotter and endorsed to the Lupong Tagapamayapa when mediation is required.",
   btnFile: "File a Complaint",
   btnTrack: "Track My Complaint",
-  hallInfo: "Barangay Hall Information",
+  hallAddress: "Address",
+  hallHotline: "Hotline",
+  refHint: "You will be given a reference like 26-10-0042 to follow the case.",
+  doorStart: "Start here",
+  doorFileHint:
+    "The form takes a few minutes. Attach photos or documents if you have them.",
+  officialsLead:
+    "The Punong Barangay and the Barangay Secretary sign the notices, summonses and settlements this desk issues.",
+  luponTitle: "Lupon Tagapamayapa members",
+  luponNote:
+    "When a case reaches conciliation, the Pangkat that hears it is picked from these members.",
+  noticesLatest: "newest first",
   hallHours:
     "Monday–Friday, 8:00 AM – 5:00 PM. Barangay Tanod desk open 24/7 for emergencies",
   howTitle: "How a complaint works",
@@ -160,22 +171,6 @@ const en = {
   about3Title: "What it cannot take up",
   about3Text:
     "Criminal cases punishable by imprisonment of more than one year, disputes where the parties live in different cities or municipalities, and complaints by one barangay against a private person. These are endorsed to the proper agency.",
-
-  // home · testimonies
-  testimoniesTitle: "In their words",
-  testimoniesNote: "Sample entries for this prototype.",
-  testimony1Quote:
-    "I filed at night and had a reference number before I closed the laptop. No lining up, and no guessing whether the entry was actually made.",
-  testimony1Name: "R. Mendoza",
-  testimony1Meta: "Complainant, Purok 4",
-  testimony2Quote:
-    "We both got the reminder the day before. We showed up, settled it that same morning, and signed the settlement there.",
-  testimony2Name: "J. Villanueva",
-  testimony2Meta: "Respondent, Purok 2",
-  testimony3Quote:
-    "I could see that the case moved from mediation to the Pangkat without going to the hall every week to ask.",
-  testimony3Name: "A. Reyes",
-  testimony3Meta: "Complainant, Purok 7",
 
   // home · faq
   faqTitle: "Frequently asked questions",
@@ -408,6 +403,14 @@ const en = {
   removePurok: "Remove purok",
   puroksNote:
     "Complaints store the purok name, so renaming an entry only affects new filings.",
+  settingsOfficials: "Barangay officials",
+  officialsHint: "The people the public site lists as serving in the council.",
+  officialsLabel: "Published roster",
+  noOfficials: "No officials listed yet. Add the first one below.",
+  addOfficial: "Add official",
+  removeOfficial: "Remove official",
+  officialsNote:
+    "Shown in this order. Leave the list empty to hide the roster from the site.",
   officeLineLabel: "Office line on documents",
   officeLineHint:
     "Printed under the barangay name on summons, notices, and settlements.",
@@ -901,7 +904,19 @@ const tl: Record<Key, string> = {
     "Isumbong ang alalahanin sa inyong barangay nang hindi na kailangang pumila. Ang bawat isinumite ay itinatala sa blotter ng barangay at ipinapasa sa Lupong Tagapamayapa kapag kailangan ng mediation.",
   btnFile: "Maghain ng Reklamo",
   btnTrack: "Subaybayan ang Reklamo Ko",
-  hallInfo: "Impormasyon ng Barangay Hall",
+  hallAddress: "Address",
+  hallHotline: "Hotline",
+  refHint:
+    "Makakakuha ka ng reference number na katulad ng 26-10-0042 para masubaybayan ang kaso.",
+  doorStart: "Magsimula dito",
+  doorFileHint:
+    "Ilang minuto lang ang pormularyo. Maglakip ng larawan o dokumento kung mayroon ka.",
+  officialsLead:
+    "Ang Punong Barangay at ang Kalihim ng Barangay ang pumipirma ng mga paskil, kasulatan ng patawag at kasunduan na inilalabas ng desk na ito.",
+  luponTitle: "Mga miyembro ng Lupong Tagapamayapa",
+  luponNote:
+    "Kapag dumaan sa conciliation ang isang kaso, ang Pangkat na mamamahala ay pinili mula sa mga miyembrong ito.",
+  noticesLatest: "pinakabago muna",
   hallHours:
     "Lunes–Biyernes, 8:00 AM – 5:00 PM. Bukas 24/7 ang Barangay Tanod desk para sa mga emergency",
   howTitle: "Paano gumagana ang reklamo",
@@ -946,21 +961,6 @@ const tl: Record<Key, string> = {
   about3Title: "Ano ang hindi nito mahahawakan",
   about3Text:
     "Mga kasong kriminal na may parusang higit sa isang taon, alitan ng mga panig na nakatira sa magkaibang lungsod o munisipalidad, at reklamo ng isang barangay laban sa pribadong tao. Ipinapasa ang mga ito sa tamang ahensya.",
-
-  testimoniesTitle: "Sa kanilang mga salita",
-  testimoniesNote: "Mga halimbawang entry sa prototype na ito.",
-  testimony1Quote:
-    "Nag-file ako panggabi at may reference number bago ko isinara ang laptop. Walang pila, at hindi na nagtataka kung natalaan ba talaga.",
-  testimony1Name: "R. Mendoza",
-  testimony1Meta: "Nagreklamo, Purok 4",
-  testimony2Quote:
-    "Pareho kaming nabigyan ng paalala ng isang araw bago ang hearing. Dumating kami, napagkasunduan nang umaga na iyon, at doon din kami pumirma.",
-  testimony2Name: "J. Villanueva",
-  testimony2Meta: "Inirereklamo, Purok 2",
-  testimony3Quote:
-    "Nakita kong lumipat ang kaso mula mediatasyon papuntang Pangkat nang hindi umuuwi sa hall kada linggo para magtanong.",
-  testimony3Name: "A. Reyes",
-  testimony3Meta: "Nagreklamo, Purok 7",
 
   faqTitle: "Mga madalas itanong",
   faq1Q: "Kailangan ba pumunta sa barangay hall para magfile?",
@@ -1189,6 +1189,14 @@ const tl: Record<Key, string> = {
   removePurok: "Alisin ang purok",
   puroksNote:
     "Naka-imbak ang pangalan ng purok sa bawat reklamo, kaya ang pagpapalit ng entry ay nakakaapekto lamang sa mga bagong filing.",
+  settingsOfficials: "Mga opisyal ng barangay",
+  officialsHint: "Ang mga taong ilalagay ng public site bilang kasapi ng konseho.",
+  officialsLabel: "Nailalathalang listahan",
+  noOfficials: "Wala pang nakalistang opisyal. Magdagdag ng isa sa ibaba.",
+  addOfficial: "Magdagdag ng opisyal",
+  removeOfficial: "Alisin ang opisyal",
+  officialsNote:
+    "Ipinapakita sa pagkakasunod-sunod na ito. Kung hindi magagamit ang listahan, itinatago ito sa site.",
   officeLineLabel: "Linya ng tanggapan sa mga dokumento",
   officeLineHint:
     "Nakalimbag sa ilalim ng pangalan ng barangay sa summons, abiso, at kasunduan.",

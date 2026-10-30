@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 
+import request from "supertest";
+
+import app from "../src/app.js";
 import { prisma } from "../src/db.js";
 import { createUser, loginAgent } from "./helpers.js";
 
@@ -20,6 +23,23 @@ describe("Lupon roster", () => {
     expect(
       response.body.items.map((member: { fullName: string }) => member.fullName),
     ).toEqual(["Ben Reyes", "Zara Santos", "Ana Cruz"]);
+  });
+
+  it("publishes current members' names to the site, and nothing else", async () => {
+    await prisma.luponMember.createMany({
+      data: [
+        { fullName: "Zara Santos", contact: "0917 555 0142" },
+        { fullName: "Ana Cruz", isActive: false },
+        { fullName: "Ben Reyes" },
+      ],
+    });
+
+    const response = await request(app)
+      .get("/api/lupon-members/public")
+      .expect(200);
+
+    expect(response.body.items).toEqual(["Ben Reyes", "Zara Santos"]);
+    expect(JSON.stringify(response.body)).not.toContain("0917 555 0142");
   });
 
   it("lets an admin add, edit, deactivate, and remove a member", async () => {

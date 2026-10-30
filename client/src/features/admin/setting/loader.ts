@@ -17,6 +17,7 @@ export type BarangaySettings = {
   punongTitle: string;
   secretaryTitle: string;
   puroks: string[];
+  officials: string[];
   documentOfficeLine: string;
   hotline: string;
   tanodNumber: string;

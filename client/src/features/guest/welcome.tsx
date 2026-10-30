@@ -1,10 +1,7 @@
 import { Link, useLoaderData, useRouteLoaderData } from "react-router";
-import { Clock, FileText, MapPin, Phone, Search, Users } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { complaintTypeKeys, useT, type Key } from "@/lib/I18n";
 import type { RootLoaderData } from "@/layouts/root/loader";
-import type { PublicNoticesResponse } from "./loader";
+import type { HomeData } from "./loader";
 
 const stepKeys: { title: Key; text: Key }[] = [
   { title: "step1Title", text: "step1Text" },
@@ -19,12 +16,6 @@ const aboutKeys: { title: Key; text: Key }[] = [
   { title: "about3Title", text: "about3Text" },
 ];
 
-const testimonyKeys: { quote: Key; name: Key; meta: Key }[] = [
-  { quote: "testimony1Quote", name: "testimony1Name", meta: "testimony1Meta" },
-  { quote: "testimony2Quote", name: "testimony2Name", meta: "testimony2Meta" },
-  { quote: "testimony3Quote", name: "testimony3Name", meta: "testimony3Meta" },
-];
-
 const faqKeys: { q: Key; a: Key }[] = [
   { q: "faq1Q", a: "faq1A" },
   { q: "faq2Q", a: "faq2A" },
@@ -34,9 +25,13 @@ const faqKeys: { q: Key; a: Key }[] = [
   { q: "faq6Q", a: "faq6A" },
 ];
 
+function telHref(value: string) {
+  return `tel:${value.replace(/[^\d+]/g, "")}`;
+}
+
 export default function Home() {
   const { t, lang } = useT();
-  const { items: notices } = useLoaderData() as PublicNoticesResponse;
+  const { items: notices, luponMembers } = useLoaderData() as HomeData;
   const { settings } = useRouteLoaderData("root") as RootLoaderData;
 
   const date = (iso: string) =>
@@ -53,104 +48,232 @@ export default function Home() {
     .filter(Boolean)
     .join(", ");
 
-  const phones = [
+  const hotline = [
     settings?.hotline,
     settings?.tanodNumber ? `Tanod ${settings.tanodNumber}` : "",
   ]
     .filter(Boolean)
     .join(" · ");
 
-  const officials = [
-    [settings?.punongBarangay, settings?.punongTitle].filter(Boolean).join(", "),
-    [settings?.secretaryName, settings?.secretaryTitle].filter(Boolean).join(", "),
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  // Settings carry the whole council as "Name — Position". Until a roster is
+  // published, the page names only the two officers who sign documents.
+  const council: { name: string; title: string }[] = (
+    settings?.officials ?? []
+  ).map((entry) => {
+    const at = entry.indexOf("—");
+    return at === -1
+      ? { name: entry.trim(), title: "" }
+      : { name: entry.slice(0, at).trim(), title: entry.slice(at + 1).trim() };
+  });
 
-  const info: { icon: typeof MapPin; text: string }[] = [];
-  if (address) info.push({ icon: MapPin, text: address });
-  info.push({ icon: Clock, text: settings?.officeHours || t("hallHours") });
-  if (phones) info.push({ icon: Phone, text: phones });
-  if (officials) info.push({ icon: Users, text: officials });
+  const signatories: { name: string; title: string }[] = [
+    {
+      name: settings?.punongBarangay ?? "",
+      title: settings?.punongTitle ?? "",
+    },
+    {
+      name: settings?.secretaryName ?? "",
+      title: settings?.secretaryTitle ?? "",
+    },
+  ].filter((o) => o.name);
+
+  const officials = council.length > 0 ? council : signatories;
+
+  // The footer already carries the hall's contact block, so the hero only states
+  // what a complainant checks before they commit to filing.
+  const details: { label: string; value: string }[] = [
+    { label: t("hallAddress"), value: address },
+    { label: t("officeHours"), value: settings?.officeHours || t("hallHours") },
+  ].filter((d) => d.value);
 
   return (
     <div>
-      {/* Hero */}
-      <section className="border-b">
-        <div className="mx-auto grid max-w-6xl gap-10 px-6 py-16 lg:grid-cols-2 lg:items-center">
-          <div>
-            <p className="text-sm text-muted-foreground">{t("eyebrow")}</p>
-            <h1 className="mt-3 text-4xl font-bold tracking-tight md:text-5xl">
+      {/* Front door: the title on the left, the two ways in on a solid plate. */}
+      <section className="relative overflow-hidden border-b">
+        <img
+          aria-hidden="true"
+          alt=""
+          className="pointer-events-none absolute -left-32 top-1/2 size-[32rem] -translate-y-1/2 opacity-[0.06] sm:size-[40rem]"
+          decoding="async"
+          src="/seal-192.webp"
+        />
+        <div className="relative mx-auto grid max-w-6xl px-6 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10">
+          <div className="py-14 lg:py-24">
+            <p className="font-heading text-xs font-semibold uppercase tracking-[0.28em] text-status-ink">
+              {settings?.documentOfficeLine || t("eyebrow")}
+            </p>
+            <h1 className="mt-6 font-heading text-4xl font-extrabold leading-[1.02] tracking-tight text-balance sm:text-5xl lg:text-6xl">
               {t("heroTitle")}
             </h1>
-            <p className="mt-4 max-w-xl text-muted-foreground">
+            <p className="mt-5 max-w-xl text-base leading-7 text-muted-foreground">
               {t("heroText")}
             </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Button asChild size="lg">
-                <Link to="/file-complaint">
-                  <FileText /> {t("btnFile")}
-                </Link>
-              </Button>
-              <Button asChild size="lg" variant="outline">
-                <Link to="/track-complaint">
-                  <Search /> {t("btnTrack")}
-                </Link>
-              </Button>
-            </div>
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>{t("hallInfo")}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {info.map(({ icon: Icon, text }) => (
-                <div key={text} className="flex gap-3 text-sm">
-                  <Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-                  <p>{text}</p>
+            <dl className="mt-10 max-w-xl divide-y">
+              {details.map((d) => (
+                <div
+                  key={d.label}
+                  className="grid gap-1 py-3 sm:grid-cols-[8rem_1fr] sm:gap-6"
+                >
+                  <dt className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                    {d.label}
+                  </dt>
+                  <dd className="text-sm leading-6">{d.value}</dd>
                 </div>
               ))}
-            </CardContent>
-          </Card>
+            </dl>
+          </div>
+
+          <aside className="mb-14 mt-2 bg-primary p-7 text-primary-foreground lg:mb-24 lg:mt-24 lg:p-9">
+            <p className="font-heading text-xs font-semibold uppercase tracking-[0.28em]">
+              {t("doorStart")}
+            </p>
+            <div className="mt-3 divide-y divide-primary-foreground/30">
+              {[
+                {
+                  to: "/file-complaint",
+                  label: t("btnFile"),
+                  hint: t("doorFileHint"),
+                },
+                {
+                  to: "/track-complaint",
+                  label: t("btnTrack"),
+                  hint: t("refHint"),
+                },
+              ].map((a) => (
+                <Link
+                  key={a.to}
+                  to={a.to}
+                  className="group block py-6 first:pt-4 last:pb-4"
+                >
+                  <span className="flex items-baseline justify-between gap-4 font-heading text-xl font-bold tracking-tight sm:text-2xl">
+                    {a.label}
+                    <span
+                      aria-hidden="true"
+                      className="leading-none transition-transform duration-200 group-hover:translate-x-1"
+                    >
+                      →
+                    </span>
+                  </span>
+                  <span className="mt-1.5 block text-sm leading-6">{a.hint}</span>
+                </Link>
+              ))}
+            </div>
+            {hotline && (
+              <p className="mt-7 border-t border-primary-foreground/30 pt-4 text-sm">
+                {t("hallHotline")}{" "}
+                <a
+                  className="font-semibold underline underline-offset-4 hover:decoration-2"
+                  href={telHref(hotline)}
+                >
+                  {hotline}
+                </a>
+              </p>
+            )}
+          </aside>
         </div>
       </section>
 
-      {/* How it works */}
-      <section className="border-b">
-        <div className="mx-auto max-w-6xl px-6 py-14">
-          <h2 className="text-2xl font-semibold">{t("howTitle")}</h2>
-          <ol className="mt-8 grid gap-x-8 gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Process: numbered stops on a single rule, not a card row. */}
+      <section className="border-b bg-muted/30">
+        <div className="mx-auto max-w-6xl px-6 py-16">
+          <h2 className="font-heading text-2xl font-bold tracking-tight">
+            {t("howTitle")}
+          </h2>
+          <ol className="mt-10 grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
             {stepKeys.map((s, i) => (
-              <li key={s.title} className="border-t pt-4">
-                <h3 className="text-base font-semibold">
-                  <span
-                    aria-hidden="true"
-                    className="mr-2 text-sm tabular-nums text-muted-foreground"
-                  >
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  {t(s.title)}
-                </h3>
-                <p className="mt-2 text-sm text-muted-foreground">{t(s.text)}</p>
+              <li key={s.title} className="border-t-2 border-foreground/15 pt-5">
+                <p
+                  aria-hidden="true"
+                  className="font-heading text-4xl font-extrabold leading-none tracking-tight text-foreground/20"
+                >
+                  {String(i + 1).padStart(2, "0")}
+                </p>
+                <h3 className="mt-4 text-base font-semibold">{t(s.title)}</h3>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  {t(s.text)}
+                </p>
               </li>
             ))}
           </ol>
         </div>
       </section>
 
-      {/* About */}
+      {/* Notice board on its own row. */}
       <section className="border-b">
-        <div className="mx-auto max-w-6xl px-6 py-14">
-          <h2 className="text-2xl font-semibold">{t("aboutTitle")}</h2>
-          <p className="mt-4 max-w-3xl text-sm leading-6 text-muted-foreground">
+        <div className="mx-auto max-w-6xl px-6 py-16">
+          <div className="flex items-baseline justify-between gap-4">
+            <h2 className="font-heading text-2xl font-bold tracking-tight">
+              {t("noticesTitle")}
+            </h2>
+            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+              {t("noticesLatest")}
+            </p>
+          </div>
+          {notices.length === 0 ? (
+            <p className="mt-6 border-t pt-6 text-sm text-muted-foreground">
+              {t("noticesEmpty")}
+            </p>
+          ) : (
+            <ul className="mt-2 divide-y">
+              {notices.map((n) => (
+                <li
+                  key={n.id}
+                  className="grid gap-2 py-6 first:pt-4 sm:grid-cols-[8.5rem_1fr] sm:gap-8"
+                >
+                  <time className="text-sm tabular-nums text-muted-foreground">
+                    {date(n.createdAt)}
+                  </time>
+                  <div className="max-w-3xl">
+                    <h3 className="text-base font-semibold">{n.title}</h3>
+                    <p className="mt-1.5 text-sm leading-6 whitespace-pre-line text-muted-foreground">
+                      {n.body}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </section>
+
+      {/* What this desk takes up. */}
+      <section className="border-b bg-muted/30">
+        <div className="mx-auto max-w-6xl px-6 py-16">
+          <h2 className="font-heading text-2xl font-bold tracking-tight">
+            {t("typesTitle")}
+          </h2>
+          <ul className="mt-8 grid gap-x-12 text-sm sm:grid-cols-2 lg:grid-cols-3">
+            {complaintTypeKeys.map((k) => (
+              <li key={k} className="border-b py-2.5">
+                {t(k)}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-8 max-w-3xl border-l-2 border-status-ink pl-4 text-sm leading-6 text-muted-foreground">
+            {t("typesNote")}
+          </p>
+        </div>
+      </section>
+
+      {/* About, separated by vertical rules instead of stacked borders. */}
+      <section className="border-b">
+        <div className="mx-auto max-w-6xl px-6 py-16">
+          <h2 className="font-heading text-2xl font-bold tracking-tight">
+            {t("aboutTitle")}
+          </h2>
+          <p className="mt-4 max-w-3xl text-sm leading-7 text-muted-foreground">
             {t("aboutText")}
           </p>
-          <div className="mt-8 grid gap-x-8 gap-y-8 sm:grid-cols-3">
-            {aboutKeys.map((item) => (
-              <div key={item.title} className="border-t pt-4">
-                <h3 className="text-base font-semibold">{t(item.title)}</h3>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+          <div className="mt-10 grid gap-8 sm:grid-cols-3 sm:gap-0">
+            {aboutKeys.map((item, i) => (
+              <div
+                key={item.title}
+                className={i === 0 ? "" : "sm:border-l sm:border-border sm:pl-8"}
+              >
+                <h3 className="font-heading text-sm font-semibold uppercase tracking-[0.18em]">
+                  {t(item.title)}
+                </h3>
+                <p className="mt-3 text-sm leading-6 text-muted-foreground">
                   {t(item.text)}
                 </p>
               </div>
@@ -159,82 +282,91 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Notices + complaint types, stacked */}
-      <section className="border-b">
-        <div className="mx-auto flex max-w-6xl flex-col gap-12 px-6 py-14">
-          <div>
-            <h2 className="text-2xl font-semibold">{t("noticesTitle")}</h2>
-            <div className="mt-6 space-y-4">
-              {notices.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{t("noticesEmpty")}</p>
-              ) : (
-                notices.map((n) => (
-                  <Card key={n.id} className="border-l-4 border-l-primary">
-                    <CardHeader>
-                      <p className="text-sm uppercase text-muted-foreground">
-                        {date(n.createdAt)}
+      {/* The people behind the desk: the council in office, and the members who hear. */}
+      {(officials.length > 0 || luponMembers.length > 0) && (
+        <section className="border-b bg-muted/30">
+          <div className="mx-auto max-w-6xl px-6 py-16">
+            <h2 className="font-heading text-2xl font-bold tracking-tight">
+              {t("settingsOfficials")}
+            </h2>
+
+            {officials.length > 0 && (
+              <>
+                {council.length === 0 && (
+                  <p className="mt-4 max-w-3xl text-sm leading-7 text-muted-foreground">
+                    {t("officialsLead")}
+                  </p>
+                )}
+                <ul className="mt-8 grid gap-x-12 text-sm sm:grid-cols-2">
+                  {officials.map((o, i) => (
+                    <li key={`${o.name}-${i}`} className="border-b py-4">
+                      <p className="font-heading text-base font-semibold tracking-tight">
+                        {o.name}
                       </p>
-                      <CardTitle className="text-base">{n.title}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="whitespace-pre-line text-sm text-muted-foreground">
-                      {n.body}
-                    </CardContent>
-                  </Card>
-                ))
-              )}
-            </div>
-          </div>
+                      {o.title && (
+                        <p className="mt-0.5 text-muted-foreground">{o.title}</p>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
 
-          <div>
-            <h2 className="text-2xl font-semibold">{t("typesTitle")}</h2>
-            <p className="mt-4 max-w-3xl text-sm leading-6">
-              {complaintTypeKeys.map((k) => t(k)).join(" · ")}
-            </p>
-            <p className="mt-4 text-sm text-muted-foreground">
-              {t("typesNote")}
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonies */}
-      <section className="border-b">
-        <div className="mx-auto max-w-3xl px-6 py-14">
-          <h2 className="text-2xl font-semibold">{t("testimoniesTitle")}</h2>
-          <ul className="mt-6 divide-y">
-            {testimonyKeys.map((item) => (
-              <li key={item.name} className="py-6 first:pt-0 last:pb-0">
-                <figure>
-                  <blockquote className="text-sm leading-6">
-                    “{t(item.quote)}”
-                  </blockquote>
-                  <figcaption className="mt-3 text-sm text-muted-foreground">
-                    {t(item.name)} · {t(item.meta)}
-                  </figcaption>
-                </figure>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-6 text-sm text-muted-foreground">
-            {t("testimoniesNote")}
-          </p>
-        </div>
-      </section>
-
-      {/* FAQ */}
-      <section>
-        <div className="mx-auto max-w-3xl px-6 py-14">
-          <h2 className="text-2xl font-semibold">{t("faqTitle")}</h2>
-          <div className="mt-6 divide-y">
-            {faqKeys.map((item) => (
-              <details key={item.q} className="py-4 first:pt-0 last:pb-0">
-                <summary className="cursor-pointer text-sm font-medium">
-                  {t(item.q)}
-                </summary>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  {t(item.a)}
+            {luponMembers.length > 0 && (
+              <div className="mt-12">
+                <h3 className="font-heading text-sm font-semibold uppercase tracking-[0.18em]">
+                  {t("luponTitle")}
+                </h3>
+                <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">
+                  {t("luponNote")}
                 </p>
-              </details>
+                <ul className="mt-6 grid gap-x-12 text-sm sm:grid-cols-2 lg:grid-cols-3">
+                  {luponMembers.map((name, i) => (
+                    <li key={`${name}-${i}`} className="border-b py-2.5">
+                      {name}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* FAQ in two columns so the questions read at a glance. */}
+      <section>
+        <div className="mx-auto max-w-6xl px-6 py-16">
+          <h2 className="font-heading text-2xl font-bold tracking-tight">
+            {t("faqTitle")}
+          </h2>
+          <div className="mt-8 grid gap-x-12 md:grid-cols-2">
+            {[0, 1].map((column) => (
+              <div key={column} className="divide-y">
+                {faqKeys
+                  .slice(
+                    column * Math.ceil(faqKeys.length / 2),
+                    (column + 1) * Math.ceil(faqKeys.length / 2),
+                  )
+                  .map((item) => (
+                    <details
+                      key={item.q}
+                      className="group py-5 first:pt-0 last:pb-0"
+                    >
+                      <summary className="flex cursor-pointer list-none items-start justify-between gap-4 text-sm font-medium [&::-webkit-details-marker]:hidden">
+                        {t(item.q)}
+                        <span
+                          aria-hidden="true"
+                          className="font-heading text-lg leading-none text-status-ink transition-transform duration-200 group-open:rotate-45"
+                        >
+                          +
+                        </span>
+                      </summary>
+                      <p className="mt-2.5 max-w-xl text-sm leading-6 text-muted-foreground">
+                        {t(item.a)}
+                      </p>
+                    </details>
+                  ))}
+              </div>
             ))}
           </div>
         </div>

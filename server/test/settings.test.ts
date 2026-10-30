@@ -241,6 +241,45 @@ describe("settings guardrails", () => {
     });
   });
 
+  it("publishes the officials roster, trimming duplicates and allowing none", async () => {
+    await createUser("admin");
+    const { agent, token } = await loginAgent("admin");
+
+    await updateSettings(agent, token, {
+      officials: [
+        "Hon. Mario D. Santos — Punong Barangay",
+        "  Hon. Bea Salcedo — Kagawad  ",
+        "Hon. Mario D. Santos — Punong Barangay",
+      ],
+    });
+
+    const published = await request(app).get("/api/settings").expect(200);
+    expect(published.body.officials).toEqual([
+      "Hon. Mario D. Santos — Punong Barangay",
+      "Hon. Bea Salcedo — Kagawad",
+    ]);
+
+    const padded = {
+      ...(await settingsPayload(agent)),
+      officials: ["Hon. Bea Salcedo — Kagawad", "  ", ""],
+    };
+    const dropped = await agent
+      .patch("/api/settings")
+      .set("x-csrf-token", token)
+      .send(padded)
+      .expect(200);
+    expect(dropped.body.officials).toEqual(["Hon. Bea Salcedo — Kagawad"]);
+
+    const cleared = { ...(await settingsPayload(agent)), officials: [] };
+    await agent
+      .patch("/api/settings")
+      .set("x-csrf-token", token)
+      .send(cleared)
+      .expect(200);
+    const hidden = await request(app).get("/api/settings").expect(200);
+    expect(hidden.body.officials).toEqual([]);
+  });
+
   it("uses the configured pre-session reminder lead time", async () => {
     await createUser("admin");
     const complaintId = await filedComplaintId();

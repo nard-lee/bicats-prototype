@@ -21,6 +21,17 @@ const luponService = {
     });
   },
 
+  // What the public site may say about the body: names of current members only.
+  async listPublicNames() {
+    const members = await prisma.luponMember.findMany({
+      where: { isActive: true },
+      orderBy: { fullName: "asc" },
+      select: { fullName: true },
+    });
+
+    return members.map((member) => member.fullName);
+  },
+
   async create(input: CreateLuponMemberInput) {
     return prisma.luponMember.create({
       data: { fullName: input.fullName, contact: input.contact },

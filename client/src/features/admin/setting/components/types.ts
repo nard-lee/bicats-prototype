@@ -37,6 +37,7 @@ export function toValues(settings: BarangaySettings): Values {
     punongTitle: settings.punongTitle,
     secretaryTitle: settings.secretaryTitle,
     puroks: settings.puroks,
+    officials: settings.officials,
     documentOfficeLine: settings.documentOfficeLine,
     hotline: settings.hotline,
     tanodNumber: settings.tanodNumber,

@@ -23,6 +23,10 @@ const luponController = {
     res.json({ items: await luponService.list() });
   },
 
+  async listPublic(_req: Request, res: Response): Promise<void> {
+    res.json({ items: await luponService.listPublicNames() });
+  },
+
   async create(req: Request, res: Response): Promise<void> {
     const input = validateRequest(createLuponMemberSchema, req.body);
     const created = await luponService.create(input);
