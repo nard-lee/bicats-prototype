@@ -4,7 +4,7 @@ import { prisma } from "@/db.js";
 import { CustomError } from "@/utils/custom.exception.js";
 import auditService from "@/modules/audit/audit.service.js";
 import type { LoginInput, LoginResult, RefreshResult } from "./auth.schema.js";
-import { generateRefreshToken, signAccessToken } from "@/utils/jwt.js";
+import { generateRefreshToken, hashRefreshToken, signAccessToken } from "@/utils/jwt.js";
 import { config } from "@/utils/env.config.js";
 
 const REFRESH_TTL_MS = config.refreshTokenExpiresInDays * 24 * 60 * 60 * 1000;
@@ -80,7 +80,7 @@ const authService = {
 
     await prisma.refreshToken.create({
       data: {
-        token: refreshToken,
+        tokenHash: hashRefreshToken(refreshToken),
         userId: user.id,
         expiresAt,
         remember: request.remember,
@@ -96,7 +96,7 @@ const authService = {
 
   async refresh(oldRefreshToken: string, ip: string | null = null): Promise<RefreshResult> {
     const stored = await prisma.refreshToken.findUnique({
-      where: { token: oldRefreshToken },
+      where: { tokenHash: hashRefreshToken(oldRefreshToken) },
       include: {
         user: { select: { id: true, role: true, fullName: true, isActive: true } },
       },
@@ -130,7 +130,7 @@ const authService = {
 
     await prisma.refreshToken.create({
       data: {
-        token: newRefreshToken,
+        tokenHash: hashRefreshToken(newRefreshToken),
         userId: stored.user.id,
         expiresAt,
         remember: stored.remember,
@@ -151,7 +151,7 @@ const authService = {
     // Tombstone instead of delete so a replay of the logged-out cookie is
     // still caught by refresh().
     await prisma.refreshToken.updateMany({
-      where: { token: refreshToken, revokedAt: null },
+      where: { tokenHash: hashRefreshToken(refreshToken), revokedAt: null },
       data: { revokedAt: new Date() },
     });
   },

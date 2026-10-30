@@ -33,7 +33,7 @@ CREATE TABLE "User" (
 -- CreateTable
 CREATE TABLE "RefreshToken" (
     "id" SERIAL NOT NULL,
-    "token" TEXT NOT NULL,
+    "tokenHash" TEXT NOT NULL,
     "userId" INTEGER NOT NULL,
     "expiresAt" TIMESTAMP(3) NOT NULL,
     "remember" BOOLEAN NOT NULL DEFAULT false,
@@ -226,6 +226,7 @@ CREATE TABLE "BarangaySettings" (
     "punongTitle" TEXT NOT NULL DEFAULT 'Punong Barangay / Chairman, Lupong Tagapamayapa',
     "secretaryTitle" TEXT NOT NULL DEFAULT 'Barangay Secretary / Secretary, Lupong Tagapamayapa',
     "puroks" TEXT[] DEFAULT ARRAY['Session Road', 'Assumption Road', 'Mabini Street', 'General Luna Road', 'Fr. Carlu Street']::TEXT[],
+    "officials" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "documentOfficeLine" TEXT NOT NULL DEFAULT 'Office of the Punong Barangay',
     "hotline" TEXT NOT NULL DEFAULT '',
     "tanodNumber" TEXT NOT NULL DEFAULT '',
@@ -272,7 +273,7 @@ CREATE INDEX "User_role_isActive_idx" ON "User"("role", "isActive");
 CREATE INDEX "User_createdAt_idx" ON "User"("createdAt");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "RefreshToken_token_key" ON "RefreshToken"("token");
+CREATE UNIQUE INDEX "RefreshToken_tokenHash_key" ON "RefreshToken"("tokenHash");
 
 -- CreateIndex
 CREATE INDEX "LuponMember_isActive_fullName_idx" ON "LuponMember"("isActive", "fullName");

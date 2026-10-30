@@ -18,3 +18,11 @@ export function verifyAccessToken(token: string): JwtPayload {
 export function generateRefreshToken(): string {
   return crypto.randomBytes(40).toString('hex');
 }
+
+// Refresh tokens are stored as a digest, so a database dump yields strings
+// that cannot be spent. SHA-256 is enough here because the token is 40 random
+// bytes: unlike a password there is no dictionary to search, so nothing is
+// gained by a slow hash.
+export function hashRefreshToken(token: string): string {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}

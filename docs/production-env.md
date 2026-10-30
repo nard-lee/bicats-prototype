@@ -2,8 +2,24 @@
 
 Every variable below is read by `server/src/utils/env.config.ts`, which throws on
 a missing required one — the service refuses to boot rather than start half-wired.
+The two object-storage and evidence URL knobs (`STORAGE_BUCKET`, `PUBLIC_API_URL`)
+are read directly from `process.env` by `storage.ts` and `complaint.helpers.ts`.
 Set them in Render → your service → **Environment**, then **Apply & Restart**.
 Treat secrets as "Secret text"; the rest can be plain values.
+
+## Which file is the source, locally
+
+- `server/.env` — the only file the app reads for its own settings, resolved from
+  `server/src/utils/load-env.js` so it loads from any working directory.
+- `.env.local` (repo root) — written by `neon env pull`; loaded *after* `server/.env`
+  and only for keys that are still unset, so it supplies the `AWS_*` credentials
+  that switch dev uploads to the bucket. It can never replace `DATABASE_URL` or a
+  secret set in `server/.env`.
+- Nothing reads a `.env.production`. Production values live in Render; keep any
+  local note of them out of the repo, since `.env.*` is only ignored by pattern
+  and a stray copy is still a secret file.
+- The client needs no env file: it is same-origin and reaches the API through the
+  Vite proxy (`client/vite.config.ts`).
 
 ## Required — the app will not start without these
 
@@ -41,6 +57,7 @@ an env file.
 | `BREVO_SENDER_EMAIL` | empty | From-address on complainant notices |
 | `BREVO_SENDER_NAME` | `Barangay Kabayanihan` | From-name the resident sees. Brevo keys its sender identity on the name + address pair, so re-activate this combination at app.brevo.com/settings/senders or sends are refused |
 | `BREVO_API_URL` | `https://api.brevo.com/v3/smtp/email` | Email endpoint |
+| `PUBLIC_API_URL` | `http://localhost:3000` | Origin used to build `/uploads/…` evidence URLs. Only read when object storage is **off**, so on Render (bucket configured) it changes nothing |
 
 A blank key disables the channel: sends are skipped and nothing is written to the
 audit log at all, so confirm the enabled state after deploy with
@@ -101,10 +118,40 @@ notifications tab also reads.
   generated from `schema.prisma`; use it for a fresh database or a preview branch.
 - CI regenerates the baseline and fails if it differs from the committed one, so
   a schema edit that forgets the migrations folder is caught in the pull request.
+- **Refresh tokens are hashed at rest** (2026-10-29): `RefreshToken.tokenHash`
+  holds the SHA-256 digest of the cookie value, so a database dump yields
+  strings that cannot be spent. Production still has the plaintext `token`
+  column, so the cutover is two additive steps before the deploy and one
+  destructive step after it:
+
+  ```sql
+  -- 1. Before deploying. Additive; the running build keeps working.
+  BEGIN;
+  ALTER TABLE "RefreshToken" ADD COLUMN IF NOT EXISTS "tokenHash" TEXT;
+  UPDATE "RefreshToken"
+     SET "tokenHash" = encode(sha256(convert_to("token", 'UTF8')), 'hex')
+   WHERE "tokenHash" IS NULL;
+  ALTER TABLE "RefreshToken" ALTER COLUMN "tokenHash" SET NOT NULL;
+  -- The old build inserts "token"; the new one leaves it out.
+  ALTER TABLE "RefreshToken" ALTER COLUMN "token" DROP NOT NULL;
+  CREATE UNIQUE INDEX IF NOT EXISTS "RefreshToken_tokenHash_key"
+    ON "RefreshToken"("tokenHash");
+  COMMIT;
+  ```
+
+  Backfilling from the column itself means nobody is logged out: the stored
+  digest is computed from the same value the client's cookie holds, so existing
+  sessions rotate normally. Then deploy, sign in, and confirm `/api/auth/refresh`
+  works.
+
+  ```sql
+  -- 2. After the deploy is verified. Destroys the plaintext tokens, which is
+  -- the point of the change; needs explicit sign-off.
+  ALTER TABLE "RefreshToken" DROP COLUMN "token";
+  ```
 
 ## Still open, by choice
 
 - Demo accounts still carry the seeded `password123` password. Not rotated here.
 - Rate limiting uses the in-memory store, so cold starts reset public intake caps.
-- Refresh tokens are stored as plaintext in Postgres.
 - `docs/SDD.md` and `docs/sddv2.md` still describe the older `BK-` reference form.

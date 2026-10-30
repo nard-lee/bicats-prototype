@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import app from "../src/app.js";
 import authService from "../src/modules/auth/auth.service.js";
 import { prisma } from "../src/db.js";
+import { hashRefreshToken } from "../src/utils/jwt.js";
 import {
   PASSWORD,
   createUser,
@@ -137,6 +138,35 @@ describe("authentication", () => {
     expect(refreshed.body.message).toBe("Invalid session");
   });
 
+  it("stores only a digest of the refresh token", async () => {
+    const user = await createUser("admin");
+    const agent = request.agent(app);
+    const csrf = await csrfToken(agent);
+
+    const login = await agent
+      .post("/api/auth/log-in")
+      .set("x-csrf-token", csrf)
+      .send({ identifier: "admin", password: PASSWORD })
+      .expect(200);
+
+    const raw = refreshTokenFrom(login.headers)!;
+    const stored = await prisma.refreshToken.findFirst({
+      where: { userId: user.id },
+    });
+
+    // The row holds the digest of the cookie value, not the cookie value.
+    expect(stored!.tokenHash).toBe(hashRefreshToken(raw));
+    expect(stored!.tokenHash).toHaveLength(64);
+    expect(stored!.tokenHash).not.toBe(raw);
+
+    // The stored digest is not itself a spendable session.
+    await expect(
+      authService.refresh(stored!.tokenHash),
+    ).rejects.toMatchObject({ statusCode: 401 });
+
+    await agent.get("/api/auth/me").expect(200);
+  });
+
   it("rotates the refresh token and keeps the access token working", async () => {
     const user = await createUser("secretary");
     const agent = request.agent(app);
@@ -158,7 +188,7 @@ describe("authentication", () => {
       .expect(200);
 
     const storedOld = await prisma.refreshToken.findUnique({
-      where: { token: oldRefreshToken! },
+      where: { tokenHash: hashRefreshToken(oldRefreshToken!) },
     });
     // Rotation tombstones the old token instead of deleting it, so replays
     // stay detectable.

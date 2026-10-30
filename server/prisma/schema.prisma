@@ -80,7 +80,9 @@ model User {
 
 model RefreshToken {
   id        Int      @id @default(autoincrement())
-  token     String    @unique
+  // SHA-256 of the token sent to the client. A dump of this table yields
+  // strings that cannot be spent.
+  tokenHash String    @unique
   userId    Int
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
@@ -358,6 +360,11 @@ model BarangaySettings {
 
   // Purok choices offered by the public filing form
   puroks String[] @default(["Session Road", "Assumption Road", "Mabini Street", "General Luna Road", "Fr. Carlu Street"])
+
+  // The full Sangguniang Barangay as published on the site: one entry per
+  // official, "Name — Position". Members of the Lupong Tagapamayapa are a
+  // separate roster (LuponMember) and may repeat these names.
+  officials String[] @default([])
 
   // Line printed under the barangay name on KP documents
   documentOfficeLine String @default("Office of the Punong Barangay")
