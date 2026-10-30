@@ -1,4 +1,4 @@
-import "dotenv/config";
+import "../src/utils/load-env.js";
 
 function nameOf(url: URL): string {
   return decodeURIComponent(url.pathname.replace(/^\//, ""));

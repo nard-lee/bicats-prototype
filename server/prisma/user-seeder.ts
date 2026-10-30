@@ -1,4 +1,4 @@
-import "dotenv/config";
+import "../src/utils/load-env.js";
 import argon2 from "argon2";
 import { prisma } from "../src/db";
 

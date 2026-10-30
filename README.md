@@ -22,6 +22,11 @@ pnpm db:seed:users        # login: james12 / password123 (admin)
 pnpm db:seed              # optional sample complaints
 ```
 
+The client needs no env file — it reaches the API through the Vite proxy.
+Object storage is optional: `neon env pull` at the repo root writes the branch's
+`AWS_*` credentials into `.env.local`, which the server picks up on the next
+start, and uploads then go to the bucket instead of `server/uploads/`.
+
 ## Run
 
 Two terminals from the root:

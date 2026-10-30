@@ -9,9 +9,13 @@ process.env.JWT_SECRET ??= "test-jwt-secret";
 process.env.CSRF_SECRET ??= "test-csrf-secret";
 process.env.JWT_EXPIRES_IN ??= "900";
 process.env.CORS_ORIGIN ??= "http://localhost:5173";
-// Keep the suite offline: the real .env may hold live SMS/email provider keys.
+// Keep the suite offline: the real .env may hold live SMS/email provider keys,
+// and the branch storage credentials would send test uploads to the bucket.
 process.env.UNISMS_SECRET_KEY = "";
 process.env.BREVO_API_KEY = "";
+process.env.AWS_ACCESS_KEY_ID = "";
+process.env.AWS_SECRET_ACCESS_KEY = "";
+process.env.AWS_ENDPOINT_URL_S3 = "";
 
 const { prisma } = await import("../src/db.js");
 

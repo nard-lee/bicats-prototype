@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import './load-env.js';
 import { storageEnabled } from './storage.js';
 
 function requireEnv(key: string): string {

@@ -1,4 +1,4 @@
-import "dotenv/config";
+import "../src/utils/load-env.js";
 import fs from "node:fs/promises";
 import path from "node:path";
 

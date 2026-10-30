@@ -1,4 +1,4 @@
-import "dotenv/config";
+import "../src/utils/load-env.js";
 import { prisma } from "../src/db";
 
 // Demo audit trail so the admin "Audit Logs" page is populated on a fresh DB.
