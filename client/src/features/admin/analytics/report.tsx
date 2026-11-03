@@ -221,11 +221,8 @@ export default function AdminReport() {
       <PrintReport scopeLabel={scopeLabel} digest={digest} digestRows={digestRows} />
 
       <div className="space-y-6 print:hidden">
-        <header className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1 className="font-heading text-2xl font-bold tracking-tight">{t("adminAnalytics")}</h1>
-            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{t("anSubtitle")}</p>
-          </div>
+        <header className="flex flex-wrap items-center justify-end gap-4">
+          <h1 className="sr-only">{t("adminAnalytics")}</h1>
           <ScopeControls
             value={scopeValue}
             onValueChange={setScopeValue}

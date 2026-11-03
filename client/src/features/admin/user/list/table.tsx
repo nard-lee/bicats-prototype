@@ -48,13 +48,11 @@ export default function StaffAccounts() {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">{t("adminAccounts")}</h1>
-          <p className="text-sm text-muted-foreground">
-            {total} {hasFilters ? "matching account(s)" : "total"}
-          </p>
-        </div>
+      <div className="flex flex-wrap items-center justify-end gap-4">
+        <h1 className="sr-only">{t("adminAccounts")}</h1>
+        <p className="text-sm text-muted-foreground">
+          {total} {hasFilters ? "matching account(s)" : "total"}
+        </p>
         <Button asChild>
           <Link to="/admin/create">
             <Plus className="mr-2 h-4 w-4" />

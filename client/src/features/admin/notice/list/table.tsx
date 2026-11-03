@@ -66,11 +66,9 @@ export default function NoticesList() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Notices</h1>
-          <p className="text-sm text-muted-foreground">{total} total</p>
-        </div>
+      <div className="flex items-center justify-end gap-4">
+        <h1 className="sr-only">Notices</h1>
+        <p className="text-sm text-muted-foreground">{total} total</p>
         <Button asChild>
           <Link to="/admin/notices/create">
             <Plus className="mr-2 h-4 w-4" /> New Notice

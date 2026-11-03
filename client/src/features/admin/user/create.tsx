@@ -6,7 +6,7 @@ import {
     useActionData,
     useNavigation,
 } from "react-router";
-import { UserPlus, AlertCircle, InfoIcon, ArrowLeft } from "lucide-react";
+import { AlertCircle, InfoIcon, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -53,21 +53,7 @@ export default function CreateUser() {
                     </Link>
                 </Button>
 
-                {/* Header */}
-                <div className="flex flex-col items-center gap-3 text-center">
-                    <div className="flex size-16 items-center justify-center rounded-2xl bg-primary/5 text-primary dark:text-status-ink">
-                        <UserPlus className="size-8" />
-                    </div>
-
-                    <div className="space-y-2">
-                        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                            {t("adminCreate")}
-                        </h1>
-                        <p className="text-base text-muted-foreground">
-                            {t("staffOnly")}
-                        </p>
-                    </div>
-                </div>
+                <h1 className="sr-only">{t("adminCreate")}</h1>
 
                 {/* Form card */}
                 <div className="rounded-2xl sm:p-8 lg:p-10">

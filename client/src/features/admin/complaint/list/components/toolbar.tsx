@@ -57,13 +57,8 @@ export default function Toolbar({
 
   return (
     <>
-      <div className="flex shrink-0 flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="font-heading text-2xl font-bold tracking-tight">
-            {t("adminComplaints")}
-          </h1>
-          <p className="text-sm text-muted-foreground">{t("clSubtitle")}</p>
-        </div>
+      <div className="flex shrink-0 flex-wrap items-center justify-end gap-3">
+        <h1 className="sr-only">{t("adminComplaints")}</h1>
         <ComplaintSearch defaultValue={q} />
       </div>
 

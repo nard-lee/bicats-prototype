@@ -5,7 +5,7 @@ import {
   useLoaderData,
   useNavigation,
 } from "react-router";
-import { ArrowLeft, AlertCircle, CheckCircle2, UserRound } from "lucide-react";
+import { ArrowLeft, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -55,15 +55,7 @@ export default function Profile() {
         </Link>
       </Button>
 
-      <div className="flex items-center gap-4">
-        <div className="flex size-14 items-center justify-center rounded-2xl bg-primary/5 text-primary dark:text-status-ink">
-          <UserRound className="size-7" />
-        </div>
-        <div>
-          <h1 className="font-heading text-2xl font-bold tracking-tight">{t("myProfile")}</h1>
-          <p className="text-sm text-muted-foreground">{t("profileSub")}</p>
-        </div>
-      </div>
+      <h1 className="sr-only">{t("myProfile")}</h1>
 
       <Card>
         <CardHeader>

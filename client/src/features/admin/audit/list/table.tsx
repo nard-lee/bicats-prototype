@@ -116,11 +116,8 @@ export default function AuditLog() {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">{t("adminAudit")}</h1>
-          <p className="text-sm text-muted-foreground">{t("auditSubtitle")}</p>
-        </div>
+      <div className="flex flex-wrap items-center justify-end gap-4">
+        <h1 className="sr-only">{t("adminAudit")}</h1>
         <Badge variant="secondary">
           {total} {hasFilters ? "matching" : "total"}
         </Badge>

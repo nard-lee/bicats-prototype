@@ -22,12 +22,12 @@ export default function CreateNotice() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div className="flex items-center gap-2">
+        <h1 className="sr-only">Create Notice</h1>
         <Button asChild variant="ghost" size="sm">
           <Link to="/admin/notices">
             <ArrowLeft className="mr-2 h-4 w-4" /> Back
           </Link>
         </Button>
-        <h1 className="text-2xl font-semibold">Create Notice</h1>
       </div>
 
       <Card>
