@@ -120,9 +120,10 @@ notifications tab also reads.
   a schema edit that forgets the migrations folder is caught in the pull request.
 - **Refresh tokens are hashed at rest** (2026-10-29): `RefreshToken.tokenHash`
   holds the SHA-256 digest of the cookie value, so a database dump yields
-  strings that cannot be spent. Production still has the plaintext `token`
-  column, so the cutover is two additive steps before the deploy and one
-  destructive step after it:
+  strings that cannot be spent. The plaintext `token` column is gone from
+  production (dropped 2026-11-03, after the digest build was verified). For
+  another environment that still has it, the cutover is two additive steps
+  before the deploy and one destructive step after it:
 
   ```sql
   -- 1. Before deploying. Additive; the running build keeps working.
