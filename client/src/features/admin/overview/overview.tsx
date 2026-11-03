@@ -73,13 +73,8 @@ export default function AdminOverview() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="font-heading text-2xl font-bold tracking-tight">
-            {t("adminOverview")}
-          </h1>
-          <p className="text-sm text-muted-foreground">{t("ovSubtitle")}</p>
-        </div>
+      <div className="flex flex-wrap items-center justify-end gap-3">
+        <h1 className="sr-only">{t("adminOverview")}</h1>
         <span className="text-sm text-muted-foreground">{today}</span>
       </div>
 
@@ -142,7 +137,7 @@ export default function AdminOverview() {
                   <Link
                     key={item.id}
                     to={`/admin/complaints/${item.id}`}
-                    className="-mx-2 flex items-center gap-3 rounded-md px-2 py-2.5 transition-colors hover:bg-primary/5"
+                    className="flex items-center gap-3 py-2.5 transition-colors hover:bg-primary/5"
                   >
                     <span className="text-sm font-medium tabular-nums">
                       {item.reference}
@@ -237,7 +232,7 @@ export default function AdminOverview() {
                 <Link
                   key={complaint.id}
                   to={`/admin/complaints/${complaint.id}`}
-                  className="-mx-2 flex items-center gap-3 rounded-md px-2 py-2.5 transition-colors hover:bg-primary/5"
+                  className="flex items-center gap-3 py-2.5 transition-colors hover:bg-primary/5"
                 >
                   <span className="text-sm font-medium tabular-nums">
                     {complaint.reference}
