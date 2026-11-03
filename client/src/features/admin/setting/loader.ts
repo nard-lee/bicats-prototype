@@ -14,6 +14,7 @@ export type BarangaySettings = {
   logoUrl: string;
   punongSignatureUrl: string;
   secretarySignatureUrl: string;
+  theme: string;
   punongTitle: string;
   secretaryTitle: string;
   puroks: string[];

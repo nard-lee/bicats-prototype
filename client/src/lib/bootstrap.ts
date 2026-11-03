@@ -1,5 +1,6 @@
 import { HTTPError } from "ky";
 import { api } from "@/lib/api";
+import { applyTheme } from "@/lib/theme";
 import type { CurrentUser } from "@/hooks/use-auth";
 import type { BarangaySettings } from "@/features/admin/setting/loader";
 
@@ -12,7 +13,9 @@ let bootstrapPromise: Promise<Bootstrap> | null = null;
 
 async function fetchBootstrap(): Promise<Bootstrap> {
   try {
-    return await api.get("auth/bootstrap").json<Bootstrap>();
+    const data = await api.get("auth/bootstrap").json<Bootstrap>();
+    applyTheme(data.settings?.theme);
+    return data;
   } catch (err) {
     if (err instanceof HTTPError && err.response.status === 401) {
       // A remembered session failed to refresh; the signed-out page still needs
@@ -21,6 +24,7 @@ async function fetchBootstrap(): Promise<Bootstrap> {
         .get("settings")
         .json<BarangaySettings>()
         .catch(() => null);
+      applyTheme(settings?.theme);
       return { user: null, settings };
     }
     throw err;

@@ -223,6 +223,7 @@ CREATE TABLE "BarangaySettings" (
     "logoUrl" TEXT NOT NULL DEFAULT '',
     "punongSignatureUrl" TEXT NOT NULL DEFAULT '',
     "secretarySignatureUrl" TEXT NOT NULL DEFAULT '',
+    "theme" TEXT NOT NULL DEFAULT 'kalachuchi',
     "punongTitle" TEXT NOT NULL DEFAULT 'Punong Barangay / Chairman, Lupong Tagapamayapa',
     "secretaryTitle" TEXT NOT NULL DEFAULT 'Barangay Secretary / Secretary, Lupong Tagapamayapa',
     "puroks" TEXT[] DEFAULT ARRAY['Session Road', 'Assumption Road', 'Mabini Street', 'General Luna Road', 'Fr. Carlu Street']::TEXT[],

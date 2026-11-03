@@ -377,6 +377,7 @@ const en = {
   settingsSignatoriesDesc:
     "The Punong Barangay chairs the Lupong Tagapamayapa by law, so one official carries both titles. The Pangkat chairman is elected per case and is recorded on the case page.",
   settingsBranding: "Logo and branding",
+  settingsTheme: "Accent colour",
   settingsDeadlines: "Katarungang Pambarangay deadlines",
   settingsNavDeadlines: "Deadlines",
   settingsNotifications: "Complainant notifications",
@@ -1163,6 +1164,7 @@ const tl: Record<Key, string> = {
   settingsSignatoriesDesc:
     "Sa batas, ang Punong Barangay ang nangunguna sa Lupong Tagapamayapa, kaya isang opisyal ang may dalawang titulo. Ang tagapangulo ng Pangkat ay halal sa bawat kaso at inilalagay sa pahina ng kaso.",
   settingsBranding: "Logo at branding",
+  settingsTheme: "Kulay ng accent",
   settingsDeadlines: "Mga takda ng Katarungang Pambarangay",
   settingsNavDeadlines: "Mga takda",
   settingsNotifications: "Abiso sa naghain ng reklamo",

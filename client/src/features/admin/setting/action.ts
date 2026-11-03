@@ -24,6 +24,7 @@ const TEXT_FIELDS = [
   "logoUrl",
   "punongSignatureUrl",
   "secretarySignatureUrl",
+  "theme",
   "punongTitle",
   "secretaryTitle",
   "documentOfficeLine",

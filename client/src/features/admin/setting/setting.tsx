@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent } from "@/components/ui/card";
 import { useT } from "@/lib/I18n";
+import { applyTheme } from "@/lib/theme";
 import type { AdminLoaderData } from "@/layouts/admin/loader";
 import type { SettingsActionResult } from "./action";
 import type { SettingsLoaderData } from "./loader";
@@ -28,6 +29,7 @@ import PuroksSection from "./components/puroks-section";
 import SaveBar from "./components/save-bar";
 import SchedulingSection from "./components/scheduling-section";
 import SignatoriesSection from "./components/signatories-section";
+import ThemeSection from "./components/theme-section";
 import { toValues, type FieldErrors, type Values } from "./components/types";
 
 const SECTIONS = [
@@ -61,6 +63,7 @@ const FIELD_SECTIONS: Record<string, SectionId> = {
   officeHours: "profile",
   puroks: "profile",
   logoUrl: "profile",
+  theme: "signatories",
   punongBarangay: "signatories",
   secretaryName: "signatories",
   punongTitle: "signatories",
@@ -134,6 +137,8 @@ export default function BarangaySettingsPage() {
     const next = toValues(actionData.settings);
     setValues(next);
     setBaseline(next);
+    // Repaint without waiting for the next bootstrap, which a save clears.
+    applyTheme(next.theme);
     toast.success(t("settingsSaved"));
   }, [actionData, t]);
 
@@ -159,42 +164,38 @@ export default function BarangaySettingsPage() {
   const updatedAt = actionData?.settings?.updatedAt ?? settings.updatedAt;
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6">
-      <div>
-        <h1 className="font-heading text-2xl font-bold tracking-tight">{t("adminSettings")}</h1>
-        <p className="text-sm text-muted-foreground">{t("settingsSub")}</p>
-      </div>
-
+    <div className="w-full">
       <Form method="post" noValidate>
-        <div className="grid items-start gap-6 lg:grid-cols-[200px_minmax(0,1fr)]">
-          <nav
-            aria-label={t("settingsSections")}
-            className="min-w-0 lg:sticky lg:top-6"
-          >
-            <div className="flex gap-1 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:flex-col lg:overflow-visible lg:pb-0">
-              {SECTIONS.map(({ id, label }) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => {
-                    setNav({ section: id, action: actionData });
-                    window.history.replaceState(null, "", `#${id}`);
-                  }}
-                  aria-current={active === id ? "page" : undefined}
-                  className={cn(
-                    "shrink-0 rounded-lg px-3 py-2 text-left text-sm whitespace-nowrap transition-colors",
-                    active === id
-                      ? "bg-primary/5 font-medium text-primary dark:text-status-ink"
-                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-                  )}
-                >
-                  {t(label)}
-                </button>
-              ))}
-            </div>
-          </nav>
+        <div className="grid items-start gap-6 lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-8">
+          <div className="min-w-0 lg:sticky lg:top-6">
+            <h1 className="sr-only">{t("adminSettings")}</h1>
 
-          <div className="min-w-0 space-y-6">
+            <nav aria-label={t("settingsSections")}>
+              <div className="flex gap-1 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:flex-col lg:overflow-visible lg:pb-0">
+                {SECTIONS.map(({ id, label }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => {
+                      setNav({ section: id, action: actionData });
+                      window.history.replaceState(null, "", `#${id}`);
+                    }}
+                    aria-current={active === id ? "page" : undefined}
+                    className={cn(
+                      "shrink-0 rounded-lg px-3 py-2 text-left text-sm whitespace-nowrap transition-colors",
+                      active === id
+                        ? "bg-primary/5 font-medium text-primary dark:text-status-ink"
+                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                    )}
+                  >
+                    {t(label)}
+                  </button>
+                ))}
+              </div>
+            </nav>
+          </div>
+
+          <div className="mx-auto min-w-0 w-full max-w-[880px] space-y-6">
             {actionData?.error && (
               <Alert variant="destructive">
                 <AlertCircle />
@@ -252,8 +253,13 @@ export default function BarangaySettingsPage() {
                       </CardContent>
                     </Card>
                   </div>
-                  <div className="xl:sticky xl:top-6">
+                  <div className="xl:sticky xl:top-6 space-y-4">
                     <LetterheadPreview values={values} />
+                    <ThemeSection
+                      values={values}
+                      fields={fields}
+                      update={update}
+                    />
                   </div>
                 </div>
               </section>

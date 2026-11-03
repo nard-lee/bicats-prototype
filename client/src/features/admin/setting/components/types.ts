@@ -34,6 +34,7 @@ export function toValues(settings: BarangaySettings): Values {
     logoUrl: settings.logoUrl,
     punongSignatureUrl: settings.punongSignatureUrl,
     secretarySignatureUrl: settings.secretarySignatureUrl,
+    theme: settings.theme,
     punongTitle: settings.punongTitle,
     secretaryTitle: settings.secretaryTitle,
     puroks: settings.puroks,

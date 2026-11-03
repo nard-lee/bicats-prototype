@@ -80,6 +80,52 @@
     --sidebar-ring: oklch(0.542 0.034 322.5);
 }
 
+/* Accent themes chosen in Settings and applied as data-theme on <html>.
+   "kalachuchi" is the default above, so it needs no block. Every value below
+   was measured against the same backgrounds as the default: the light accent
+   clears 4.5:1 on --background and 4.8:1 under --primary-foreground, and the
+   dark ink clears 10:1 on --card. Dark --primary stays around 2.8:1 exactly
+   like the default — it is a fill, never text; text uses --status-ink. */
+html[data-theme="pine"] {
+    --primary: oklch(0.52 0.13 152);
+    --status-ink: oklch(0.44 0.11 152);
+    --ring: oklch(0.62 0.09 152);
+}
+html[data-theme="pine"].dark {
+    --primary: oklch(0.44 0.11 152);
+    --status-ink: oklch(0.85 0.14 145);
+}
+
+html[data-theme="gabi"] {
+    --primary: oklch(0.5 0.17 288);
+    --status-ink: oklch(0.43 0.15 288);
+    --ring: oklch(0.62 0.13 288);
+}
+html[data-theme="gabi"].dark {
+    --primary: oklch(0.5 0.15 288);
+    --status-ink: oklch(0.84 0.13 300);
+}
+
+html[data-theme="langit"] {
+    --primary: oklch(0.53 0.11 236);
+    --status-ink: oklch(0.45 0.1 236);
+    --ring: oklch(0.63 0.09 236);
+}
+html[data-theme="langit"].dark {
+    --primary: oklch(0.45 0.1 236);
+    --status-ink: oklch(0.86 0.1 215);
+}
+
+html[data-theme="bato"] {
+    --primary: oklch(0.5 0.045 265);
+    --status-ink: oklch(0.45 0.045 265);
+    --ring: oklch(0.62 0.04 265);
+}
+html[data-theme="bato"].dark {
+    --primary: oklch(0.52 0.04 265);
+    --status-ink: oklch(0.84 0.03 265);
+}
+
 @theme inline {
     --font-sans: 'Noto Sans Variable', sans-serif;
     --font-heading: 'Raleway Variable', sans-serif;
@@ -148,6 +194,13 @@
   .animate-top-loader {
     animation: top-loader-fill 8s cubic-bezier(0.1, 0.05, 0, 1) forwards;
   }
+}
+
+/* The Settings save bar is pinned to the bottom of the scroll area, so the
+   panel's own box is the limit of how far down it can stick. The shell's bottom
+   padding would otherwise leave a strip of bare page under it. */
+main:has([data-save-bar]) {
+  padding-bottom: 0;
 }
 
 /* Printing a page (e.g. the analytics report) drops the app chrome. */

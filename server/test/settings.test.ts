@@ -68,6 +68,7 @@ describe("settings guardrails", () => {
         workingDaysOnly: false,
         holidays: [],
         reminderLeadHours: 24,
+        theme: "kalachuchi",
         puroks: [
           "Session Road",
           "Assumption Road",
@@ -278,6 +279,23 @@ describe("settings guardrails", () => {
       .expect(200);
     const hidden = await request(app).get("/api/settings").expect(200);
     expect(hidden.body.officials).toEqual([]);
+  });
+
+  it("stores an accent theme and rejects an unknown id", async () => {
+    await createUser("admin");
+    const { agent, token } = await loginAgent("admin");
+
+    await updateSettings(agent, token, { theme: "pine" });
+    const saved = await request(app).get("/api/settings").expect(200);
+    expect(saved.body.theme).toBe("pine");
+
+    const invalid = { ...(await settingsPayload(agent)), theme: "neon" };
+    const rejected = await agent
+      .patch("/api/settings")
+      .set("x-csrf-token", token)
+      .send(invalid)
+      .expect(400);
+    expect(rejected.body.fields).toMatchObject({ theme: expect.any(String) });
   });
 
   it("uses the configured pre-session reminder lead time", async () => {

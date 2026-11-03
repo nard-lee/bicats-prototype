@@ -22,6 +22,16 @@ const assetSchema = z.string().trim().max(500);
 const daysSchema = z.coerce.number().int().min(1).max(365);
 const hourSchema = z.coerce.number().int().min(0).max(24);
 
+// Mirrors the html[data-theme] blocks in client/src/index.css.
+export const themeIds = [
+  "kalachuchi",
+  "pine",
+  "gabi",
+  "langit",
+  "bato",
+] as const;
+const themeSchema = z.enum(themeIds);
+
 export const updateSettingsSchema = z
   .object({
     barangayName: z.string().trim().min(1, "Barangay name is required").max(120),
@@ -37,6 +47,7 @@ export const updateSettingsSchema = z
     logoUrl: assetSchema,
     punongSignatureUrl: assetSchema,
     secretarySignatureUrl: assetSchema,
+    theme: themeSchema,
 
     punongTitle: z.string().trim().max(120),
     secretaryTitle: z.string().trim().max(120),

@@ -351,6 +351,10 @@ model BarangaySettings {
   punongSignatureUrl    String @default("")
   secretarySignatureUrl String @default("")
 
+  // Accent palette id applied to the whole site as <html data-theme>. The
+  // default matches the tokens in client/src/index.css; see THEMES there.
+  theme String @default("kalachuchi")
+
   // Signatory titles printed under the names. RA 7160 §409 makes the Punong
   // Barangay the chairman of the Lupong Tagapamayapa, so one official carries
   // both titles; the Pangkat chairman is not a standing officer and is instead
