@@ -99,7 +99,7 @@ export default function MonthCalendar({
                     disabled={!complaintsAvailable}
                     className={cn(
                       "relative flex min-h-14 flex-col items-stretch gap-1 rounded-md border p-1 text-left align-top transition-all sm:min-h-24 sm:p-1.5",
-                      "hover:border-primary/40 hover:bg-muted/40 disabled:cursor-default",
+                      "hover:border-primary/40 hover:bg-primary/5 disabled:cursor-default dark:hover:bg-primary/15",
                       isToday ? "border-primary/50 bg-primary/5" : "border-border",
                       isBusy &&
                         "hover:z-10 hover:ring-2 hover:ring-primary/40 hover:shadow-sm",

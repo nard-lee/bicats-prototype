@@ -161,7 +161,7 @@ export default function BarangaySettingsPage() {
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6">
       <div>
-        <h1 className="font-heading text-2xl font-semibold">{t("adminSettings")}</h1>
+        <h1 className="font-heading text-2xl font-bold tracking-tight">{t("adminSettings")}</h1>
         <p className="text-sm text-muted-foreground">{t("settingsSub")}</p>
       </div>
 
@@ -184,7 +184,7 @@ export default function BarangaySettingsPage() {
                   className={cn(
                     "shrink-0 rounded-lg px-3 py-2 text-left text-sm whitespace-nowrap transition-colors",
                     active === id
-                      ? "bg-muted font-medium text-foreground"
+                      ? "bg-primary/5 font-medium text-primary dark:text-status-ink"
                       : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
                   )}
                 >

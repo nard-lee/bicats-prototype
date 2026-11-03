@@ -214,7 +214,7 @@ export default function DateTimePicker({
                 onClick={() => pickDay(day)}
                 className={cn(
                   "flex size-8 items-center justify-center rounded-md text-sm transition-colors hover:bg-muted",
-                  isToday && !isSelected && "font-semibold text-primary",
+                  isToday && !isSelected && "font-semibold text-primary dark:text-status-ink",
                   isSelected &&
                     "bg-primary font-medium text-primary-foreground hover:bg-primary hover:text-primary-foreground",
                 )}

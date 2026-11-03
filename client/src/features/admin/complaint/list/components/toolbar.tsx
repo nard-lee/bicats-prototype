@@ -59,7 +59,7 @@ export default function Toolbar({
     <>
       <div className="flex shrink-0 flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-heading text-2xl font-semibold">
+          <h1 className="font-heading text-2xl font-bold tracking-tight">
             {t("adminComplaints")}
           </h1>
           <p className="text-sm text-muted-foreground">{t("clSubtitle")}</p>
@@ -130,7 +130,7 @@ export default function Toolbar({
           )}
 
           {!filtersOpen && (
-            <div className="inline-flex w-fit flex-wrap items-center gap-1 rounded-lg border bg-muted/40 p-1">
+            <div className="inline-flex w-fit flex-wrap items-center gap-1 rounded-lg bg-primary/5 p-1">
               {statFilters.map(({ kind, label, value }) => {
                 const active = activeStat === kind;
                 return (
@@ -142,7 +142,7 @@ export default function Toolbar({
                     className={cn(
                       "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring",
                       active
-                        ? "bg-card text-foreground shadow-xs"
+                        ? "bg-card text-primary shadow-xs dark:text-status-ink"
                         : "text-muted-foreground hover:text-foreground",
                     )}
                   >
@@ -150,7 +150,9 @@ export default function Toolbar({
                     <span
                       className={cn(
                         "text-sm tabular-nums",
-                        active ? "text-primary" : "text-muted-foreground",
+                        active
+                          ? "text-primary dark:text-status-ink"
+                          : "text-muted-foreground",
                       )}
                     >
                       {value}

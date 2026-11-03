@@ -1,5 +1,5 @@
 import { Link, useLoaderData } from "react-router";
-import { Calendar, CheckCircle2, ChevronRight, ClipboardList } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import {
   Card,
   CardAction,
@@ -75,7 +75,7 @@ export default function AdminOverview() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-heading text-2xl font-semibold">
+          <h1 className="font-heading text-2xl font-bold tracking-tight">
             {t("adminOverview")}
           </h1>
           <p className="text-sm text-muted-foreground">{t("ovSubtitle")}</p>
@@ -84,7 +84,7 @@ export default function AdminOverview() {
       </div>
 
       {/* One segment per number; the ones with a list behind them link to it */}
-      <div className="grid gap-px overflow-hidden rounded-xl border bg-border ring-1 ring-foreground/10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="grid gap-px overflow-hidden rounded-xl bg-primary/15 ring-1 ring-border dark:ring-background sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {stats.map(({ label, value, to }) => {
           const body = (
             <div className="flex items-baseline gap-2 px-4 py-3">
@@ -94,7 +94,9 @@ export default function AdminOverview() {
               <p
                 className={cn(
                   "min-w-0 flex-1 text-sm leading-tight",
-                  to ? "text-primary" : "text-muted-foreground",
+                  to
+                    ? "text-primary dark:text-status-ink"
+                    : "text-muted-foreground",
                 )}
               >
                 {label}
@@ -108,7 +110,7 @@ export default function AdminOverview() {
             <Link
               key={label}
               to={to}
-              className="block bg-card outline-none transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring"
+              className="block bg-card outline-none transition-colors hover:bg-primary/5 focus-visible:ring-2 focus-visible:ring-ring"
             >
               {body}
             </Link>
@@ -133,14 +135,14 @@ export default function AdminOverview() {
           </CardHeader>
           <CardContent>
             {data.attention.length === 0 ? (
-              <EmptyState icon={CheckCircle2} message={t("allClear")} />
+              <EmptyState message={t("allClear")} />
             ) : (
               <div className="divide-y">
                 {data.attention.map((item) => (
                   <Link
                     key={item.id}
                     to={`/admin/complaints/${item.id}`}
-                    className="-mx-2 flex items-center gap-3 rounded-md px-2 py-2.5 transition-colors hover:bg-muted/50"
+                    className="-mx-2 flex items-center gap-3 rounded-md px-2 py-2.5 transition-colors hover:bg-primary/5"
                   >
                     <span className="text-sm font-medium tabular-nums">
                       {item.reference}
@@ -182,7 +184,7 @@ export default function AdminOverview() {
           </CardHeader>
           <CardContent>
             {data.upcomingHearings.length === 0 ? (
-              <EmptyState icon={Calendar} message={t("ovNoMediation")} />
+              <EmptyState message={t("ovNoMediation")} />
             ) : (
               <div className="divide-y">
                 {data.upcomingHearings.map((hearing) => (
@@ -228,14 +230,14 @@ export default function AdminOverview() {
         </CardHeader>
         <CardContent>
           {data.recentComplaints.length === 0 ? (
-            <EmptyState icon={ClipboardList} message={t("ovNoComplaints")} />
+            <EmptyState message={t("ovNoComplaints")} />
           ) : (
             <div className="divide-y">
               {data.recentComplaints.map((complaint) => (
                 <Link
                   key={complaint.id}
                   to={`/admin/complaints/${complaint.id}`}
-                  className="-mx-2 flex items-center gap-3 rounded-md px-2 py-2.5 transition-colors hover:bg-muted/50"
+                  className="-mx-2 flex items-center gap-3 rounded-md px-2 py-2.5 transition-colors hover:bg-primary/5"
                 >
                   <span className="text-sm font-medium tabular-nums">
                     {complaint.reference}
@@ -263,7 +265,7 @@ export default function AdminOverview() {
         </CardHeader>
         <CardContent>
           {statuses.length === 0 ? (
-            <EmptyState icon={ClipboardList} message={t("ovNoComplaints")} />
+            <EmptyState message={t("ovNoComplaints")} />
           ) : (
             <>
               <div className="flex h-2.5 w-full gap-0.5 overflow-hidden rounded-full bg-muted">
@@ -302,19 +304,6 @@ export default function AdminOverview() {
   );
 }
 
-function EmptyState({
-  icon: Icon,
-  message,
-}: {
-  icon: typeof ClipboardList;
-  message: string;
-}) {
-  return (
-    <div className="flex flex-col items-center gap-2 py-8 text-center">
-      <div className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
-        <Icon className="size-5" />
-      </div>
-      <p className="text-sm text-muted-foreground">{message}</p>
-    </div>
-  );
+function EmptyState({ message }: { message: string }) {
+  return <p className="py-8 text-center text-sm text-muted-foreground">{message}</p>;
 }

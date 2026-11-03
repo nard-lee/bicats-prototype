@@ -148,7 +148,7 @@ export default function HearingsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-heading text-2xl font-semibold">Mediation</h1>
+          <h1 className="font-heading text-2xl font-bold tracking-tight">Mediation</h1>
           <p className="text-sm text-muted-foreground">
             Schedule and track mediation, conciliation, and arbitration sessions.
             Sessions past their date without a recorded outcome are flagged overdue.

@@ -245,7 +245,7 @@ export default function ServiceRecordCard({
           records.map((record) => (
             <div
               key={record.id}
-              className="rounded-md border bg-muted/30 p-3"
+              className="rounded-md bg-primary/5 p-3"
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-sm font-medium">{record.serverName}</p>

@@ -56,11 +56,11 @@ export default function Profile() {
       </Button>
 
       <div className="flex items-center gap-4">
-        <div className="flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+        <div className="flex size-14 items-center justify-center rounded-2xl bg-primary/5 text-primary dark:text-status-ink">
           <UserRound className="size-7" />
         </div>
         <div>
-          <h1 className="font-heading text-2xl font-semibold">{t("myProfile")}</h1>
+          <h1 className="font-heading text-2xl font-bold tracking-tight">{t("myProfile")}</h1>
           <p className="text-sm text-muted-foreground">{t("profileSub")}</p>
         </div>
       </div>

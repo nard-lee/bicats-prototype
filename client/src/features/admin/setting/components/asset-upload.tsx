@@ -49,7 +49,7 @@ export default function AssetUpload({
     <div className="space-y-2">
       <Label>{label}</Label>
       <div className="flex items-center gap-3">
-        <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-muted/40">
+        <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-primary/5">
           {value ? (
             <img src={value} alt={label} className="h-full w-full object-contain" />
           ) : (

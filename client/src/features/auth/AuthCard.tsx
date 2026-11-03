@@ -3,12 +3,10 @@ import { Link } from "react-router";
 import { useT } from "@/lib/I18n";
 
 export default function AuthCard({
-  icon,
   title,
   subtitle,
   children,
 }: {
-  icon: ReactNode;
   title: string;
   subtitle: string;
   children: ReactNode;
@@ -17,18 +15,18 @@ export default function AuthCard({
 
   return (
     <div className="mx-auto w-full max-w-md px-6 py-16">
-      <div className="overflow-hidden rounded-md border">
-        <div className="flex flex-col items-center gap-2 bg-primary px-6 py-8 text-center text-primary-foreground">
-          {icon}
-          <h1 className="text-2xl font-semibold">{title}</h1>
-          <p className="text-sm opacity-80">{subtitle}</p>
-        </div>
-        <div className="space-y-5 p-6">{children}</div>
-      </div>
+      <p className="font-heading text-xs font-semibold uppercase tracking-[0.28em] text-primary dark:text-status-ink">
+        {subtitle}
+      </p>
+      <h1 className="mt-4 font-heading text-3xl font-extrabold tracking-tight">
+        {title}
+      </h1>
+
+      <div className="mt-8 space-y-5">{children}</div>
 
       <Link
         to="/"
-        className="mt-6 block text-center text-sm font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground"
+        className="mt-8 block text-sm font-semibold text-muted-foreground hover:text-foreground"
       >
         {t("backPublic")}
       </Link>

@@ -5,21 +5,10 @@ import {
   useNavigation,
   useSearchParams,
 } from "react-router";
-import {
-  CheckCircle2,
-  Download,
-  FileCheck2,
-  FileText,
-  Send,
-  Users,
-  XCircle,
-} from "lucide-react";
+import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { useT, type Key } from "@/lib/I18n";
 import {
   clearRecentReferences,
@@ -46,27 +35,6 @@ export default function Track() {
       dateStyle: "medium",
       timeStyle: "short",
     });
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "received":
-        return <FileText className="h-8 w-8" />;
-      case "summoned":
-        return <Send className="h-8 w-8" />;
-      case "mediation":
-        return <Users className="h-8 w-8" />;
-      case "conciliation":
-        return <Users className="h-4 w-4" />;
-      case "settled":
-        return <CheckCircle2 className="h-8 w-8" />;
-      case "certified":
-        return <FileCheck2 className="h-8 w-8" />;
-      case "dismissed":
-        return <XCircle className="h-8 w-8" />;
-      default:
-        return <FileText className="h-8 w-8" />;
-    }
-  };
 
   const result = data?.result;
   const filedAt = result?.updates[0]?.createdAt;
@@ -101,7 +69,9 @@ export default function Track() {
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-12">
-      <h1 className="text-3xl font-bold tracking-tight">{t("trackTitle")}</h1>
+      <h1 className="font-heading text-3xl font-extrabold tracking-tight">
+        {t("trackTitle")}
+      </h1>
       <p className="mt-2 text-sm text-muted-foreground">{t("trackIntro")}</p>
 
       <Form method="post" className="mt-8 space-y-5">
@@ -130,7 +100,7 @@ export default function Track() {
                     setReference(item);
                     phoneRef.current?.focus();
                   }}
-                  className="rounded-full border bg-background px-3 py-1 text-sm font-medium tabular-nums text-primary transition-colors hover:bg-muted"
+                  className="rounded-full bg-muted/60 px-3 py-1 text-sm font-medium tabular-nums text-primary transition-colors hover:bg-primary/10 dark:text-status-ink"
                 >
                   {item}
                 </button>
@@ -171,114 +141,87 @@ export default function Track() {
       </Form>
 
       {result && (
-        <div className="mt-10 space-y-6">
-          {/* Reference + current status */}
-          <Card>
-            <CardHeader>
-              <CardTitle>{t("complaintDetails")}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
-                <label className="text-sm font-medium text-muted-foreground">
-                  {t("refNumber")}
-                </label>
-                <div className="flex min-w-0 items-center gap-2">
-                  <p className="min-w-0 flex-1 truncate text-sm font-medium tabular-nums sm:flex-none">
-                    {result.reference}
-                  </p>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="shrink-0"
-                    onClick={downloadReference}
-                    aria-label={t("downloadRef")}
-                    title={t("downloadRef")}
-                  >
-                    <Download className="size-3.5" />
-                    {t("download")}
-                  </Button>
-                </div>
+        <div className="mt-12">
+          <section>
+            <h2 className="font-heading text-lg font-bold tracking-tight">
+              {t("complaintDetails")}
+            </h2>
+            <div className="mt-4 rounded-xl bg-primary/5 px-5 py-6">
+              <p className="text-sm text-muted-foreground">{t("refNumber")}</p>
+              <div className="mt-1 flex flex-wrap items-center gap-x-5 gap-y-3">
+                <p className="font-heading text-2xl font-extrabold tracking-wider tabular-nums">
+                  {result.reference}
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={downloadReference}
+                  aria-label={t("downloadRef")}
+                  title={t("downloadRef")}
+                >
+                  <Download className="size-3.5" />
+                  {t("download")}
+                </Button>
               </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-muted-foreground">
+
+              <div className="mt-6 flex flex-wrap items-baseline justify-between gap-x-5">
+                <p className="text-sm text-muted-foreground">
                   {t("currentStatus")}
-                </label>
-                <Badge variant="outline" className="font-bold">
+                </p>
+                <p className="font-heading text-sm font-bold text-primary dark:text-status-ink">
                   {statusLabel(result.status)}
-                </Badge>
+                </p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
 
-          {/* Plain-language phase explanation */}
-          <Card>
-            <CardHeader>
-              <CardTitle>{t("trackPhase")}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm leading-relaxed text-foreground/90">
-                {t(`ph_${result.status}` as Key)}
-              </p>
-            </CardContent>
-          </Card>
+          <section className="mt-10">
+            <h2 className="font-heading text-lg font-bold tracking-tight">
+              {t("trackPhase")}
+            </h2>
+            <p className="mt-3 text-sm leading-relaxed text-foreground/90">
+              {t(`ph_${result.status}` as Key)}
+            </p>
+          </section>
 
-          {/* Status history timeline */}
           {history.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>{t("statusHistory")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  {history.map((event, index) => (
-                    <div key={index} className="relative flex gap-4">
-                      {/* Timeline line */}
-                      {index !== history.length - 1 && (
-                        <div className="absolute left-3 top-8 bottom-[-24px] w-px bg-border" />
+            <section className="mt-10">
+              <h2 className="font-heading text-lg font-bold tracking-tight">
+                {t("statusHistory")}
+              </h2>
+              <ol className="mt-6 space-y-7">
+                {history.map((event, index) => (
+                  <li
+                    key={index}
+                    className="grid gap-1.5 sm:grid-cols-[12rem_1fr] sm:gap-6"
+                  >
+                    <p className="text-sm tabular-nums text-muted-foreground">
+                      {fmt(event.createdAt)}
+                    </p>
+                    <div className="space-y-1.5">
+                      <p className="font-heading text-sm font-bold text-primary dark:text-status-ink">
+                        {statusLabel(event.status)}
+                      </p>
+                      {event.publicNote && (
+                        <p className="text-sm leading-relaxed text-foreground/85">
+                          {event.publicNote}
+                        </p>
                       )}
-
-                      {/* Icon bubble */}
-                      <div className="relative z-10 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-background">
-                        {getStatusIcon(event.status)}
-                      </div>
-
-                      <div className="flex-1 space-y-2 pt-0.5">
-                        <div className="flex flex-col gap-2">
-                          <Badge variant="outline" className="font-bold">
-                            {statusLabel(event.status)}
-                          </Badge>
-                          <p className="text-sm text-muted-foreground">
-                            {fmt(event.createdAt)}
-                          </p>
-                        </div>
-
-                        {(event.publicNote || event.hearingAt) && (
-                          <div className="space-y-1">
-                            {event.publicNote && (
-                              <p className="text-sm leading-relaxed text-foreground/80">
-                                {event.publicNote}
-                              </p>
-                            )}
-
-                            {event.hearingAt && (
-                              <p className="text-sm font-medium">
-                                {t("hearing")}: {fmt(event.hearingAt)}
-                              </p>
-                            )}
-                          </div>
-                        )}
-                      </div>
+                      {event.hearingAt && (
+                        <p className="text-sm font-medium">
+                          {t("hearing")}: {fmt(event.hearingAt)}
+                        </p>
+                      )}
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                  </li>
+                ))}
+              </ol>
+            </section>
           )}
 
           {filedAt && (
-            <div className="text-right text-sm text-muted-foreground">
+            <div className="mt-10 text-right text-sm text-muted-foreground">
               {t("filedDate")}: {fmt(filedAt)}
             </div>
           )}

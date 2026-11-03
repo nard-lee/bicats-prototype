@@ -17,7 +17,7 @@ export default function SaveBar({
   const { t } = useT();
 
   return (
-    <div className="sticky bottom-0 z-10 mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-background/95 px-4 py-3 shadow-sm backdrop-blur">
+    <div className="sticky bottom-0 z-10 -mx-4 mt-6 flex flex-wrap items-center justify-between gap-3 border-t bg-background/95 px-4 py-3 backdrop-blur sm:-mx-6">
       <p className="text-sm text-muted-foreground">
         {isDirty ? (
           t("unsavedChanges")

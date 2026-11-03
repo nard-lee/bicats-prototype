@@ -110,8 +110,10 @@ export function StageAdvanceDialog({ complaintId, currentStatus, onSuccess }: St
                 onClick={() => setTarget(step)}
                 aria-pressed={target === step}
                 className={cn(
-                  "w-full rounded-lg border p-3 text-left transition-colors hover:bg-muted/50",
-                  target === step && "border-primary bg-primary/5 ring-1 ring-primary",
+                  "w-full rounded-lg p-3 text-left transition-colors",
+                  target === step
+                    ? "bg-primary/10 text-primary dark:text-status-ink"
+                    : "bg-muted/40 hover:bg-muted",
                 )}
               >
                 <span className="flex items-center gap-2 text-sm font-medium">
@@ -126,7 +128,7 @@ export function StageAdvanceDialog({ complaintId, currentStatus, onSuccess }: St
           </div>
 
           {target && (
-            <div className="space-y-4 rounded-lg border bg-muted/30 p-3">
+            <div className="space-y-4 rounded-lg bg-primary/5 p-3">
               {closing ? (
                 <p className="flex items-start gap-2 text-sm text-status-ink">
                   <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />

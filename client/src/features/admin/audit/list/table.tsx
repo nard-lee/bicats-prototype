@@ -230,7 +230,7 @@ export default function AuditLog() {
             )}
 
             {items.map((row) => (
-              <TableRow key={row.id} className="transition-colors hover:bg-muted/50">
+              <TableRow key={row.id}>
                 <TableCell className="whitespace-nowrap text-muted-foreground tabular-nums">
                   {when(row.createdAt)}
                 </TableCell>

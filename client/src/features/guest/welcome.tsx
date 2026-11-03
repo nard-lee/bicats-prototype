@@ -1,4 +1,5 @@
-import { Link, useLoaderData, useRouteLoaderData } from "react-router";
+import { useLoaderData, useRouteLoaderData } from "react-router";
+import { ChevronDown } from "lucide-react";
 import { complaintTypeKeys, useT, type Key } from "@/lib/I18n";
 import type { RootLoaderData } from "@/layouts/root/loader";
 import type { HomeData } from "./loader";
@@ -88,8 +89,8 @@ export default function Home() {
 
   return (
     <div>
-      {/* Front door: the title on the left, the two ways in on a solid plate. */}
-      <section className="relative overflow-hidden border-b">
+      {/* Front door: the title on the left, the photo and hotline on the right. */}
+      <section className="relative overflow-hidden">
         <img
           aria-hidden="true"
           alt=""
@@ -99,7 +100,7 @@ export default function Home() {
         />
         <div className="relative mx-auto grid max-w-6xl px-6 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10">
           <div className="py-14 lg:py-24">
-            <p className="font-heading text-xs font-semibold uppercase tracking-[0.28em] text-status-ink">
+            <p className="font-heading text-xs font-semibold uppercase tracking-[0.28em] text-primary dark:text-status-ink">
               {settings?.documentOfficeLine || t("eyebrow")}
             </p>
             <h1 className="mt-6 font-heading text-4xl font-extrabold leading-[1.02] tracking-tight text-balance sm:text-5xl lg:text-6xl">
@@ -108,11 +109,11 @@ export default function Home() {
             <p className="mt-5 max-w-xl text-base leading-7 text-muted-foreground">
               {t("heroText")}
             </p>
-            <dl className="mt-10 max-w-xl divide-y">
+            <dl className="mt-10 max-w-xl">
               {details.map((d) => (
                 <div
                   key={d.label}
-                  className="grid gap-1 py-3 sm:grid-cols-[8rem_1fr] sm:gap-6"
+                  className="grid gap-1 py-2.5 first:pt-0 sm:grid-cols-[8rem_1fr] sm:gap-6"
                 >
                   <dt className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                     {d.label}
@@ -123,46 +124,22 @@ export default function Home() {
             </dl>
           </div>
 
-          <aside className="mb-14 mt-2 bg-primary p-7 text-primary-foreground lg:mb-24 lg:mt-24 lg:p-9">
-            <p className="font-heading text-xs font-semibold uppercase tracking-[0.28em]">
-              {t("doorStart")}
-            </p>
-            <div className="mt-3 divide-y divide-primary-foreground/30">
-              {[
-                {
-                  to: "/file-complaint",
-                  label: t("btnFile"),
-                  hint: t("doorFileHint"),
-                },
-                {
-                  to: "/track-complaint",
-                  label: t("btnTrack"),
-                  hint: t("refHint"),
-                },
-              ].map((a) => (
-                <Link
-                  key={a.to}
-                  to={a.to}
-                  className="group block py-6 first:pt-4 last:pb-4"
-                >
-                  <span className="flex items-baseline justify-between gap-4 font-heading text-xl font-bold tracking-tight sm:text-2xl">
-                    {a.label}
-                    <span
-                      aria-hidden="true"
-                      className="leading-none transition-transform duration-200 group-hover:translate-x-1"
-                    >
-                      →
-                    </span>
-                  </span>
-                  <span className="mt-1.5 block text-sm leading-6">{a.hint}</span>
-                </Link>
-              ))}
-            </div>
+          <aside className="mb-14 mt-2 lg:mb-24 lg:mt-24">
+            <img
+              alt=""
+              aria-hidden="true"
+              className="aspect-[4/3] w-full object-cover"
+              fetchPriority="high"
+              height="750"
+              src="/home-desk-1000.webp"
+              srcSet="/home-desk-750.webp 750w, /home-desk-1000.webp 1000w"
+              width="1000"
+            />
             {hotline && (
-              <p className="mt-7 border-t border-primary-foreground/30 pt-4 text-sm">
+              <p className="mt-6 text-sm">
                 {t("hallHotline")}{" "}
                 <a
-                  className="font-semibold underline underline-offset-4 hover:decoration-2"
+                  className="text-primary dark:text-status-ink font-semibold underline underline-offset-4 hover:decoration-2"
                   href={telHref(hotline)}
                 >
                   {hotline}
@@ -173,18 +150,18 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Process: numbered stops on a single rule, not a card row. */}
-      <section className="border-b bg-muted/30">
+      {/* Process: numbered stops, nothing but space between them. */}
+      <section className="bg-primary/5">
         <div className="mx-auto max-w-6xl px-6 py-16">
           <h2 className="font-heading text-2xl font-bold tracking-tight">
             {t("howTitle")}
           </h2>
           <ol className="mt-10 grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
             {stepKeys.map((s, i) => (
-              <li key={s.title} className="border-t-2 border-foreground/15 pt-5">
+              <li key={s.title}>
                 <p
                   aria-hidden="true"
-                  className="font-heading text-4xl font-extrabold leading-none tracking-tight text-foreground/20"
+                  className="font-heading text-4xl font-extrabold leading-none tracking-tight text-primary dark:text-status-ink"
                 >
                   {String(i + 1).padStart(2, "0")}
                 </p>
@@ -199,7 +176,7 @@ export default function Home() {
       </section>
 
       {/* Notice board on its own row. */}
-      <section className="border-b">
+      <section>
         <div className="mx-auto max-w-6xl px-6 py-16">
           <div className="flex items-baseline justify-between gap-4">
             <h2 className="font-heading text-2xl font-bold tracking-tight">
@@ -210,11 +187,11 @@ export default function Home() {
             </p>
           </div>
           {notices.length === 0 ? (
-            <p className="mt-6 border-t pt-6 text-sm text-muted-foreground">
+            <p className="mt-6 text-sm text-muted-foreground">
               {t("noticesEmpty")}
             </p>
           ) : (
-            <ul className="mt-2 divide-y">
+            <ul className="mt-2">
               {notices.map((n) => (
                 <li
                   key={n.id}
@@ -237,26 +214,26 @@ export default function Home() {
       </section>
 
       {/* What this desk takes up. */}
-      <section className="border-b bg-muted/30">
+      <section className="bg-primary/5">
         <div className="mx-auto max-w-6xl px-6 py-16">
           <h2 className="font-heading text-2xl font-bold tracking-tight">
             {t("typesTitle")}
           </h2>
           <ul className="mt-8 grid gap-x-12 text-sm sm:grid-cols-2 lg:grid-cols-3">
             {complaintTypeKeys.map((k) => (
-              <li key={k} className="border-b py-2.5">
+              <li key={k} className="py-2">
                 {t(k)}
               </li>
             ))}
           </ul>
-          <p className="mt-8 max-w-3xl border-l-2 border-status-ink pl-4 text-sm leading-6 text-muted-foreground">
+          <p className="mt-8 max-w-3xl text-sm leading-6 text-muted-foreground">
             {t("typesNote")}
           </p>
         </div>
       </section>
 
-      {/* About, separated by vertical rules instead of stacked borders. */}
-      <section className="border-b">
+      {/* About: three columns held apart by whitespace alone. */}
+      <section>
         <div className="mx-auto max-w-6xl px-6 py-16">
           <h2 className="font-heading text-2xl font-bold tracking-tight">
             {t("aboutTitle")}
@@ -264,12 +241,9 @@ export default function Home() {
           <p className="mt-4 max-w-3xl text-sm leading-7 text-muted-foreground">
             {t("aboutText")}
           </p>
-          <div className="mt-10 grid gap-8 sm:grid-cols-3 sm:gap-0">
-            {aboutKeys.map((item, i) => (
-              <div
-                key={item.title}
-                className={i === 0 ? "" : "sm:border-l sm:border-border sm:pl-8"}
-              >
+          <div className="mt-10 grid gap-x-12 gap-y-8 sm:grid-cols-3">
+            {aboutKeys.map((item) => (
+              <div key={item.title}>
                 <h3 className="font-heading text-sm font-semibold uppercase tracking-[0.18em]">
                   {t(item.title)}
                 </h3>
@@ -284,7 +258,7 @@ export default function Home() {
 
       {/* The people behind the desk: the council in office, and the members who hear. */}
       {(officials.length > 0 || luponMembers.length > 0) && (
-        <section className="border-b bg-muted/30">
+        <section className="bg-primary/5">
           <div className="mx-auto max-w-6xl px-6 py-16">
             <h2 className="font-heading text-2xl font-bold tracking-tight">
               {t("settingsOfficials")}
@@ -299,7 +273,7 @@ export default function Home() {
                 )}
                 <ul className="mt-8 grid gap-x-12 text-sm sm:grid-cols-2">
                   {officials.map((o, i) => (
-                    <li key={`${o.name}-${i}`} className="border-b py-4">
+                    <li key={`${o.name}-${i}`} className="py-4">
                       <p className="font-heading text-base font-semibold tracking-tight">
                         {o.name}
                       </p>
@@ -322,7 +296,7 @@ export default function Home() {
                 </p>
                 <ul className="mt-6 grid gap-x-12 text-sm sm:grid-cols-2 lg:grid-cols-3">
                   {luponMembers.map((name, i) => (
-                    <li key={`${name}-${i}`} className="border-b py-2.5">
+                    <li key={`${name}-${i}`} className="py-2">
                       {name}
                     </li>
                   ))}
@@ -341,7 +315,7 @@ export default function Home() {
           </h2>
           <div className="mt-8 grid gap-x-12 md:grid-cols-2">
             {[0, 1].map((column) => (
-              <div key={column} className="divide-y">
+              <div key={column}>
                 {faqKeys
                   .slice(
                     column * Math.ceil(faqKeys.length / 2),
@@ -354,12 +328,10 @@ export default function Home() {
                     >
                       <summary className="flex cursor-pointer list-none items-start justify-between gap-4 text-sm font-medium [&::-webkit-details-marker]:hidden">
                         {t(item.q)}
-                        <span
+                        <ChevronDown
                           aria-hidden="true"
-                          className="font-heading text-lg leading-none text-status-ink transition-transform duration-200 group-open:rotate-45"
-                        >
-                          +
-                        </span>
+                          className="size-4 shrink-0 translate-y-0.5 text-primary dark:text-status-ink transition-transform duration-200 group-open:rotate-180"
+                        />
                       </summary>
                       <p className="mt-2.5 max-w-xl text-sm leading-6 text-muted-foreground">
                         {t(item.a)}

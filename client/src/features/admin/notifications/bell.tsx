@@ -204,7 +204,7 @@ export default function NotificationsBell() {
                             {n.title}
                           </p>
                           {isUnread && (
-                            <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-primary">
+                            <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-primary dark:text-status-ink">
                               {t("notifNew")}
                             </span>
                           )}
@@ -229,7 +229,7 @@ export default function NotificationsBell() {
                         void markRead(n.id);
                         setOpen(false);
                       }}
-                      className="block border-b transition-colors last:border-b-0 hover:bg-muted/50"
+                      className="block border-b transition-colors last:border-b-0 hover:bg-primary/5 dark:hover:bg-primary/15"
                     >
                       {row}
                     </Link>
@@ -238,7 +238,7 @@ export default function NotificationsBell() {
                       key={n.id}
                       type="button"
                       onClick={() => void markRead(n.id)}
-                      className="block w-full border-b text-left transition-colors last:border-b-0 hover:bg-muted/50"
+                      className="block w-full border-b text-left transition-colors last:border-b-0 hover:bg-primary/5 dark:hover:bg-primary/15"
                     >
                       {row}
                     </button>

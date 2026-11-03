@@ -9,7 +9,6 @@ import {
 } from "react-router";
 import {
   AlertCircle,
-  CheckCircle2,
   Eye,
   Paperclip,
   ShieldAlert,
@@ -31,7 +30,6 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import DateTimePicker from "@/components/ui/date-time-picker";
 import { complaintTypeKeys, useT } from "@/lib/I18n";
-import { STATUS_ACTION, STATUS_ACTIVE } from "@/lib/status";
 import type { ActionResult } from "./action";
 import type { FileComplaintLoaderData } from "./loader";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -73,10 +71,10 @@ function Choice({
   return (
     <label
       className={cn(
-        "inline-flex cursor-pointer items-center rounded-full border px-3 py-1.5 text-sm transition-colors",
+        "flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2.5 text-sm transition-colors",
         checked
-          ? "border-primary bg-primary/10 font-medium text-primary"
-          : "bg-background text-muted-foreground hover:bg-muted",
+          ? "border-primary/40 bg-primary/5 font-medium text-primary dark:text-status-ink"
+          : "text-muted-foreground hover:bg-primary/5 hover:text-foreground",
       )}
     >
       <input
@@ -85,10 +83,19 @@ function Choice({
         value={value}
         checked={checked}
         onChange={() => onChange(value)}
-        className="sr-only"
+        className="peer sr-only"
         required
       />
-      {children}
+      <span
+        aria-hidden="true"
+        className={cn(
+          "flex size-4 shrink-0 items-center justify-center rounded-full border transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-card",
+          checked ? "border-primary dark:border-status-ink" : "border-input",
+        )}
+      >
+        {checked && <span className="size-2 rounded-full bg-primary dark:bg-status-ink" />}
+      </span>
+      <span>{children}</span>
     </label>
   );
 }
@@ -105,7 +112,7 @@ function ScreeningQuestion({
   return (
     <div className="space-y-2 sm:col-span-2">
       <p className="text-sm font-medium">{label}</p>
-      <div className="flex flex-wrap gap-2">{children}</div>
+      <div className="grid gap-2 sm:grid-cols-2">{children}</div>
       <FieldError message={error} />
     </div>
   );
@@ -123,14 +130,14 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <section className="overflow-hidden rounded-xl border bg-card shadow-sm">
-      <div className="flex items-start gap-3 border-b bg-muted/40 px-5 py-4">
-        <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+    <section className="overflow-hidden rounded-xl bg-card ring-1 ring-border dark:ring-background">
+      <div className="flex items-center gap-3 border-b px-5 py-4">
+        <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 font-heading text-sm font-bold tabular-nums text-primary dark:bg-primary/25 dark:text-status-ink">
           {number}
         </span>
         <div>
-        <h2 className="font-semibold">{title}</h2>
-        <p className="text-sm text-muted-foreground">{subtitle}</p>
+          <h2 className="font-heading text-base font-bold tracking-tight">{title}</h2>
+          <p className="text-sm text-muted-foreground">{subtitle}</p>
         </div>
       </div>
       <div className="grid gap-5 p-5 sm:grid-cols-2 sm:p-6">{children}</div>
@@ -245,23 +252,21 @@ export default function FileComplaint() {
   if (actionData?.success && reference) {
     return (
       <div className="mx-auto max-w-xl px-6 py-16">
-        <div className="rounded-lg border p-8 text-center">
-          <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
-            <CheckCircle2 className="size-8" />
-          </div>
-
-          <h1 className="mt-5 text-2xl font-bold tracking-tight">
+        <div className="rounded-xl bg-card p-8 text-center ring-1 ring-border dark:ring-background">
+          <h1 className="text-2xl font-bold tracking-tight">
             {t("fcSuccessTitle")}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             {t("fcSuccessText")}
           </p>
 
-          <div className="mt-6 rounded-md border bg-muted/50 p-4">
-            <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+          <div className="mt-8 rounded-xl bg-primary/5 px-4 py-6 ring-1 ring-border dark:ring-background">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
               {t("refNumber")}
             </p>
-            <p className="mt-1 text-2xl font-bold tracking-wider">{reference}</p>
+            <p className="mt-2 font-heading text-2xl font-extrabold tracking-wider tabular-nums">
+              {reference}
+            </p>
           </div>
 
           <p className="mt-4 text-sm text-muted-foreground">
@@ -269,7 +274,7 @@ export default function FileComplaint() {
           </p>
 
           {screening === "needs_review" && (
-            <p className={cn("mt-3 rounded-md border p-3 text-sm", STATUS_ACTION)}>
+            <p className="mt-4 rounded-md bg-primary/5 px-4 py-3 text-sm font-medium text-destructive ring-1 ring-border dark:ring-background">
               {t("eligSuccessReview")}
             </p>
           )}
@@ -300,27 +305,25 @@ export default function FileComplaint() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12">
-      <div className="rounded-2xl border bg-gradient-to-br from-primary/10 via-background to-background p-6 sm:p-8">
-        <p className="text-sm font-semibold tracking-[0.16em] text-primary uppercase">
+      <div className="rounded-xl bg-primary/5 px-5 py-8 text-center ring-1 ring-border dark:ring-background sm:px-7 sm:py-10">
+        <p className="font-heading text-xs font-semibold uppercase tracking-[0.28em] text-primary dark:text-status-ink">
           Barangay Kabayanihan · Online Desk
         </p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">{t("fcTitle")}</h1>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">{t("fcIntro")}</p>
+        <h1 className="mt-4 font-heading text-3xl font-extrabold tracking-tight sm:text-4xl">{t("fcTitle")}</h1>
+        <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">{t("fcIntro")}</p>
 
-        <ol className="mt-6 grid gap-3 text-sm sm:grid-cols-3">
+        <ol className="mt-8 grid gap-x-8 gap-y-6 text-sm sm:grid-cols-3">
           {[
             ["1", "Your details", "Tell us how to contact you."],
             ["2", "Incident", "Describe what happened."],
             ["3", "Submit", "Keep your reference number."],
           ].map(([step, title, description]) => (
-            <li key={step} className="flex items-center gap-3 rounded-lg border bg-background/80 p-3">
-              <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+            <li key={step} className="flex flex-col items-center">
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 font-heading text-sm font-bold tabular-nums text-primary dark:bg-primary/25 dark:text-status-ink">
                 {step}
               </span>
-              <span>
-                <span className="block font-medium">{title}</span>
-                <span className="block text-sm text-muted-foreground">{description}</span>
-              </span>
+              <p className="mt-2 font-medium">{title}</p>
+              <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
             </li>
           ))}
         </ol>
@@ -340,13 +343,15 @@ export default function FileComplaint() {
         <input type="hidden" name="complainantLang" value={lang} />
 
         {/* 00 Eligibility screening */}
-        <section className="overflow-hidden rounded-xl border bg-card shadow-sm">
-          <div className="flex items-start gap-3 border-b bg-muted/40 px-5 py-4">
-            <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+        <section className="overflow-hidden rounded-xl bg-card ring-1 ring-border dark:ring-background">
+          <div className="flex items-center gap-3 border-b px-5 py-4">
+            <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary dark:bg-primary/25 dark:text-status-ink">
               <ShieldCheck className="size-4" />
             </span>
             <div>
-              <h2 className="font-semibold">{t("eligTitle")}</h2>
+              <h2 className="font-heading text-base font-bold tracking-tight">
+                {t("eligTitle")}
+              </h2>
               <p className="text-sm text-muted-foreground">{t("eligIntro")}</p>
             </div>
           </div>
@@ -522,22 +527,22 @@ export default function FileComplaint() {
             )}
 
             {screening === "eligible" && (
-              <div className={cn("flex items-start gap-3 rounded-lg border p-4 text-sm sm:col-span-2", STATUS_ACTIVE)}>
-                <ShieldCheck className="mt-0.5 size-5 shrink-0" />
+              <div className="flex items-start gap-3 rounded-lg bg-primary/5 px-5 py-4 text-sm ring-1 ring-border dark:ring-background sm:col-span-2">
+                <ShieldCheck className="mt-0.5 size-5 shrink-0 text-primary dark:text-status-ink" />
                 <p>{t("eligEligible")}</p>
               </div>
             )}
 
             {screening === "needs_review" && (
-              <div className={cn("flex items-start gap-3 rounded-lg border p-4 text-sm sm:col-span-2", STATUS_ACTION)}>
-                <ShieldAlert className="mt-0.5 size-5 shrink-0" />
+              <div className="flex items-start gap-3 rounded-lg bg-primary/5 px-5 py-4 text-sm ring-1 ring-border dark:ring-background sm:col-span-2">
+                <ShieldAlert className="mt-0.5 size-5 shrink-0 text-destructive" />
                 <p>{t("eligNeedsReview")}</p>
               </div>
             )}
 
             {screening === "outside_kp" && (
-              <div className={cn("flex items-start gap-3 rounded-lg border p-4 text-sm sm:col-span-2", STATUS_ACTION)}>
-                <ShieldAlert className="mt-0.5 size-5 shrink-0" />
+              <div className="flex items-start gap-3 rounded-lg bg-primary/5 px-5 py-4 text-sm ring-1 ring-border dark:ring-background sm:col-span-2">
+                <ShieldAlert className="mt-0.5 size-5 shrink-0 text-destructive" />
                 <p>{t("eligOutside")}</p>
               </div>
             )}
@@ -764,7 +769,7 @@ export default function FileComplaint() {
         </Section>
 
         {/* Consent */}
-        <div className="flex items-start gap-3 rounded-md border bg-muted/50 p-5">
+        <div className="flex items-start gap-3 rounded-lg bg-primary/5 px-5 py-6 ring-1 ring-border dark:ring-background">
           <Checkbox id="consent" name="consent" className="mt-1" aria-invalid={!!fields.consent} />
           <Label htmlFor="consent" className="text-sm font-normal leading-relaxed">
             <span>
@@ -790,7 +795,7 @@ export default function FileComplaint() {
             </Alert>
           )}
 
-        <div className="sticky bottom-3 flex flex-col gap-3 rounded-xl border bg-background/95 p-4 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+        <div className="sticky bottom-3 flex flex-col gap-3 rounded-xl bg-card p-4 ring-1 ring-border dark:ring-background backdrop-blur sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-muted-foreground">{t("refNote")}</p>
           <Button
             type="submit"

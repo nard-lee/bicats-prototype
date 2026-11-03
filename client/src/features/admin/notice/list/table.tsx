@@ -83,7 +83,7 @@ export default function NoticesList() {
       )}
 
       {items.length === 0 ? (
-        <div className="rounded-md border py-16 text-center text-sm text-muted-foreground">
+        <div className="rounded-md bg-primary/5 py-16 text-center text-sm text-muted-foreground">
           No notices yet. Create the first one to publish it on the home page.
         </div>
       ) : (

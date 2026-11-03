@@ -35,7 +35,7 @@ export default function BulkBar({
   if (selectedCount === 0) return null;
 
   return (
-    <div className="flex shrink-0 flex-wrap items-center gap-2 rounded-lg border bg-muted/40 px-3 py-2">
+    <div className="flex shrink-0 flex-wrap items-center gap-2 rounded-lg bg-primary/5 px-3 py-2">
       <span className="text-sm font-medium tabular-nums">
         {selectedCount} {t("clSelected")}
       </span>

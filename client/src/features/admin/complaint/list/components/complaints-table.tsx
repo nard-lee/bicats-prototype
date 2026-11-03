@@ -24,7 +24,7 @@ const OPEN_STATUSES: ComplaintStatus[] = [
 
 // Transparent checkbox: just an empty box that turns into a check when picked.
 const CHECKBOX =
-  "border-input bg-transparent shadow-none dark:bg-transparent data-checked:border-input data-checked:bg-transparent data-checked:text-primary dark:data-checked:bg-transparent";
+  "border-input bg-transparent shadow-none dark:bg-transparent data-checked:border-input data-checked:bg-transparent data-checked:text-primary dark:data-checked:border-primary dark:data-checked:bg-primary/15 dark:data-checked:text-status-ink";
 
 const NOW_MS = Date.now();
 
@@ -81,8 +81,9 @@ export default function ComplaintsTable({
               <div
                 key={c.id}
                 className={cn(
-                  "flex cursor-pointer items-start gap-3 px-4 py-3 transition-colors hover:bg-muted/50",
-                  selected.includes(c.id) && "bg-muted/50",
+                  "flex cursor-pointer items-start gap-3 px-4 py-3 transition-colors hover:bg-primary/5 dark:hover:bg-primary/15",
+                  selected.includes(c.id) &&
+                    "bg-primary/10 dark:bg-primary/25",
                 )}
                 onClick={() => onRowClick(c.id)}
               >
@@ -102,7 +103,7 @@ export default function ComplaintsTable({
                       {c.reference}
                     </span>
                     {!c.viewedAt && (
-                      <Badge className="h-5 px-1.5 uppercase tracking-wide">
+                      <Badge className="h-5 bg-primary/15 px-1.5 text-primary uppercase tracking-wide dark:bg-primary/30 dark:text-status-ink">
                         {t("notifNew")}
                       </Badge>
                     )}
@@ -162,7 +163,7 @@ export default function ComplaintsTable({
               <TableRow
                 key={c.id}
                 data-state={selected.includes(c.id) ? "selected" : undefined}
-                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                className="cursor-pointer"
                 onClick={() => onRowClick(c.id)}
               >
                 {canWrite && (
@@ -179,7 +180,7 @@ export default function ComplaintsTable({
                   <span className="inline-flex items-center gap-2 whitespace-nowrap">
                     {c.reference}
                     {!c.viewedAt && (
-                      <Badge className="h-5 px-1.5 uppercase tracking-wide">
+                      <Badge className="h-5 bg-primary/15 px-1.5 text-primary uppercase tracking-wide dark:bg-primary/30 dark:text-status-ink">
                         {t("notifNew")}
                       </Badge>
                     )}

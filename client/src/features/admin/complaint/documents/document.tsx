@@ -127,7 +127,7 @@ export default function ComplaintDocument() {
   };
 
   return (
-    <div className="min-h-screen bg-muted/30 py-6 print:bg-white print:py-0">
+    <div className="min-h-screen bg-primary/5 py-6 print:bg-white print:py-0">
       {/* Screen-only toolbar */}
       <div className="mx-auto mb-6 flex w-full max-w-[210mm] flex-wrap items-center justify-between gap-3 px-4 print:hidden">
         <Button asChild variant="ghost" size="sm">

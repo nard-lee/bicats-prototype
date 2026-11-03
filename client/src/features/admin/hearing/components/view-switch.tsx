@@ -13,7 +13,7 @@ export default function ViewSwitch({
   onViewChange,
 }: ViewSwitchProps) {
   return (
-    <div className="inline-flex w-fit flex-wrap items-center gap-1 rounded-lg border bg-muted/40 p-1">
+    <div className="inline-flex w-fit flex-wrap items-center gap-1 rounded-lg bg-primary/5 p-1">
       {VIEWS.map((view) => (
         <button
           key={view}
@@ -23,7 +23,7 @@ export default function ViewSwitch({
           className={cn(
             "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring",
             activeView === view
-              ? "bg-card text-foreground shadow-xs"
+              ? "bg-background text-primary dark:text-status-ink"
               : "text-muted-foreground hover:text-foreground",
           )}
         >
@@ -31,7 +31,9 @@ export default function ViewSwitch({
           <span
             className={cn(
               "text-sm tabular-nums",
-              activeView === view ? "text-primary" : "text-muted-foreground",
+              activeView === view
+                ? "text-primary dark:text-status-ink"
+                : "text-muted-foreground",
             )}
           >
             {viewCounts[view]}

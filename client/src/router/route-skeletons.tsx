@@ -71,7 +71,7 @@ export function TablePageSkeleton() {
   return (
     <div className="space-y-6">
       <PageHeaderSkeleton />
-      <div className="rounded-xl border">
+      <div className="rounded-xl bg-card ring-1 ring-border dark:ring-background">
         <div className="flex flex-wrap items-center justify-between gap-4 border-b p-4">
           <Skeleton className="h-10 w-72" />
           <Skeleton className="h-10 w-44" />
@@ -95,7 +95,7 @@ export function FormPageSkeleton() {
   return (
     <div className="space-y-6">
       <PageHeaderSkeleton />
-      <div className="rounded-xl border">
+      <div className="rounded-xl bg-card ring-1 ring-border dark:ring-background">
         <div className="space-y-2 border-b p-6">
           <Skeleton className="h-5 w-44" />
           <Skeleton className="h-3.5 w-72 max-w-full" />
@@ -133,36 +133,39 @@ export function DetailPageSkeleton() {
 
 export function CenteredCardSkeleton() {
   return (
-    <div className="flex min-h-[60svh] items-center justify-center p-6">
-      <div className="w-full max-w-md space-y-6 rounded-xl border p-8">
-        <div className="space-y-3 text-center">
-          <Skeleton className="mx-auto size-12 rounded-2xl" />
-          <Skeleton className="mx-auto h-6 w-40" />
-          <Skeleton className="mx-auto h-4 w-56" />
-        </div>
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="space-y-2">
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-11 w-full" />
-          </div>
-        ))}
-        <Skeleton className="h-11 w-full" />
+    <div className="mx-auto w-full max-w-md space-y-8 px-6 py-16">
+      <div className="space-y-3">
+        <Skeleton className="h-3 w-40" />
+        <Skeleton className="h-8 w-56" />
       </div>
+      {Array.from({ length: 3 }).map((_, i) => (
+        <div key={i} className="space-y-2">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-11 w-full" />
+        </div>
+      ))}
+      <Skeleton className="h-11 w-full" />
     </div>
   );
 }
 
 export function LandingSkeleton() {
   return (
-    <div className="space-y-10 px-6 py-16">
-      <div className="mx-auto max-w-3xl space-y-4 text-center">
-        <Skeleton className="mx-auto h-10 w-3/4" />
-        <Skeleton className="mx-auto h-5 w-1/2" />
-        <Skeleton className="mx-auto h-11 w-44" />
+    <div className="mx-auto max-w-6xl space-y-16 px-6 py-16">
+      <div className="grid gap-10 lg:grid-cols-2">
+        <div className="space-y-4">
+          <Skeleton className="h-3 w-44" />
+          <Skeleton className="h-10 w-3/4" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-5/6" />
+          <Skeleton className="h-11 w-44" />
+        </div>
+        <Skeleton className="aspect-[4/3] w-full" />
       </div>
-      <div className="mx-auto grid max-w-5xl gap-4 sm:grid-cols-3">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <Skeleton key={i} className="h-40" />
+      <div className="space-y-6">
+        <Skeleton className="h-6 w-52" />
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-4 w-full" />
         ))}
       </div>
     </div>
@@ -171,7 +174,7 @@ export function LandingSkeleton() {
 
 export function DocumentSkeleton() {
   return (
-    <div className="min-h-svh space-y-6 bg-muted/30 py-6">
+    <div className="min-h-svh space-y-6 bg-primary/5 py-6">
       <div className="mx-auto mb-6 flex w-full max-w-[210mm] items-center justify-between px-4">
         <Skeleton className="h-8 w-32" />
         <Skeleton className="h-8 w-24" />

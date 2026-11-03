@@ -251,7 +251,9 @@ export default function ComplaintView() {
                 {t(eligibilityFlagKey)}
               </Badge>
             ) : (
-              <Badge>{t(`st_${complaint.status}` as Key)}</Badge>
+              <Badge className="h-6 bg-primary/15 px-2 text-sm text-primary dark:bg-primary/30 dark:text-status-ink">
+                {t(`st_${complaint.status}` as Key)}
+              </Badge>
             )}
           </div>
 
@@ -404,10 +406,10 @@ export default function ComplaintView() {
                               alt={file.originalName}
                               loading="lazy"
                               decoding="async"
-                              className="size-10 shrink-0 rounded-md border object-cover"
+                              className="size-10 shrink-0 rounded-md bg-primary/5 object-cover"
                             />
                           ) : (
-                            <span className="flex size-10 shrink-0 items-center justify-center rounded-md border text-muted-foreground">
+                            <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary/5 text-muted-foreground">
                               <FileText className="size-4" />
                             </span>
                           )}
@@ -421,7 +423,7 @@ export default function ComplaintView() {
                             href={file.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="ml-auto shrink-0 text-sm font-medium text-primary hover:underline"
+                            className="ml-auto shrink-0 text-sm font-medium text-primary hover:underline dark:text-status-ink"
                           >
                             {t("evOpen")}
                           </a>

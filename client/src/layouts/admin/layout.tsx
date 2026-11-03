@@ -252,7 +252,7 @@ export default function AdminLayout() {
             {user && (
               <Link
                 to="/admin/profile"
-                className="hidden text-sm font-medium hover:text-primary sm:inline"
+                className="hidden text-sm font-medium hover:text-primary dark:hover:text-status-ink sm:inline"
               >
                 {user.fullName}
               </Link>

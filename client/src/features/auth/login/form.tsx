@@ -5,7 +5,7 @@ import {
   useNavigation,
   useRouteLoaderData,
 } from "react-router";
-import { AlertCircle, ShieldCheck } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -31,12 +31,7 @@ export default function Login() {
   if (user) return <Navigate to="/admin" replace />;
 
   return (
-    <AuthCard
-      icon={<ShieldCheck className="size-8" />}
-      title={t("loginTitle")}
-      subtitle={t("staffOnly")}
-    >
-
+    <AuthCard title={t("loginTitle")} subtitle={t("staffOnly")}>
       <Form method="post" className="space-y-5">
 
         {(actionData?.message ||

@@ -24,9 +24,9 @@ export default function RootLayout() {
       {/* Public-only: the admin panel must not load AdSense. */}
       <AdSense />
       <TopLoader />
-      <header className="sticky top-0 z-50 border-b bg-background">
+      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3 sm:gap-4 sm:px-6 sm:py-4">
-          <div className="flex size-12 shrink-0 items-center justify-center rounded-full border font-semibold sm:size-24">
+          <div className="size-12 shrink-0 sm:size-24">
             <img
               className="h-full w-full object-contain"
               src={settings?.logoUrl || "/seal-192.webp"}
@@ -79,9 +79,10 @@ export default function RootLayout() {
               to={l.to}
               end={l.end}
               className={({ isActive }) =>
-                `border-b-2 px-3 py-3 text-sm font-medium whitespace-nowrap sm:px-4 ${isActive
-                  ? "border-primary text-foreground"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
+                `px-3 py-3 text-sm font-medium whitespace-nowrap sm:px-4 ${
+                  isActive
+                    ? "bg-primary/5 text-primary dark:text-status-ink"
+                    : "text-muted-foreground hover:text-foreground"
                 }`
               }
             >
@@ -95,10 +96,10 @@ export default function RootLayout() {
         <Outlet />
       </main>
 
-      <footer className="border-t">
-        <div className="mx-auto grid max-w-6xl gap-8 px-6 py-10 md:grid-cols-3">
+      <footer className="bg-primary/5">
+        <div className="mx-auto grid max-w-6xl gap-8 px-6 py-12 md:grid-cols-3">
           <div>
-            <p className="font-semibold">
+            <p className="font-heading font-bold tracking-tight">
               {settings?.barangayName || "Barangay Kabayanihan"}
             </p>
             <p className="mt-2 text-sm whitespace-pre-line text-muted-foreground">
@@ -106,7 +107,9 @@ export default function RootLayout() {
             </p>
           </div>
           <div>
-            <p className="font-semibold">{t("contact")}</p>
+            <p className="font-heading font-bold tracking-tight">
+              {t("contact")}
+            </p>
             <p className="mt-2 text-sm whitespace-pre-line text-muted-foreground">
               {[
                 settings?.hotline,
@@ -118,18 +121,20 @@ export default function RootLayout() {
             </p>
           </div>
           <div>
-            <p className="font-semibold">{t("officeHours")}</p>
+            <p className="font-heading font-bold tracking-tight">
+              {t("officeHours")}
+            </p>
             <p className="mt-2 text-sm whitespace-pre-line text-muted-foreground">
               {settings?.officeHours || t("monFri")}
             </p>
           </div>
         </div>
-        <div className="border-t py-4 text-center text-sm text-muted-foreground">
+        <div className="mx-auto max-w-6xl px-6 pb-10 text-sm text-muted-foreground">
           © {YEAR}{" "}
           {settings?.barangayName || "Barangay Kabayanihan"}. {t("tagline")}{" "}
           <Link
             to="/privacy"
-            className="underline-offset-4 hover:text-foreground hover:underline"
+            className="font-medium text-primary underline-offset-4 hover:underline dark:text-status-ink"
           >
             {t("privacyTitle")}
           </Link>

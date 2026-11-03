@@ -98,7 +98,7 @@ export default function SessionsTable({
                     <TableCell>
                       <Link
                         to={`/admin/complaints/${hearing.complaintId}`}
-                        className="text-sm font-semibold tracking-wide transition-colors hover:text-primary"
+                        className="text-sm font-semibold tracking-wide transition-colors hover:text-primary dark:hover:text-status-ink"
                       >
                         {hearing.reference}
                       </Link>

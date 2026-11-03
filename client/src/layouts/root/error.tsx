@@ -26,7 +26,9 @@ export default function RootError() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-3 px-6 text-center">
-      <p className="text-4xl font-semibold">{status}</p>
+      <p className="font-heading text-4xl font-extrabold tracking-tight tabular-nums">
+        {status}
+      </p>
       <p className="text-sm text-muted-foreground">{message}</p>
       <Button asChild variant="outline" size="sm">
         <Link to="/">Back to home</Link>

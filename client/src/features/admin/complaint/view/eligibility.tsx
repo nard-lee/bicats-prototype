@@ -339,7 +339,7 @@ export default function EligibilityCard({
         )}
 
         {complaint.eligibilityNotes && (
-          <div className="rounded-md border bg-muted/40 p-3">
+          <div className="rounded-md bg-primary/5 p-3">
             <p className="text-sm font-medium tracking-wide text-muted-foreground uppercase">
               {t("eligNotes")}
             </p>

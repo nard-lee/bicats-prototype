@@ -174,7 +174,7 @@ export default function StaffAccounts() {
               </TableRow>
             )}
             {items.map((user) => (
-              <TableRow key={user.id} className="transition-colors hover:bg-muted/50">
+              <TableRow key={user.id}>
                 <TableCell className="font-bold">{user.fullName}</TableCell>
                 <TableCell className="text-muted-foreground">@{user.username}</TableCell>
                 <TableCell className="hidden md:table-cell">{user.position}</TableCell>

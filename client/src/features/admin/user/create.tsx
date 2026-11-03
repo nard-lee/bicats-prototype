@@ -55,7 +55,7 @@ export default function CreateUser() {
 
                 {/* Header */}
                 <div className="flex flex-col items-center gap-3 text-center">
-                    <div className="flex size-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                    <div className="flex size-16 items-center justify-center rounded-2xl bg-primary/5 text-primary dark:text-status-ink">
                         <UserPlus className="size-8" />
                     </div>
 

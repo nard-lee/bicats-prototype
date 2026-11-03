@@ -16,7 +16,9 @@ export default function Privacy() {
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-12">
-      <h1 className="text-3xl font-bold tracking-tight">{t("privacyTitle")}</h1>
+      <h1 className="font-heading text-3xl font-extrabold tracking-tight">
+        {t("privacyTitle")}
+      </h1>
       <p className="mt-2 text-sm text-muted-foreground">{t("privacyUpdated")}</p>
       <p className="mt-6 leading-relaxed text-muted-foreground">
         {t("privacyIntro")}
@@ -25,7 +27,9 @@ export default function Privacy() {
       <div className="mt-8 space-y-7">
         {sections.map(({ title, text }) => (
           <section key={title}>
-            <h2 className="text-lg font-semibold tracking-tight">{t(title)}</h2>
+            <h2 className="font-heading text-lg font-bold tracking-tight">
+              {t(title)}
+            </h2>
             <p className="mt-2 leading-relaxed text-muted-foreground">
               {t(text)}
             </p>
