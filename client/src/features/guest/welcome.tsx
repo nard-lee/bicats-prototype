@@ -89,15 +89,18 @@ export default function Home() {
 
   return (
     <div>
-      {/* Front door: the title on the left, the photo and hotline on the right. */}
-      <section className="relative overflow-hidden">
-        <img
-          aria-hidden="true"
-          alt=""
-          className="pointer-events-none absolute -left-32 top-1/2 size-[32rem] -translate-y-1/2 opacity-[0.06] sm:size-[40rem]"
-          decoding="async"
-          src="/seal-192.webp"
-        />
+      {/* Watermark pinned to the viewport: the page scrolls, the seal stays.
+          Everything below the hero sits on an opaque sheet, so the seal is a
+          front-door-only decoration without needing any scroll JS. */}
+      <img
+        aria-hidden="true"
+        alt=""
+        className="pointer-events-none fixed -left-32 top-1/2 -z-10 size-[32rem] -translate-y-1/2 opacity-[0.06] sm:size-[40rem]"
+        decoding="async"
+        src="/seal-192.webp"
+      />
+      {/* Front door: the title on the left, the illustration and hotline on the right. */}
+      <section>
         <div className="relative mx-auto grid max-w-6xl px-6 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10">
           <div className="py-14 lg:py-24">
             <p className="font-heading text-xs font-semibold uppercase tracking-[0.28em] text-primary dark:text-status-ink">
@@ -125,16 +128,23 @@ export default function Home() {
           </div>
 
           <aside className="mb-14 mt-2 lg:mb-24 lg:mt-24">
-            <img
-              alt=""
-              aria-hidden="true"
-              className="aspect-[4/3] w-full object-cover"
-              fetchPriority="high"
-              height="750"
-              src="/home-desk-1000.webp"
-              srcSet="/home-desk-750.webp 750w, /home-desk-1000.webp 1000w"
-              width="1000"
-            />
+            <div className="relative">
+              {/* The same cut, slid behind the image */}
+              <span
+                aria-hidden="true"
+                className="absolute inset-0 translate-x-3 translate-y-3 bg-primary/15 [clip-path:polygon(0_18%,18%_0,100%_0,100%_82%,82%_100%,0_100%)] sm:translate-x-4 sm:translate-y-4"
+              />
+              <img
+                alt=""
+                aria-hidden="true"
+                className="relative aspect-[4/3] w-full object-cover [clip-path:polygon(0_18%,18%_0,100%_0,100%_82%,82%_100%,0_100%)]"
+                fetchPriority="high"
+                height="750"
+                src="/home-hero-1000.webp"
+                srcSet="/home-hero-750.webp 750w, /home-hero-1000.webp 1000w"
+                width="1000"
+              />
+            </div>
             {hotline && (
               <p className="mt-6 text-sm">
                 {t("hallHotline")}{" "}
@@ -150,199 +160,203 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Process: numbered stops, nothing but space between them. */}
-      <section className="bg-primary/5">
-        <div className="mx-auto max-w-6xl px-6 py-16">
-          <h2 className="font-heading text-2xl font-bold tracking-tight">
-            {t("howTitle")}
-          </h2>
-          <ol className="mt-10 grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
-            {stepKeys.map((s, i) => (
-              <li key={s.title}>
-                <p
-                  aria-hidden="true"
-                  className="font-heading text-4xl font-extrabold leading-none tracking-tight text-primary dark:text-status-ink"
-                >
-                  {String(i + 1).padStart(2, "0")}
-                </p>
-                <h3 className="mt-4 text-base font-semibold">{t(s.title)}</h3>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  {t(s.text)}
-                </p>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </section>
-
-      {/* Notice board on its own row. */}
-      <section>
-        <div className="mx-auto max-w-6xl px-6 py-16">
-          <div className="flex items-baseline justify-between gap-4">
-            <h2 className="font-heading text-2xl font-bold tracking-tight">
-              {t("noticesTitle")}
-            </h2>
-            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-              {t("noticesLatest")}
-            </p>
-          </div>
-          {notices.length === 0 ? (
-            <p className="mt-6 text-sm text-muted-foreground">
-              {t("noticesEmpty")}
-            </p>
-          ) : (
-            <ul className="mt-2">
-              {notices.map((n) => (
-                <li
-                  key={n.id}
-                  className="grid gap-2 py-6 first:pt-4 sm:grid-cols-[8.5rem_1fr] sm:gap-8"
-                >
-                  <time className="text-sm tabular-nums text-muted-foreground">
-                    {date(n.createdAt)}
-                  </time>
-                  <div className="max-w-3xl">
-                    <h3 className="text-base font-semibold">{n.title}</h3>
-                    <p className="mt-1.5 text-sm leading-6 whitespace-pre-line text-muted-foreground">
-                      {n.body}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </section>
-
-      {/* What this desk takes up. */}
-      <section className="bg-primary/5">
-        <div className="mx-auto max-w-6xl px-6 py-16">
-          <h2 className="font-heading text-2xl font-bold tracking-tight">
-            {t("typesTitle")}
-          </h2>
-          <ul className="mt-8 grid gap-x-12 text-sm sm:grid-cols-2 lg:grid-cols-3">
-            {complaintTypeKeys.map((k) => (
-              <li key={k} className="py-2">
-                {t(k)}
-              </li>
-            ))}
-          </ul>
-          <p className="mt-8 max-w-3xl text-sm leading-6 text-muted-foreground">
-            {t("typesNote")}
-          </p>
-        </div>
-      </section>
-
-      {/* About: three columns held apart by whitespace alone. */}
-      <section>
-        <div className="mx-auto max-w-6xl px-6 py-16">
-          <h2 className="font-heading text-2xl font-bold tracking-tight">
-            {t("aboutTitle")}
-          </h2>
-          <p className="mt-4 max-w-3xl text-sm leading-7 text-muted-foreground">
-            {t("aboutText")}
-          </p>
-          <div className="mt-10 grid gap-x-12 gap-y-8 sm:grid-cols-3">
-            {aboutKeys.map((item) => (
-              <div key={item.title}>
-                <h3 className="font-heading text-sm font-semibold uppercase tracking-[0.18em]">
-                  {t(item.title)}
-                </h3>
-                <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                  {t(item.text)}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* The people behind the desk: the council in office, and the members who hear. */}
-      {(officials.length > 0 || luponMembers.length > 0) && (
+      {/* Opaque sheet: as it slides over the pinned seal it buries it, so the
+          watermark reads as front-door-only with no scroll animation. */}
+      <div className="bg-background">
+        {/* Process: numbered stops, nothing but space between them. */}
         <section className="bg-primary/5">
           <div className="mx-auto max-w-6xl px-6 py-16">
             <h2 className="font-heading text-2xl font-bold tracking-tight">
-              {t("settingsOfficials")}
+              {t("howTitle")}
             </h2>
-
-            {officials.length > 0 && (
-              <>
-                {council.length === 0 && (
-                  <p className="mt-4 max-w-3xl text-sm leading-7 text-muted-foreground">
-                    {t("officialsLead")}
+            <ol className="mt-10 grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
+              {stepKeys.map((s, i) => (
+                <li key={s.title}>
+                  <p
+                    aria-hidden="true"
+                    className="font-heading text-4xl font-extrabold leading-none tracking-tight text-primary dark:text-status-ink"
+                  >
+                    {String(i + 1).padStart(2, "0")}
                   </p>
-                )}
-                <ul className="mt-8 grid gap-x-12 text-sm sm:grid-cols-2">
-                  {officials.map((o, i) => (
-                    <li key={`${o.name}-${i}`} className="py-4">
-                      <p className="font-heading text-base font-semibold tracking-tight">
-                        {o.name}
+                  <h3 className="mt-4 text-base font-semibold">{t(s.title)}</h3>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                    {t(s.text)}
+                  </p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+  
+        {/* Notice board on its own row. */}
+        <section>
+          <div className="mx-auto max-w-6xl px-6 py-16">
+            <div className="flex items-baseline justify-between gap-4">
+              <h2 className="font-heading text-2xl font-bold tracking-tight">
+                {t("noticesTitle")}
+              </h2>
+              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                {t("noticesLatest")}
+              </p>
+            </div>
+            {notices.length === 0 ? (
+              <p className="mt-6 text-sm text-muted-foreground">
+                {t("noticesEmpty")}
+              </p>
+            ) : (
+              <ul className="mt-2">
+                {notices.map((n) => (
+                  <li
+                    key={n.id}
+                    className="grid gap-2 py-6 first:pt-4 sm:grid-cols-[8.5rem_1fr] sm:gap-8"
+                  >
+                    <time className="text-sm tabular-nums text-muted-foreground">
+                      {date(n.createdAt)}
+                    </time>
+                    <div className="max-w-3xl">
+                      <h3 className="text-base font-semibold">{n.title}</h3>
+                      <p className="mt-1.5 text-sm leading-6 whitespace-pre-line text-muted-foreground">
+                        {n.body}
                       </p>
-                      {o.title && (
-                        <p className="mt-0.5 text-muted-foreground">{o.title}</p>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
-
-            {luponMembers.length > 0 && (
-              <div className="mt-12">
-                <h3 className="font-heading text-sm font-semibold uppercase tracking-[0.18em]">
-                  {t("luponTitle")}
-                </h3>
-                <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">
-                  {t("luponNote")}
-                </p>
-                <ul className="mt-6 grid gap-x-12 text-sm sm:grid-cols-2 lg:grid-cols-3">
-                  {luponMembers.map((name, i) => (
-                    <li key={`${name}-${i}`} className="py-2">
-                      {name}
-                    </li>
-                  ))}
-                </ul>
-              </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
         </section>
-      )}
-
-      {/* FAQ in two columns so the questions read at a glance. */}
-      <section>
-        <div className="mx-auto max-w-6xl px-6 py-16">
-          <h2 className="font-heading text-2xl font-bold tracking-tight">
-            {t("faqTitle")}
-          </h2>
-          <div className="mt-8 grid gap-x-12 md:grid-cols-2">
-            {[0, 1].map((column) => (
-              <div key={column}>
-                {faqKeys
-                  .slice(
-                    column * Math.ceil(faqKeys.length / 2),
-                    (column + 1) * Math.ceil(faqKeys.length / 2),
-                  )
-                  .map((item) => (
-                    <details
-                      key={item.q}
-                      className="group py-5 first:pt-0 last:pb-0"
-                    >
-                      <summary className="flex cursor-pointer list-none items-start justify-between gap-4 text-sm font-medium [&::-webkit-details-marker]:hidden">
-                        {t(item.q)}
-                        <ChevronDown
-                          aria-hidden="true"
-                          className="size-4 shrink-0 translate-y-0.5 text-primary dark:text-status-ink transition-transform duration-200 group-open:rotate-180"
-                        />
-                      </summary>
-                      <p className="mt-2.5 max-w-xl text-sm leading-6 text-muted-foreground">
-                        {t(item.a)}
-                      </p>
-                    </details>
-                  ))}
-              </div>
-            ))}
+  
+        {/* What this desk takes up. */}
+        <section className="bg-primary/5">
+          <div className="mx-auto max-w-6xl px-6 py-16">
+            <h2 className="font-heading text-2xl font-bold tracking-tight">
+              {t("typesTitle")}
+            </h2>
+            <ul className="mt-8 grid gap-x-12 text-sm sm:grid-cols-2 lg:grid-cols-3">
+              {complaintTypeKeys.map((k) => (
+                <li key={k} className="py-2">
+                  {t(k)}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-8 max-w-3xl text-sm leading-6 text-muted-foreground">
+              {t("typesNote")}
+            </p>
           </div>
-        </div>
-      </section>
+        </section>
+  
+        {/* About: three columns held apart by whitespace alone. */}
+        <section>
+          <div className="mx-auto max-w-6xl px-6 py-16">
+            <h2 className="font-heading text-2xl font-bold tracking-tight">
+              {t("aboutTitle")}
+            </h2>
+            <p className="mt-4 max-w-3xl text-sm leading-7 text-muted-foreground">
+              {t("aboutText")}
+            </p>
+            <div className="mt-10 grid gap-x-12 gap-y-8 sm:grid-cols-3">
+              {aboutKeys.map((item) => (
+                <div key={item.title}>
+                  <h3 className="font-heading text-sm font-semibold uppercase tracking-[0.18em]">
+                    {t(item.title)}
+                  </h3>
+                  <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                    {t(item.text)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+  
+        {/* The people behind the desk: the council in office, and the members who hear. */}
+        {(officials.length > 0 || luponMembers.length > 0) && (
+          <section className="bg-primary/5">
+            <div className="mx-auto max-w-6xl px-6 py-16">
+              <h2 className="font-heading text-2xl font-bold tracking-tight">
+                {t("settingsOfficials")}
+              </h2>
+  
+              {officials.length > 0 && (
+                <>
+                  {council.length === 0 && (
+                    <p className="mt-4 max-w-3xl text-sm leading-7 text-muted-foreground">
+                      {t("officialsLead")}
+                    </p>
+                  )}
+                  <ul className="mt-8 grid gap-x-12 text-sm sm:grid-cols-2">
+                    {officials.map((o, i) => (
+                      <li key={`${o.name}-${i}`} className="py-4">
+                        <p className="font-heading text-base font-semibold tracking-tight">
+                          {o.name}
+                        </p>
+                        {o.title && (
+                          <p className="mt-0.5 text-muted-foreground">{o.title}</p>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+  
+              {luponMembers.length > 0 && (
+                <div className="mt-12">
+                  <h3 className="font-heading text-sm font-semibold uppercase tracking-[0.18em]">
+                    {t("luponTitle")}
+                  </h3>
+                  <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">
+                    {t("luponNote")}
+                  </p>
+                  <ul className="mt-6 grid gap-x-12 text-sm sm:grid-cols-2 lg:grid-cols-3">
+                    {luponMembers.map((name, i) => (
+                      <li key={`${name}-${i}`} className="py-2">
+                        {name}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+  
+        {/* FAQ in two columns so the questions read at a glance. */}
+        <section>
+          <div className="mx-auto max-w-6xl px-6 py-16">
+            <h2 className="font-heading text-2xl font-bold tracking-tight">
+              {t("faqTitle")}
+            </h2>
+            <div className="mt-8 grid gap-x-12 md:grid-cols-2">
+              {[0, 1].map((column) => (
+                <div key={column}>
+                  {faqKeys
+                    .slice(
+                      column * Math.ceil(faqKeys.length / 2),
+                      (column + 1) * Math.ceil(faqKeys.length / 2),
+                    )
+                    .map((item) => (
+                      <details
+                        key={item.q}
+                        className="group py-5 first:pt-0 last:pb-0"
+                      >
+                        <summary className="flex cursor-pointer list-none items-start justify-between gap-4 text-sm font-medium [&::-webkit-details-marker]:hidden">
+                          {t(item.q)}
+                          <ChevronDown
+                            aria-hidden="true"
+                            className="size-4 shrink-0 translate-y-0.5 text-primary dark:text-status-ink transition-transform duration-200 group-open:rotate-180"
+                          />
+                        </summary>
+                        <p className="mt-2.5 max-w-xl text-sm leading-6 text-muted-foreground">
+                          {t(item.a)}
+                        </p>
+                      </details>
+                    ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

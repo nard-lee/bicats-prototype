@@ -96,7 +96,9 @@ export default function RootLayout() {
         <Outlet />
       </main>
 
-      <footer className="bg-primary/5">
+      {/* Solid tint, not bg-primary/5: the homepage pins a translucent seal to
+          the viewport and this band must not let it read through. */}
+      <footer className="bg-[color-mix(in_srgb,var(--primary)_5%,var(--background))]">
         <div className="mx-auto grid max-w-6xl gap-8 px-6 py-12 md:grid-cols-3">
           <div>
             <p className="font-heading font-bold tracking-tight">
