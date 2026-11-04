@@ -1,14 +1,16 @@
 import "../src/utils/load-env.js";
-import fs from "node:fs";
-import path from "node:path";
-import { randomUUID } from "node:crypto";
-import zlib from "node:zlib";
 import { prisma } from "../src/db";
 import {
   formatReference,
   referencePeriod,
 } from "../src/modules/complaint/complaint.helpers.js";
 import { faker } from "@faker-js/faker";
+import { makeEvidence } from "./fake-evidence.js";
+import {
+  BARANGAY_DEMO_OFFICIALS,
+  DEMO_SECRETARY,
+  LUPON_DEMO_MEMBERS,
+} from "./demo-roster.js";
 
 const COMPLAINT_TYPES = [
   "type1", "type2", "type3", "type4", "type5", "type6",
@@ -21,199 +23,9 @@ const RECEIVED_DEADLINE_DAYS = 1;
 const SUMMONED_DEADLINE_DAYS = 5;
 const MEDIATION_DEADLINE_DAYS = 30;
 const CONCILIATION_DEADLINE_DAYS = 15;
-
-// A Lupong Tagapamayapa seats 11 (RA 7160 §403). The numbers are fake.
-const LUPON_DEMO_MEMBERS = [
-  { fullName: "Elena Bautista", contact: "0917 555 0101" },
-  { fullName: "Ramon Salazar", contact: "0917 555 0102" },
-  { fullName: "Cecilia Dizon", contact: "0917 555 0103" },
-  { fullName: "Ferdinand Ocampo", contact: "0917 555 0104" },
-  { fullName: "Gloria Villanueva", contact: "0917 555 0105" },
-  { fullName: "Nestor Aquino", contact: "0917 555 0106" },
-  { fullName: "Marisol Del Rosario", contact: "0917 555 0107" },
-  { fullName: "Danilo Mendoza", contact: "0917 555 0108" },
-  { fullName: "Rowena Villamor", contact: "0917 555 0109" },
-  { fullName: "Alfredo Tan", contact: "0917 555 0110" },
-  { fullName: "Teresa Bagtas", contact: "0917 555 0111" },
-];
-
-// The Sangguniang Barangay as the public site lists it: PB, Vice PB, seven
-// Kagawad, and the SK Chairperson. Names may repeat the Lupon roster.
-const BARANGAY_DEMO_OFFICIALS = [
-  "Hon. Mario D. Santos — Punong Barangay",
-  "Hon. Reynaldo Rivera — Vice Punong Barangay",
-  "Hon. Lorna Villanueva — Kagawad",
-  "Hon. Ernesto Del Rosario — Kagawad",
-  "Hon. Maricel Bautista — Kagawad",
-  "Hon. Alfredo Tan — Kagawad",
-  "Hon. Daisy Mendoza — Kagawad",
-  "Hon. Ramon Salazar — Kagawad",
-  "Hon. Cecilia Dizon — Kagawad",
-  "Hon. Kristine Alegre — SK Chairperson",
-];
+const ARBITRATION_DEADLINE_DAYS = 15;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-
-const UPLOAD_DIR = path.resolve("uploads");
-fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-
-// ---------------------------------------------------------------------------
-// Minimal PNG / PDF generators so seeded evidence actually renders.
-// ---------------------------------------------------------------------------
-
-const CRC_TABLE = (() => {
-  const table = new Uint32Array(256);
-  for (let n = 0; n < 256; n++) {
-    let c = n;
-    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
-    table[n] = c >>> 0;
-  }
-  return table;
-})();
-
-function crc32(buf: Buffer): number {
-  let c = 0xffffffff;
-  for (const byte of buf) c = CRC_TABLE[(c ^ byte) & 0xff]! ^ (c >>> 8);
-  return (c ^ 0xffffffff) >>> 0;
-}
-
-function pngChunk(type: string, data: Buffer): Buffer {
-  const length = Buffer.alloc(4);
-  length.writeUInt32BE(data.length, 0);
-  const typeBuf = Buffer.from(type, "ascii");
-  const crc = Buffer.alloc(4);
-  crc.writeUInt32BE(crc32(Buffer.concat([typeBuf, data])), 0);
-  return Buffer.concat([length, typeBuf, data, crc]);
-}
-
-function makePng(width: number, height: number, color: { r: number; g: number; b: number }): Buffer {
-  const signature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
-  const ihdr = Buffer.alloc(13);
-  ihdr.writeUInt32BE(width, 0);
-  ihdr.writeUInt32BE(height, 4);
-  ihdr[8] = 8; // bit depth
-  ihdr[9] = 2; // color type: RGB
-
-  const stride = width * 3 + 1;
-  const raw = Buffer.alloc(stride * height);
-  for (let y = 0; y < height; y++) {
-    const rowStart = y * stride;
-    raw[rowStart] = 0; // filter: none
-    for (let x = 0; x < width; x++) {
-      const p = rowStart + 1 + x * 3;
-      raw[p] = color.r;
-      raw[p + 1] = color.g;
-      raw[p + 2] = color.b;
-    }
-  }
-
-  return Buffer.concat([
-    signature,
-    pngChunk("IHDR", ihdr),
-    pngChunk("IDAT", zlib.deflateSync(raw)),
-    pngChunk("IEND", Buffer.alloc(0)),
-  ]);
-}
-
-function makePdf(lines: string[]): Buffer {
-  const content = `BT /F1 12 Tf 20 180 Td 14 TL ${lines
-    .map((line, i) => `${i ? "T* " : ""}(${line.replace(/[()\\]/g, "")}) Tj`)
-    .join(" ")} ET`;
-  const stream = Buffer.from(content, "latin1");
-
-  const objects: Array<() => Buffer> = [
-    () => Buffer.from("<< /Type /Catalog /Pages 2 0 R >>"),
-    () => Buffer.from("<< /Type /Pages /Kids [3 0 R] /Count 1 >>"),
-    () =>
-      Buffer.from(
-        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 320 200] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>",
-      ),
-    () =>
-      Buffer.concat([
-        Buffer.from(`<< /Length ${stream.length} >>\nstream\n`),
-        stream,
-        Buffer.from("\nendstream"),
-      ]),
-    () => Buffer.from("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"),
-  ];
-
-  const chunks: Buffer[] = [Buffer.from("%PDF-1.4\n", "latin1")];
-  const offsets: number[] = [];
-  let size = chunks[0]!.length;
-
-  objects.forEach((factory, i) => {
-    offsets[i] = size;
-    const head = Buffer.from(`${i + 1} 0 obj\n`);
-    const body = factory();
-    const tail = Buffer.from("\nendobj\n");
-    chunks.push(head, body, tail);
-    size += head.length + body.length + tail.length;
-  });
-
-  let xref = `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
-  for (const offset of offsets) xref += `${String(offset).padStart(10, "0")} 00000 n \n`;
-  xref += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${size}\n%%EOF\n`;
-  chunks.push(Buffer.from(xref, "latin1"));
-
-  return Buffer.concat(chunks);
-}
-
-// ---------------------------------------------------------------------------
-// Fake evidence
-// ---------------------------------------------------------------------------
-
-const PHOTO_COLORS = [
-  { r: 190, g: 60, b: 60 },
-  { r: 60, g: 120, b: 190 },
-  { r: 70, g: 160, b: 110 },
-  { r: 200, g: 150, b: 60 },
-  { r: 140, g: 90, b: 180 },
-  { r: 90, g: 90, b: 90 },
-];
-
-interface FakeEvidence {
-  originalName: string;
-  storedName: string;
-  mimeType: string;
-  size: number;
-}
-
-async function makeEvidence(): Promise<FakeEvidence[]> {
-  const count = faker.number.int({ min: 1, max: 3 });
-  const rows: FakeEvidence[] = [];
-
-  for (let i = 0; i < count; i++) {
-    const asPdf = faker.number.int({ min: 0, max: 9 }) < 3;
-
-    if (asPdf) {
-      const storedName = `${randomUUID()}.pdf`;
-      const buffer = makePdf([
-        "Barangay Kabayanihan",
-        "Supporting document",
-        faker.lorem.words(5),
-      ]);
-      await fs.promises.writeFile(path.join(UPLOAD_DIR, storedName), buffer);
-      rows.push({
-        originalName: `${faker.word.noun()}-${faker.number.int({ min: 1, max: 99 })}.pdf`,
-        storedName,
-        mimeType: "application/pdf",
-        size: buffer.length,
-      });
-    } else {
-      const storedName = `${randomUUID()}.png`;
-      const buffer = makePng(480, 360, faker.helpers.arrayElement(PHOTO_COLORS));
-      await fs.promises.writeFile(path.join(UPLOAD_DIR, storedName), buffer);
-      rows.push({
-        originalName: `IMG_${faker.string.alphanumeric(6).toUpperCase()}.png`,
-        storedName,
-        mimeType: "image/png",
-        size: buffer.length,
-      });
-    }
-  }
-
-  return rows;
-}
 
 // ---------------------------------------------------------------------------
 // Seed
@@ -250,6 +62,7 @@ async function main() {
       deadlineSummoned: true,
       deadlineMediation: true,
       deadlineConciliation: true,
+      deadlineArbitration: true,
     },
   });
   const deadlineDays = {
@@ -258,6 +71,8 @@ async function main() {
     mediation: settings?.deadlineMediation ?? MEDIATION_DEADLINE_DAYS,
     conciliation:
       settings?.deadlineConciliation ?? CONCILIATION_DEADLINE_DAYS,
+    arbitration:
+      settings?.deadlineArbitration ?? ARBITRATION_DEADLINE_DAYS,
   };
 
   // ---- Lupon roster, kept across reseeds so staff edits survive ----
@@ -290,7 +105,13 @@ async function main() {
     await prisma.barangaySettings.upsert({
       where: { id: 1 },
       update: { officials: BARANGAY_DEMO_OFFICIALS },
-      create: { id: 1, officials: BARANGAY_DEMO_OFFICIALS },
+      create: {
+        id: 1,
+        officials: BARANGAY_DEMO_OFFICIALS,
+        // RA 7160 §403: the same person signs as secretary of the lupon, so
+        // the letterhead and the staff accounts name one secretary.
+        secretaryName: DEMO_SECRETARY.fullName,
+      },
     });
     console.log(`✅ Seeded ${BARANGAY_DEMO_OFFICIALS.length} barangay officials.`);
   }
@@ -303,6 +124,7 @@ async function main() {
       | "summoned"
       | "mediation"
       | "conciliation"
+      | "arbitration"
       | "settled"
       | "certified";
     ageDays: number; // how long ago the complaint was filed
@@ -313,6 +135,7 @@ async function main() {
     { status: "summoned", ageDays: 4 },
     { status: "mediation", ageDays: 12 },
     { status: "conciliation", ageDays: 22 },
+    { status: "arbitration", ageDays: 26 },
     { status: "settled", ageDays: 30 },
     { status: "certified", ageDays: 45 },
   ];
@@ -343,7 +166,7 @@ async function main() {
     // handled by the Punong Barangay.
     const panel =
       roster.length >= 3 &&
-      ["conciliation", "certified"].includes(item.status)
+      ["conciliation", "arbitration", "certified"].includes(item.status)
         ? roster.slice(0, 3).map((member, index) => ({
             id: member.id,
             fullName: member.fullName,
@@ -430,6 +253,51 @@ async function main() {
       });
       dueAt = new Date(
         conciliationStarted.getTime() + deadlineDays.conciliation * DAY_MS,
+      );
+    } else if (item.status === "arbitration") {
+      // Mediation failed, the Pangkat was constituted, and then the parties
+      // agreed in writing to abide by an arbitration award (RA 7160 §413).
+      const summonedAt = faker.date.between({
+        from: new Date(createdAt.getTime() + DAY_MS),
+        to: new Date(NOW.getTime() - 6 * DAY_MS),
+      });
+      const mediationStarted = faker.date.between({
+        from: summonedAt,
+        to: new Date(NOW.getTime() - 5 * DAY_MS),
+      });
+      const conciliationStarted = faker.date.between({
+        from: mediationStarted,
+        to: new Date(NOW.getTime() - 3 * DAY_MS),
+      });
+      const agreementAt = faker.date.between({
+        from: conciliationStarted,
+        to: new Date(NOW.getTime() - DAY_MS),
+      });
+      updates.push({
+        status: "summoned",
+        publicNote: "Respondent was summoned before the Punong Barangay.",
+        createdAt: summonedAt,
+      });
+      updates.push({
+        status: "mediation",
+        publicNote: "Mediation before the Punong Barangay.",
+        createdAt: mediationStarted,
+        hearingAt: mediationStarted,
+      });
+      updates.push({
+        status: "conciliation",
+        publicNote: "Conciliation before the Pangkat ng Tagapagkasundo.",
+        createdAt: conciliationStarted,
+        hearingAt: conciliationStarted,
+      });
+      updates.push({
+        status: "arbitration",
+        publicNote:
+          "The parties agreed in writing to abide by the arbitration award.",
+        createdAt: agreementAt,
+      });
+      dueAt = new Date(
+        agreementAt.getTime() + deadlineDays.arbitration * DAY_MS,
       );
     } else if (item.status === "summoned") {
       const summonedAt = faker.date.between({
@@ -619,6 +487,9 @@ async function main() {
     mediation: [{ offsetDays: 3, kind: "mediation", status: "scheduled" }],
     conciliation: [
       { offsetDays: 4, kind: "conciliation", status: "scheduled" },
+    ],
+    arbitration: [
+      { offsetDays: 2, kind: "hearing", status: "scheduled" },
     ],
     settled: [
       {

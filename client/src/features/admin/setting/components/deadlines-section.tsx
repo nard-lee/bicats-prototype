@@ -131,6 +131,26 @@ export default function DeadlinesSection({
         </div>
 
         <div className="space-y-2">
+          <Label htmlFor="deadlineArbitration">
+            {t("deadlineArbitrationLabel")}
+          </Label>
+          <Input
+            id="deadlineArbitration"
+            name="deadlineArbitration"
+            type="number"
+            min={1}
+            max={365}
+            value={values.deadlineArbitration}
+            onChange={(e) =>
+              update("deadlineArbitration", Number(e.target.value))
+            }
+            className="h-11"
+            aria-invalid={!!fields.deadlineArbitration}
+          />
+          <FieldError message={fields.deadlineArbitration} />
+        </div>
+
+        <div className="space-y-2">
           <Label htmlFor="riskWindowDays">{t("riskWindowLabel")}</Label>
           <Input
             id="riskWindowDays"

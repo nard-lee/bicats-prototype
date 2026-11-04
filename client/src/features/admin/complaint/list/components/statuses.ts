@@ -5,6 +5,7 @@ export const STATUSES: ComplaintStatus[] = [
   "summoned",
   "mediation",
   "conciliation",
+  "arbitration",
   "settled",
   "certified",
   "dismissed",

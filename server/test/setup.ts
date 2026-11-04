@@ -27,6 +27,7 @@ await prisma.barangaySettings.upsert({
     deadlineSummoned: 15,
     deadlineMediation: 15,
     deadlineConciliation: 15,
+    deadlineArbitration: 15,
     riskWindowDays: 3,
     puroks: [
       "Session Road",

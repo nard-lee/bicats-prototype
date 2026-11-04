@@ -14,6 +14,7 @@ const DEADLINE_DAYS = {
   summoned: 15,
   mediation: 15,
   conciliation: 15,
+  arbitration: 15,
 };
 
 async function filedComplaintId(): Promise<number> {

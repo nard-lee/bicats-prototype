@@ -144,7 +144,7 @@ export default function ComplaintView() {
     if (doc === "cfa") return complaint.status === "certified";
     if (doc === "notice") {
       return (
-        ["mediation", "conciliation"].includes(complaint.status) ||
+        ["mediation", "conciliation", "arbitration"].includes(complaint.status) ||
         !!complaint.nextHearingAt
       );
     }
@@ -156,11 +156,12 @@ export default function ComplaintView() {
     !["received", "dismissed"].includes(complaint.status);
 
   // Mediation is handled by the Punong Barangay; the Pangkat is only formed at
-  // conciliation, so keep the card out of the way unless one was recorded.
+  // conciliation and keeps the case through arbitration, so keep the card out
+  // of the way unless one was recorded.
   const showPangkatCard =
     complaint.pangkatMembers.length > 0 ||
     !!complaint.pangkatChairman ||
-    complaint.status === "conciliation";
+    ["conciliation", "arbitration"].includes(complaint.status);
 
   const isClosed = ["settled", "certified", "dismissed"].includes(complaint.status);
 
@@ -318,25 +319,29 @@ export default function ComplaintView() {
             )}
 
             {/* Documents */}
-            {availableDocs.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t("documents")}</CardTitle>
-                  <CardDescription>{t("documentsDesc")}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-wrap gap-2">
-                    {availableDocs.map((doc) => (
-                      <Button key={doc} asChild variant="outline">
-                        <Link to={`/admin/complaints/${complaint.id}/documents/${doc}`}>
-                          {t(`doc_${doc}` as Key)}
-                        </Link>
-                      </Button>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+            <Card>
+              <CardHeader>
+                <CardTitle>{t("documents")}</CardTitle>
+                <CardDescription>{t("documentsDesc")}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {/* Valid at every stage, unlike the KP papers below it. */}
+                  <Button asChild variant="outline">
+                    <Link to={`/admin/complaints/${complaint.id}/documents/summary`}>
+                      {t("doc_summary")}
+                    </Link>
+                  </Button>
+                  {availableDocs.map((doc) => (
+                    <Button key={doc} asChild variant="outline">
+                      <Link to={`/admin/complaints/${complaint.id}/documents/${doc}`}>
+                        {t(`doc_${doc}` as Key)}
+                      </Link>
+                    </Button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
 
             {showServiceCard && (
               <ServiceRecordCard

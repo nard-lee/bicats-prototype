@@ -42,6 +42,7 @@ const NUMBER_FIELDS = [
   "deadlineSummoned",
   "deadlineMediation",
   "deadlineConciliation",
+  "deadlineArbitration",
   "riskWindowDays",
   "reminderLeadHours",
 ] as const;

@@ -5,7 +5,7 @@ CREATE SCHEMA IF NOT EXISTS "public";
 CREATE TYPE "Role" AS ENUM ('admin', 'staff', 'secretary', 'lupon');
 
 -- CreateEnum
-CREATE TYPE "ComplaintStatus" AS ENUM ('received', 'summoned', 'mediation', 'conciliation', 'settled', 'certified', 'dismissed');
+CREATE TYPE "ComplaintStatus" AS ENUM ('received', 'summoned', 'mediation', 'conciliation', 'arbitration', 'settled', 'certified', 'dismissed');
 
 -- CreateEnum
 CREATE TYPE "ComplaintType" AS ENUM ('type1', 'type2', 'type3', 'type4', 'type5', 'type6', 'type7', 'type8', 'type9', 'type10', 'type11', 'type12');
@@ -241,6 +241,7 @@ CREATE TABLE "BarangaySettings" (
     "deadlineSummoned" INTEGER NOT NULL DEFAULT 15,
     "deadlineMediation" INTEGER NOT NULL DEFAULT 15,
     "deadlineConciliation" INTEGER NOT NULL DEFAULT 15,
+    "deadlineArbitration" INTEGER NOT NULL DEFAULT 15,
     "riskWindowDays" INTEGER NOT NULL DEFAULT 3,
     "workingDaysOnly" BOOLEAN NOT NULL DEFAULT false,
     "holidays" TEXT[] DEFAULT ARRAY[]::TEXT[],

@@ -125,6 +125,37 @@ const complaintController = {
         res.json(complaint);
     },
 
+    // The printable case summary. It reads the same record as GET /:id but is a
+    // POST because assembling it exports personal data, and that is audited.
+    async summaryReport(req: Request, res: Response): Promise<void> {
+        const id = Number(req.params.id);
+
+        if (!id || isNaN(id)) {
+            throw new CustomError("Invalid complaint ID", undefined, 400);
+        }
+
+        const complaint = await complaintService.getById(id);
+
+        if (!complaint) {
+            throw new CustomError("Complaint not found", undefined, 404);
+        }
+
+        res.json(complaint);
+
+        await auditFromRequest(req, {
+            action: "complaint.summary.generate",
+            entityType: "complaint",
+            entityId: id,
+            summary: `${complaint.reference}: case summary report generated`,
+            meta: {
+                status: complaint.status,
+                historyEvents: complaint.history.length,
+                hearings: complaint.hearings.length,
+                evidence: complaint.evidence.length,
+            },
+        });
+    },
+
     async updateStatus(req: Request, res: Response): Promise<void> {
         const id = Number(req.params.id);
         const { status, publicNote, internalNote, hearingAt } = req.body;

@@ -18,6 +18,7 @@ const STATUS_ORDER = [
   "summoned",
   "mediation",
   "conciliation",
+  "arbitration",
   "settled",
   "certified",
   "dismissed",
@@ -26,7 +27,7 @@ const STATUS_ORDER = [
 // The bar and legend split by whether a case still needs the office, not by
 // stage: seven hues asked the eye to remember a legend, and the word beside
 // each dot already names the stage.
-const OPEN_STATUSES = ["received", "summoned", "mediation", "conciliation"];
+const OPEN_STATUSES = ["received", "summoned", "mediation", "conciliation", "arbitration"];
 const statusDot = (status: string) =>
   OPEN_STATUSES.includes(status) ? DOT_ACTIVE : DOT_NEUTRAL;
 

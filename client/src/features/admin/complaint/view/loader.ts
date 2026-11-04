@@ -1,11 +1,17 @@
 import { api } from "@/lib/api";
 import type { LoaderFunctionArgs } from "react-router";
+import type {
+  AttendanceStatus,
+  HearingKind,
+  HearingStatus,
+} from "@/features/admin/hearing/loader";
 
 export type ComplaintStatus =
   | "received"
   | "summoned"
   | "mediation"
   | "conciliation"
+  | "arbitration"
   | "settled"
   | "certified"
   | "dismissed";
@@ -73,11 +79,26 @@ export type ComplaintDetail = {
     size: number;
   }>;
   serviceRecords: ServiceRecord[];
+  hearings: Array<{
+    id: number;
+    scheduledAt: string;
+    kind: HearingKind;
+    status: HearingStatus;
+    location: string | null;
+    outcome: string | null;
+    complainantAttendance: AttendanceStatus | null;
+    respondentAttendance: AttendanceStatus | null;
+    attendanceNotes: string | null;
+  }>;
   history: Array<{
     kind: "status" | "service";
     status: ComplaintStatus | "service";
     date: string;
     note?: string;
+    // Split so a printed record can mark the staff-only note; the public
+    // tracker only ever reads publicNote.
+    publicNote?: string;
+    internalNote?: string;
     by: string;
     hearingAt?: string;
     serviceResult?: ServiceResult;

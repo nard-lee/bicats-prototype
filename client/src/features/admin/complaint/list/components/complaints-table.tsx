@@ -20,6 +20,7 @@ const OPEN_STATUSES: ComplaintStatus[] = [
   "summoned",
   "mediation",
   "conciliation",
+  "arbitration",
 ];
 
 // Transparent checkbox: just an empty box that turns into a check when picked.

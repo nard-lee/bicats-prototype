@@ -268,7 +268,7 @@ const complaintService = {
         }
 
         // Adjacent cases in the list's default order (newest first).
-        const [newer, older] = await Promise.all([
+        const [newer, older, hearings] = await Promise.all([
             prisma.complaint.findFirst({
                 where: {
                     OR: [
@@ -288,6 +288,24 @@ const complaintService = {
                 },
                 orderBy: [{ createdAt: "desc" }, { id: "desc" }],
                 select: { id: true },
+            }),
+            // Every session on the case, held or booked. The list above only
+            // fetches the next scheduled one for the detail header; a printed
+            // record needs the whole history of proceedings.
+            prisma.hearing.findMany({
+                where: { complaintId: id },
+                orderBy: { scheduledAt: "asc" },
+                select: {
+                    id: true,
+                    scheduledAt: true,
+                    kind: true,
+                    status: true,
+                    location: true,
+                    outcome: true,
+                    complainantAttendance: true,
+                    respondentAttendance: true,
+                    attendanceNotes: true,
+                },
             }),
         ]);
 
@@ -310,6 +328,8 @@ const complaintService = {
                     note: update.publicNote ?? update.internalNote!,
                 }
                 : {}),
+            ...(update.publicNote ? { publicNote: update.publicNote } : {}),
+            ...(update.internalNote ? { internalNote: update.internalNote } : {}),
             ...(update.hearingAt
                 ? {
                     hearingAt: update.hearingAt.toISOString(),
@@ -385,6 +405,18 @@ const complaintService = {
             })),
 
             history,
+
+            hearings: hearings.map((hearing) => ({
+                id: hearing.id,
+                scheduledAt: hearing.scheduledAt.toISOString(),
+                kind: hearing.kind,
+                status: hearing.status,
+                location: hearing.location,
+                outcome: hearing.outcome,
+                complainantAttendance: hearing.complainantAttendance,
+                respondentAttendance: hearing.respondentAttendance,
+                attendanceNotes: hearing.attendanceNotes,
+            })),
 
             complainantAge: complaint.complainantAge,
             complainantPurok: complaint.complainantPurok,
@@ -505,7 +537,12 @@ const complaintService = {
             let hearingChanged = false;
 
             if (hearingDate) {
-                const kind = status === "conciliation" ? "conciliation" : "mediation";
+                const kind =
+                    status === "conciliation"
+                        ? "conciliation"
+                        : status === "arbitration"
+                          ? "hearing"
+                          : "mediation";
 
                 const existing = await tx.hearing.findFirst({
                     where: {
@@ -818,9 +855,10 @@ const complaintService = {
             );
         }
 
-        // Mediation is the Punong Barangay's; the Pangkat is constituted only
-        // when the case moves on to conciliation.
-        if (existing.status !== "conciliation") {
+        // Mediation is the Punong Barangay's; the Pangkat is constituted when
+        // the case moves on to conciliation and stays on the case through
+        // arbitration, which is the same panel rendering the award.
+        if (existing.status !== "conciliation" && existing.status !== "arbitration") {
             throw new CustomError(
                 "The Pangkat is only assigned once the case reaches conciliation.",
                 undefined,

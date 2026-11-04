@@ -18,6 +18,7 @@
     "db:generate": "pnpm exec prisma generate",
     "db:studio": "pnpm exec prisma studio",
     "db:seed:complaints": "tsx prisma/complaint-seeder.ts",
+    "db:seed:fullcase": "tsx prisma/full-case-seeder.ts",
     "db:seed:eligibility": "tsx prisma/eligibility-seeder.ts",
     "db:seed:users": "tsx prisma/user-seeder.ts",
     "db:seed:audit": "tsx prisma/audit-seeder.ts",

@@ -75,6 +75,7 @@ const FIELD_SECTIONS: Record<string, SectionId> = {
   deadlineSummoned: "deadlines",
   deadlineMediation: "deadlines",
   deadlineConciliation: "deadlines",
+  deadlineArbitration: "deadlines",
   riskWindowDays: "deadlines",
   workingDaysOnly: "deadlines",
   holidays: "deadlines",

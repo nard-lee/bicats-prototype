@@ -13,30 +13,45 @@ export const DOCUMENT_TYPES: DocumentType[] = [
   "cfa",
 ];
 
-export function isDocumentType(value: string | undefined): value is DocumentType {
-  return (DOCUMENT_TYPES as string[]).includes(value ?? "");
+// The case summary is a printable record, not one of the KP papers: it is
+// valid at every stage, so it stays out of DOCUMENT_TYPES and the status
+// gating that drives them.
+export type PrintableType = DocumentType | "summary";
+
+export function isDocumentType(value: string | undefined): value is PrintableType {
+  return (
+    (DOCUMENT_TYPES as string[]).includes(value ?? "") || value === "summary"
+  );
 }
 
 export type DocumentLoaderData = {
   complaint: ComplaintDetail;
   settings: BarangaySettings;
   generatedAt: string;
+  generatedBy: string;
 };
 
 export async function ComplaintDocumentLoader({
   params,
 }: LoaderFunctionArgs): Promise<DocumentLoaderData> {
-  await AdminLoader();
+  const { user, settings } = await AdminLoader();
 
   const id = params.id;
   if (!id || !isDocumentType(params.doc)) {
     throw new Response("Not Found", { status: 404 });
   }
 
-  const [complaint, settings] = await Promise.all([
-    api.get(`/complaints/${id}`).json<ComplaintDetail>(),
-    api.get("settings").json<BarangaySettings>(),
-  ]);
+  // Assembling the summary exports personal data, so the server records it in
+  // the audit log; that makes it a write and the other papers a plain read.
+  const complaint =
+    params.doc === "summary"
+      ? await api.post(`/complaints/${id}/summary-report`).json<ComplaintDetail>()
+      : await api.get(`/complaints/${id}`).json<ComplaintDetail>();
 
-  return { complaint, settings, generatedAt: new Date().toISOString() };
+  return {
+    complaint,
+    settings,
+    generatedAt: new Date().toISOString(),
+    generatedBy: user.fullName,
+  };
 }

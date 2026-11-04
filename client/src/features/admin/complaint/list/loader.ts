@@ -6,6 +6,7 @@ export type ComplaintStatus =
   | "summoned"
   | "mediation"
   | "conciliation"
+  | "arbitration"
   | "settled"
   | "certified"
   | "dismissed";

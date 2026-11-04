@@ -83,6 +83,7 @@ export const updateSettingsSchema = z
     deadlineSummoned: daysSchema,
     deadlineMediation: daysSchema,
     deadlineConciliation: daysSchema,
+    deadlineArbitration: daysSchema,
     riskWindowDays: daysSchema,
     workingDaysOnly: z.boolean(),
     holidays: z

@@ -164,6 +164,7 @@ export const COMPLAINT_STATUSES = [
   "summoned",
   "mediation",
   "conciliation",
+  "arbitration",
   "settled",
   "certified",
   "dismissed",
@@ -177,14 +178,20 @@ export const TERMINAL_STATUSES: readonly ComplaintStatus[] = [
 ];
 
 // The KP stage graph. Closed cases have no forward moves; they must be reopened.
+// Sec. 413 lets the parties agree in writing to arbitration "at any stage of the
+// proceedings", so the move is offered from mediation and from conciliation, and
+// never from intake: a case that has not yet been heard has no proceeding to
+// arbitrate. The Punong Barangay sits as lupon chairman when arbitration is
+// agreed during mediation, which is why no Pangkat panel is required to enter it.
 export const COMPLAINT_TRANSITIONS: Record<
   ComplaintStatus,
   readonly ComplaintStatus[]
 > = {
   received: ["summoned", "dismissed"],
   summoned: ["mediation", "dismissed"],
-  mediation: ["settled", "conciliation", "dismissed"],
-  conciliation: ["settled", "certified", "dismissed"],
+  mediation: ["settled", "conciliation", "arbitration", "dismissed"],
+  conciliation: ["settled", "arbitration", "certified", "dismissed"],
+  arbitration: ["settled", "certified", "dismissed"],
   settled: [],
   certified: [],
   dismissed: [],
@@ -210,6 +217,7 @@ export const KP_DEADLINE_DAYS: DeadlineDays = {
   summoned: 15, // hold mediation within 15 days of the summons
   mediation: 15, // conclude mediation (from the first meeting of the parties)
   conciliation: 15, // conclude the Pangkat conciliation
+  arbitration: 15, // render the Pangkat arbitration award
 };
 
 // Build the deadline rules from the admin-configurable barangay settings.
@@ -224,6 +232,7 @@ export function deadlineConfigFrom(settings: {
   deadlineSummoned: number;
   deadlineMediation: number;
   deadlineConciliation: number;
+  deadlineArbitration: number;
   workingDaysOnly?: boolean;
   holidays?: string[];
 }): DeadlineConfig {
@@ -233,6 +242,7 @@ export function deadlineConfigFrom(settings: {
       summoned: settings.deadlineSummoned,
       mediation: settings.deadlineMediation,
       conciliation: settings.deadlineConciliation,
+      arbitration: settings.deadlineArbitration,
     },
     workingDaysOnly: settings.workingDaysOnly ?? false,
     holidays: settings.holidays ?? [],

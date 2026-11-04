@@ -16,6 +16,7 @@ router.post("/track", trackLimiter, complaintController.track);
 router.post('/list', requireAuth(...CASE_VIEW_ROLES), complaintController.list);
 router.post("/bulk-status", requireAuth(...CASE_WRITE_ROLES), complaintController.bulkStatus);
 router.get("/:id", requireAuth(...CASE_VIEW_ROLES), complaintController.getById);
+router.post("/:id/summary-report", requireAuth(...CASE_VIEW_ROLES), complaintController.summaryReport);
 router.post("/:id/view", requireAuth(...CASE_VIEW_ROLES), complaintController.markViewed);
 router.patch("/:id/status", requireAuth(...CASE_WRITE_ROLES), complaintController.updateStatus);
 router.patch("/:id/eligibility", requireAuth(...CASE_WRITE_ROLES), complaintController.reviewEligibility);

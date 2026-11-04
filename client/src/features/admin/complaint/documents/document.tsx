@@ -3,15 +3,17 @@ import { Link, useLoaderData, useParams } from "react-router";
 import { ArrowLeft, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useT, type Key } from "@/lib/I18n";
-import type { DocumentLoaderData, DocumentType } from "./loader";
+import type { DocumentLoaderData, PrintableType } from "./loader";
 import type { BarangaySettings } from "@/features/admin/setting/loader";
 import { complaintTypeLabel } from "../type-label";
+import CaseSummaryReport from "./summary";
 
-const DOC_TITLE_KEY: Record<DocumentType, Key> = {
+const DOC_TITLE_KEY: Record<PrintableType, Key> = {
   summons: "doc_summons",
   notice: "doc_notice",
   settlement: "doc_settlement",
   cfa: "doc_cfa",
+  summary: "doc_summary",
 };
 
 const BLANK = "_____________________";
@@ -72,9 +74,10 @@ function Paragraph({ children }: { children: ReactNode }) {
 
 export default function ComplaintDocument() {
   const { t, lang } = useT();
-  const { complaint, settings, generatedAt } = useLoaderData() as DocumentLoaderData;
+  const { complaint, settings, generatedAt, generatedBy } =
+    useLoaderData() as DocumentLoaderData;
   const { id, doc } = useParams();
-  const type = doc as DocumentType;
+  const type = doc as PrintableType;
   const title = t(DOC_TITLE_KEY[type] ?? "doc_summons");
 
   const locale = lang === "tl" ? "fil-PH" : "en-PH";
@@ -112,7 +115,8 @@ export default function ComplaintDocument() {
     !!pangkatChairman &&
     (type === "settlement" ||
       type === "cfa" ||
-      (type === "notice" && complaint.status === "conciliation"));
+      (type === "notice" &&
+        ["conciliation", "arbitration"].includes(complaint.status)));
   const chair = {
     name: viaPangkat ? pangkatChairman ?? settings.punongBarangay : settings.punongBarangay,
     label: viaPangkat
@@ -405,6 +409,14 @@ export default function ComplaintDocument() {
               />
             </div>
           </div>
+        )}
+
+        {type === "summary" && (
+          <CaseSummaryReport
+            complaint={complaint}
+            generatedAt={generatedAt}
+            generatedBy={generatedBy}
+          />
         )}
       </article>
     </div>

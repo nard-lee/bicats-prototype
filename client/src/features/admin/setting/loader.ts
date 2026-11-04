@@ -32,6 +32,7 @@ export type BarangaySettings = {
   deadlineSummoned: number;
   deadlineMediation: number;
   deadlineConciliation: number;
+  deadlineArbitration: number;
   riskWindowDays: number;
   workingDaysOnly: boolean;
   holidays: string[];

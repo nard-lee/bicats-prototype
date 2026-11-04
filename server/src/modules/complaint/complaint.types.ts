@@ -107,10 +107,25 @@ export type ComplaintDetail = {
         status: string;
         date: string;
         note?: string;
+        // Kept apart so a printable record can label the staff-only note; the
+        // public tracker still only ever reads publicNote.
+        publicNote?: string;
+        internalNote?: string;
         by: string;
         hearingAt?: string;
         serviceResult?: ServiceResult;
         serverName?: string;
+    }>;
+    hearings: Array<{
+        id: number;
+        scheduledAt: string;
+        kind: string;
+        status: string;
+        location: string | null;
+        outcome: string | null;
+        complainantAttendance: string | null;
+        respondentAttendance: string | null;
+        attendanceNotes: string | null;
     }>;
     complainantAge: number;
     complainantPurok: string;

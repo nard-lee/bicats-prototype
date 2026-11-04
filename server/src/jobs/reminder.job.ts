@@ -93,7 +93,7 @@ export async function runReminderScan(): Promise<number> {
         ? `${complaint.reference} step deadline passed`
         : `${complaint.reference} next step due within ${windowDays} day(s)`,
       body: overdue
-        ? `The deadline for the case's current stage lapsed on ${prettyDate(dueAt)}. Open the case, record the outcome, and schedule the next KP step (summon, mediation, or conciliation).`
+        ? `The deadline for the case's current stage lapsed on ${prettyDate(dueAt)}. Open the case, record the outcome, and schedule the next KP step (summon, mediation, conciliation, or arbitration).`
         : `The next KP step for this case must be recorded by ${prettyDate(dueAt)} or the case will start going into overdue.`,
       complaintId: complaint.id,
       reference: complaint.reference,

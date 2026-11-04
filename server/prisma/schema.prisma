@@ -22,6 +22,7 @@ enum ComplaintStatus {
   summoned
   mediation
   conciliation
+  arbitration
   settled
   certified
   dismissed
@@ -390,6 +391,7 @@ model BarangaySettings {
   deadlineSummoned     Int @default(15) // hold/complete mediation from the first meeting
   deadlineMediation    Int @default(15) // conclude mediation before constituting the Pangkat
   deadlineConciliation Int @default(15) // conclude Pangkat conciliation (extendable +15)
+  deadlineArbitration  Int @default(15) // render the Pangkat arbitration award
   riskWindowDays       Int @default(3)
 
   // Count deadline days on working days only, skipping weekends and holidays

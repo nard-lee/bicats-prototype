@@ -52,6 +52,7 @@ export function toValues(settings: BarangaySettings): Values {
     deadlineSummoned: settings.deadlineSummoned,
     deadlineMediation: settings.deadlineMediation,
     deadlineConciliation: settings.deadlineConciliation,
+    deadlineArbitration: settings.deadlineArbitration,
     riskWindowDays: settings.riskWindowDays,
     workingDaysOnly: settings.workingDaysOnly,
     holidays: settings.holidays,

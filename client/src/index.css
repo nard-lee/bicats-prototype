@@ -222,4 +222,12 @@ main:has([data-save-bar]) {
   .print-hide {
     display: none !important;
   }
+  /* A printed record can run past one page (the case summary's history). Keep
+     the column labels on every page and never split a row across two. */
+  thead {
+    display: table-header-group;
+  }
+  tr {
+    break-inside: avoid;
+  }
 }

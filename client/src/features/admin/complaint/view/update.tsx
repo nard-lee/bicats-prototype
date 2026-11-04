@@ -17,14 +17,24 @@ import type { ComplaintStatus } from "./loader";
 const NEXT_STEPS: Record<ComplaintStatus, readonly ComplaintStatus[]> = {
   received: ["summoned", "dismissed"],
   summoned: ["mediation", "dismissed"],
-  mediation: ["settled", "conciliation", "dismissed"],
-  conciliation: ["settled", "certified", "dismissed"],
+  mediation: ["settled", "conciliation", "arbitration", "dismissed"],
+  conciliation: ["settled", "arbitration", "certified", "dismissed"],
+  arbitration: ["settled", "certified", "dismissed"],
   settled: [],
   certified: [],
   dismissed: [],
 };
 
 const CLOSED_STATUSES: readonly ComplaintStatus[] = ["settled", "certified", "dismissed"];
+
+// Closing from arbitration records an award, not an amicable settlement, and
+// the barangay reads the difference on the button.
+function stepKeys(current: ComplaintStatus, step: ComplaintStatus): [Key, Key] {
+  if (step === "settled" && current === "arbitration") {
+    return ["actTo_settledAward", "actTo_settledAwardDesc"];
+  }
+  return [`actTo_${step}` as Key, `actTo_${step}Desc` as Key];
+}
 
 interface StageAdvanceDialogProps {
   complaintId: number;
@@ -118,10 +128,10 @@ export function StageAdvanceDialog({ complaintId, currentStatus, onSuccess }: St
               >
                 <span className="flex items-center gap-2 text-sm font-medium">
                   <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-                  {t(`actTo_${step}` as Key)}
+                  {t(stepKeys(currentStatus, step)[0])}
                 </span>
                 <span className="mt-1 block text-sm text-muted-foreground">
-                  {t(`actTo_${step}Desc` as Key)}
+                  {t(stepKeys(currentStatus, step)[1])}
                 </span>
               </button>
             ))}
@@ -199,7 +209,11 @@ export function StageAdvanceDialog({ complaintId, currentStatus, onSuccess }: St
               {t("updCancel")}
             </Button>
             <Button type="submit" disabled={!target || isSubmitting}>
-              {isSubmitting ? t("saving") : target ? t(`actTo_${target}` as Key) : t("saveChanges")}
+              {isSubmitting
+                ? t("saving")
+                : target
+                  ? t(stepKeys(currentStatus, target)[0])
+                  : t("saveChanges")}
             </Button>
           </DialogFooter>
         </form>

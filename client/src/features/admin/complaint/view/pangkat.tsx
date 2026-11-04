@@ -304,9 +304,10 @@ export default function PangkatCard({
             <CardTitle>{t("pangkatTitle")}</CardTitle>
             <CardDescription>{t("pangkatDesc")}</CardDescription>
           </div>
-          {canWrite && complaint.status === "conciliation" && (
-            <PangkatModal complaint={complaint} onSuccess={onSuccess} />
-          )}
+          {canWrite &&
+            ["conciliation", "arbitration"].includes(complaint.status) && (
+              <PangkatModal complaint={complaint} onSuccess={onSuccess} />
+            )}
         </div>
       </CardHeader>
 
