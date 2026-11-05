@@ -107,8 +107,9 @@ notifications tab also reads.
 ## Schema and migrations
 
 - Production was built with `prisma db push`, so it has **no `_prisma_migrations`
-  table**. Do not run `pnpm db:deploy` against it — that would try to create
-  tables that already exist. Keep `db:push` as the apply step.
+  table**. Never point `prisma migrate deploy` at it — that would try to create
+  tables that already exist (the `db:deploy`/`db:status` scripts were removed on
+  2026-11-05 so this can not be run by accident). Keep `db:push` as the apply step.
 - **Push the schema before deploying code that reads it.** `Complaint.complainantLang`
   (added 2026-10-29) is written on every public filing, so deploying that build
   onto a database without the column fails every filing with a 500. With
