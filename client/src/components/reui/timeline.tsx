@@ -205,7 +205,7 @@ function TimelineSeparator({
     <div
       aria-hidden="true"
       className={cn(
-        "absolute top-(--timeline-dot-offset) bottom-[calc(var(--timeline-dot-offset)*-1)] left-(--timeline-rail-x) w-px -translate-x-1/2 bg-(--timeline-ink) group-last/timeline-item:hidden",
+        "absolute top-(--timeline-dot-offset) bottom-[calc(var(--timeline-dot-offset)*-1)] left-(--timeline-rail-x) w-[3px] -translate-x-1/2 bg-(--timeline-ink) group-last/timeline-item:hidden",
         className,
       )}
       data-slot="timeline-separator"
