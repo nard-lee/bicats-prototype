@@ -6,6 +6,15 @@ import { STATUS_ACTION } from "@/lib/status";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  Timeline,
+  TimelineContent,
+  TimelineDate,
+  TimelineIndicator,
+  TimelineItem,
+  TimelineSeparator,
+  TimelineTitle,
+} from "@/components/reui/timeline";
+import {
   Card,
   CardContent,
   CardDescription,
@@ -441,7 +450,6 @@ export default function ComplaintView() {
             </Card>
           </div>
 
-          {/* Status History Timeline */}
           {history.length > 0 && (
             <Card>
               <CardHeader>
@@ -451,48 +459,41 @@ export default function ComplaintView() {
                 <p className="mb-4 text-sm text-muted-foreground tabular-nums">
                   {pageCount} · {historyCount}
                 </p>
-                <ol className="space-y-6">
+                <Timeline stacked value={safePage === 1 ? 1 : 0}>
                   {pageEvents.map((event, index) => (
-                    <li key={index} className="relative flex gap-4">
-                      {/* Timeline Line */}
-                      {index !== pageEvents.length - 1 && (
-                        <div className="absolute left-[3px] top-3 bottom-[-24px] w-px bg-border" />
-                      )}
-
-                      <span className="relative z-10 mt-1.5 size-2 shrink-0 rounded-full bg-muted-foreground/60" />
-
-                      <div className="flex-1 space-y-1">
-                        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                          <Badge variant="outline" className="font-bold">
-                            {event.kind === "service"
-                              ? t("serviceHistoryLabel")
-                              : t(`st_${event.status}` as Key)}
-                          </Badge>
-                          <span className="text-sm tabular-nums text-muted-foreground">
-                            {formatDateTime(event.date)}
-                          </span>
+                    <TimelineItem key={index} step={index + 1}>
+                      <TimelineDate dateTime={event.date}>
+                        {formatDateTime(event.date)}
+                      </TimelineDate>
+                      <TimelineIndicator />
+                      <TimelineSeparator />
+                      <TimelineTitle>
+                        {event.kind === "service"
+                          ? t("serviceHistoryLabel")
+                          : t(`st_${event.status}` as Key)}
+                      </TimelineTitle>
+                      {(event.by || event.note || event.hearingAt) && (
+                        <TimelineContent className="space-y-1.5">
                           {event.by && (
-                            <span className="text-sm text-muted-foreground">
+                            <p className="text-sm text-muted-foreground">
                               {t("historyBy")} {event.by}
-                            </span>
+                            </p>
                           )}
-                        </div>
-
-                        {event.note && (
-                          <p className="text-sm leading-relaxed text-foreground/80">
-                            {event.note}
-                          </p>
-                        )}
-
-                        {event.hearingAt && (
-                          <p className="text-sm font-medium">
-                            {t("hearing")}: {formatDateTime(event.hearingAt)}
-                          </p>
-                        )}
-                      </div>
-                    </li>
+                          {event.note && (
+                            <p className="text-sm leading-relaxed text-foreground/80">
+                              {event.note}
+                            </p>
+                          )}
+                          {event.hearingAt && (
+                            <p className="text-sm font-medium">
+                              {t("hearing")}: {formatDateTime(event.hearingAt)}
+                            </p>
+                          )}
+                        </TimelineContent>
+                      )}
+                    </TimelineItem>
                   ))}
-                </ol>
+                </Timeline>
                 {totalPages > 1 && (
                   <div className="mt-6 grid grid-cols-[auto_1fr_auto] items-center gap-2">
                     <Button

@@ -6,6 +6,15 @@ import {
   useSearchParams,
 } from "react-router";
 import { Download } from "lucide-react";
+import {
+  Timeline,
+  TimelineContent,
+  TimelineDate,
+  TimelineIndicator,
+  TimelineItem,
+  TimelineSeparator,
+  TimelineTitle,
+} from "@/components/reui/timeline";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -190,33 +199,32 @@ export default function Track() {
               <h2 className="font-heading text-lg font-bold tracking-tight">
                 {t("statusHistory")}
               </h2>
-              <ol className="mt-6 space-y-7">
+              <Timeline className="mt-6" value={1}>
                 {history.map((event, index) => (
-                  <li
-                    key={index}
-                    className="grid gap-1.5 sm:grid-cols-[12rem_1fr] sm:gap-6"
-                  >
-                    <p className="text-sm tabular-nums text-muted-foreground">
+                  <TimelineItem key={index} step={index + 1}>
+                    <TimelineDate dateTime={event.createdAt}>
                       {fmt(event.createdAt)}
-                    </p>
-                    <div className="space-y-1.5">
-                      <p className="font-heading text-sm font-bold text-primary dark:text-status-ink">
-                        {statusLabel(event.status)}
-                      </p>
-                      {event.publicNote && (
-                        <p className="text-sm leading-relaxed text-foreground/85">
-                          {event.publicNote}
-                        </p>
-                      )}
-                      {event.hearingAt && (
-                        <p className="text-sm font-medium">
-                          {t("hearing")}: {fmt(event.hearingAt)}
-                        </p>
-                      )}
-                    </div>
-                  </li>
+                    </TimelineDate>
+                    <TimelineIndicator />
+                    <TimelineSeparator />
+                    <TimelineTitle>{statusLabel(event.status)}</TimelineTitle>
+                    {(event.publicNote || event.hearingAt) && (
+                      <TimelineContent className="space-y-1.5">
+                        {event.publicNote && (
+                          <p className="text-sm leading-relaxed text-foreground/85">
+                            {event.publicNote}
+                          </p>
+                        )}
+                        {event.hearingAt && (
+                          <p className="text-sm font-medium">
+                            {t("hearing")}: {fmt(event.hearingAt)}
+                          </p>
+                        )}
+                      </TimelineContent>
+                    )}
+                  </TimelineItem>
                 ))}
-              </ol>
+              </Timeline>
             </section>
           )}
 
