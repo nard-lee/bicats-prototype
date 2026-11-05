@@ -3,11 +3,33 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import zlib from "node:zlib";
 import { faker } from "@faker-js/faker";
+import { deleteStoredObject, putStoredObject, storageEnabled } from "../src/utils/storage.js";
 
 // Evidence files have to be real enough to open, so they are generated here
 // rather than pointed at a missing path. Shared by both seeders.
+//
+// Seeders run against whichever database they are pointed at, so the bytes go
+// where that database expects them: the object-storage bucket when the branch
+// credentials are in the environment, otherwise the local uploads directory.
 const UPLOAD_DIR = path.resolve("uploads");
-fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+
+async function writeEvidenceFile(buffer: Buffer, storedName: string, mimeType: string) {
+  if (storageEnabled()) {
+    await putStoredObject(storedName, buffer, mimeType);
+    return;
+  }
+  await fs.promises.mkdir(UPLOAD_DIR, { recursive: true });
+  await fs.promises.writeFile(path.join(UPLOAD_DIR, storedName), buffer);
+}
+
+// Used when a seeder replaces a case it created before: the rows cascade away,
+// so the objects they pointed at have to be removed here or they are orphaned.
+export async function removeEvidenceFiles(storedNames: string[]): Promise<void> {
+  for (const storedName of storedNames) {
+    if (storageEnabled()) await deleteStoredObject(storedName);
+    else await fs.promises.rm(path.join(UPLOAD_DIR, storedName), { force: true });
+  }
+}
 
 const CRC_TABLE = (() => {
   const table = new Uint32Array(256);
@@ -137,7 +159,7 @@ export async function makeEvidence(
         "Supporting document",
         faker.lorem.words(5),
       ]);
-      await fs.promises.writeFile(path.join(UPLOAD_DIR, storedName), buffer);
+      await writeEvidenceFile(buffer, storedName, "application/pdf");
       rows.push({
         originalName: `${faker.word.noun()}-${faker.number.int({ min: 1, max: 99 })}.pdf`,
         storedName,
@@ -147,7 +169,7 @@ export async function makeEvidence(
     } else {
       const storedName = `${randomUUID()}.png`;
       const buffer = makePng(480, 360, faker.helpers.arrayElement(PHOTO_COLORS));
-      await fs.promises.writeFile(path.join(UPLOAD_DIR, storedName), buffer);
+      await writeEvidenceFile(buffer, storedName, "image/png");
       rows.push({
         originalName: `IMG_${faker.string.alphanumeric(6).toUpperCase()}.png`,
         storedName,

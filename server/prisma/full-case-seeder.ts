@@ -7,7 +7,11 @@ import {
   normalizePhone,
   referencePeriod,
 } from "../src/modules/complaint/complaint.helpers.js";
-import { makeEvidence } from "./fake-evidence.js";
+import { makeEvidence, removeEvidenceFiles } from "./fake-evidence.js";
+import {
+  BARANGAY_DEMO_OFFICIALS,
+  LUPON_DEMO_MEMBERS,
+} from "./demo-roster.js";
 
 // One showcase case that walks the whole Katarungang Pambarangay process and
 // ends certified for filing in court, so the printable case summary and the
@@ -67,6 +71,15 @@ async function main() {
 
   const contact = "0917 555 0143";
 
+  // The screening is marked eligible the morning after filing, and no status
+  // after intake is recorded before that moment: an unreviewed case cannot move
+  // forward, so the timeline has to read as if the rule was followed.
+  const eligibilityAt = at(1, 9, 15);
+  const firstStatusChangeAt = at(1, 10, 0);
+  if (firstStatusChangeAt <= eligibilityAt) {
+    throw new Error("Case timeline would move a status before eligibility was marked.");
+  }
+
   // ---- Actors: the people who did the work, taken from the seeded accounts ----
   type Actor = { id: number; fullName: string; role: string };
   const findActor = async (
@@ -89,16 +102,43 @@ async function main() {
   const helper = (await findActor("staff")) ?? pb;
 
   // The Pangkat is three lupon members. Fixed names keep the printed record
-  // stable between runs; the roster itself is whatever the office maintains.
-  const roster = await prisma.luponMember.findMany({
-    where: { isActive: true },
-    orderBy: { id: "asc" },
-    select: { id: true, fullName: true },
-  });
+  // stable between runs; the roster itself is whatever the office maintains,
+  // except that a database with no roster at all gets the demo one so this case
+  // has real names to sit on.
+  const rosterSelect = { id: true, fullName: true } as const;
+  const readRoster = () =>
+    prisma.luponMember.findMany({
+      where: { isActive: true },
+      orderBy: { id: "asc" },
+      select: rosterSelect,
+    });
+  let roster = await readRoster();
+
+  if (roster.length < 3) {
+    const listed = new Set(roster.map((member) => member.fullName));
+    const missing = LUPON_DEMO_MEMBERS.filter((member) => !listed.has(member.fullName));
+    if (missing.length > 0) await prisma.luponMember.createMany({ data: missing });
+    roster = await readRoster();
+    console.log(`✅ Seeded the lupon roster: ${roster.length} members.`);
+  }
   if (roster.length < 3) {
     throw new Error(
       "The lupon roster has fewer than three members. Run pnpm run db:seed first.",
     );
+  }
+
+  // The published council roster goes out only while the site has none, so an
+  // office that already named its officials is never overwritten.
+  const publishedOfficials = await prisma.barangaySettings
+    .findUnique({ where: { id: 1 }, select: { officials: true } })
+    .then((row) => row?.officials ?? []);
+  if (publishedOfficials.length === 0) {
+    await prisma.barangaySettings.upsert({
+      where: { id: 1 },
+      update: { officials: BARANGAY_DEMO_OFFICIALS },
+      create: { id: 1, officials: BARANGAY_DEMO_OFFICIALS },
+    });
+    console.log(`✅ Published ${BARANGAY_DEMO_OFFICIALS.length} barangay officials.`);
   }
   const wanted = ["Elena Bautista", "Nestor Aquino", "Rowena Villamor"];
   const picked = wanted
@@ -144,6 +184,11 @@ async function main() {
   if (previous.length > 0) {
     const complaintIds = previous.map((row) => row.id);
     const hearingIds = previous.flatMap((row) => row.hearings.map((h) => h.id));
+    // The evidence rows cascade with the complaint, so their files are read and
+    // removed here instead of being left behind unreferenced.
+    const orphanedFiles = await prisma.evidence
+      .findMany({ where: { complaintId: { in: complaintIds } }, select: { storedName: true } })
+      .then((rows) => rows.map((row) => row.storedName));
     await prisma.notification.deleteMany({ where: { complaintId: { in: complaintIds } } });
     await prisma.auditLog.deleteMany({
       where: {
@@ -156,6 +201,7 @@ async function main() {
       },
     });
     await prisma.complaint.deleteMany({ where: { id: { in: complaintIds } } });
+    await removeEvidenceFiles(orphanedFiles);
   }
 
   const eligibilityAnswers: EligibilityAnswers = {
@@ -223,7 +269,7 @@ async function main() {
         eligibilityAnswers: eligibilityAnswers as Prisma.InputJsonValue,
         eligibilityNotes:
           "Both parties reside in Barangay Kabayanihan and the respondent has operated his store here for more than six months. Nothing in the complaint falls under the excluded cases.",
-        eligibilityReviewedAt: at(1, 9, 15),
+        eligibilityReviewedAt: eligibilityAt,
 
         pangkatMembers: panel as unknown as Prisma.InputJsonValue,
         pangkatChairman: panel[0]!.fullName,
@@ -244,7 +290,7 @@ async function main() {
               internalNote:
                 "Summons prepared and turned over to the barangay tanod for service; posting copy ordered for the Purok 3 bulletin board.",
               createdById: pb.id,
-              createdAt: at(1, 10, 0),
+              createdAt: firstStatusChangeAt,
             },
             {
               status: "mediation",
@@ -289,7 +335,7 @@ async function main() {
     });
 
     record({
-      when: at(1, 9, 15),
+      when: eligibilityAt,
       actor: pb,
       action: "complaint.eligibility.update",
       entityType: "complaint",
@@ -490,7 +536,7 @@ async function main() {
     });
 
     record({
-      when: at(1, 10, 0),
+      when: firstStatusChangeAt,
       actor: pb,
       action: "complaint.status.update",
       entityType: "complaint",
