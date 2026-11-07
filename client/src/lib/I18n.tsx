@@ -211,6 +211,7 @@ const en = {
   fcTitle: "Complaint Form",
   fcIntro:
     "Fill in all required information. Incorrect information may be grounds for dismissal of the complaint.",
+  fcPickIncident: "Select the date and time of the incident.",
   s1Title: "Complainant details",
   s1Sub: "Person filing the complaint",
   s2Title: "Respondent",
@@ -219,9 +220,12 @@ const en = {
   s3Sub: "What happened",
   fullName: "Full name",
   age: "Age",
+  ageHint:
+    "You must be 18 or older to file online. A parent or guardian can file at the barangay hall.",
   purok: "Purok / Sitio",
   selectPurok: "Select purok",
   contactNumber: "Contact number",
+  contactHint: "Mobile number, like 0917 000 0000 or +63 917 000 0000.",
   address: "Complete address",
   emailHint: "We'll send updates here too, if you add one.",
   respName: "Name of respondent",
@@ -250,6 +254,10 @@ const en = {
   historyBy: "updated by",
   evHint: "Photos, videos, receipts, or documents. Up to 5 files, 10 MB each.",
   dropFiles: "Drag files here or browse",
+  evAllowed: "JPG, PNG, PDF, MP4",
+  evTooMany: "You can attach at most {max} files.",
+  evBadType: "Unsupported file type: {name}. Allowed: {allowed}.",
+  evTooBig: "{name} is larger than {size}.",
   clearFiles: "Clear files",
   consentA: "I understand that this complaint must first go through ",
   consentC:
@@ -1065,6 +1073,7 @@ const tl: Record<Key, string> = {
   fcTitle: "Reklamo Form",
   fcIntro:
     "Punan ang lahat ng kinakailangang impormasyon. Ang mga maling impormasyon ay maaaring maging dahilan ng pagbasura ng reklamo.",
+  fcPickIncident: "Piliin ang petsa at oras ng insidente.",
   s1Title: "Impormasyon ng nagrereklamo",
   s1Sub: "Ang naghahain ng reklamo",
   s2Title: "Inirereklamo",
@@ -1073,9 +1082,12 @@ const tl: Record<Key, string> = {
   s3Sub: "Ang nangyari",
   fullName: "Buong pangalan",
   age: "Edad",
+  ageHint:
+    "Kailangan 18 pataas para makapag-file online. Kung mas bata pa, ang magulang o tagapag-alaga ang maaaring pumunta at mag-file sa barangay hall.",
   purok: "Purok / Sitio",
   selectPurok: "Piliin ang purok",
   contactNumber: "Contact number",
+  contactHint: "Numero ng mobile, gaya ng 0917 000 0000 o +63 917 000 0000.",
   address: "Kumpletong address",
   emailHint: "Dito rin namin ipapadala ang mga update, kung maglalagay ka.",
   respName: "Pangalan ng inirereklamo",
@@ -1104,6 +1116,10 @@ const tl: Record<Key, string> = {
   historyBy: "ina-update ni",
   evHint: "Mga larawan, video, resibo, o dokumento. Hanggang 5 files, 10 MB bawat isa.",
   dropFiles: "I-drag ang files dito o mag-browse",
+  evAllowed: "JPG, PNG, PDF, MP4",
+  evTooMany: "Maaari lamang mag-attach ng hanggang {max} file.",
+  evBadType: "Hindi tanggap na uri ng file: {name}. Mga pinapayagan: {allowed}.",
+  evTooBig: "Mas malaki sa {size} ang {name}.",
   clearFiles: "Alisin ang mga file",
   consentA: "Nauunawaan ko na ang reklamong ito ay dadaan muna sa ",
   consentC:

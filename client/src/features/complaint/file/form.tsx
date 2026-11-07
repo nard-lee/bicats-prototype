@@ -42,7 +42,11 @@ import {
 const MAX_FILES = 5;
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "application/pdf", "video/mp4"]);
-const ALLOWED_LABEL = "JPG, PNG, PDF, MP4";
+// Mirrors the server's normalizePhone + /^09\d{9}$/ check: a leading 0 or 63,
+// then ten digits, with spaces, dots or dashes allowed between them. Browsers
+// compile `pattern` with the regex `v` flag, where `-` and `.` must be escaped
+// inside a character class or the whole constraint is silently dropped.
+const PHONE_PATTERN = String.raw`(?:\+?63|0)[\-\.\s]?9(?:[\-\.\s]?\d){9}`;
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -174,6 +178,7 @@ export default function FileComplaint() {
   const [files, setFiles] = useState<File[]>([]);
   const [fileError, setFileError] = useState<string | null>(null);
   const [incidentAt, setIncidentAt] = useState("");
+  const [incidentError, setIncidentError] = useState<string | null>(null);
   const [complaintType, setComplaintType] = useState("");
   const [eligibility, setEligibility] =
     useState<EligibilityFormState>(EMPTY_ELIGIBILITY);
@@ -205,19 +210,27 @@ export default function FileComplaint() {
     };
 
     if (selected.length > MAX_FILES) {
-      fail(`You can attach at most ${MAX_FILES} files.`);
+      fail(t("evTooMany").replace("{max}", String(MAX_FILES)));
       return;
     }
 
     const badType = selected.find((f) => !ALLOWED_TYPES.has(f.type));
     if (badType) {
-      fail(`Unsupported file type: ${badType.name}. Allowed: ${ALLOWED_LABEL}.`);
+      fail(
+        t("evBadType")
+          .replace("{name}", badType.name)
+          .replace("{allowed}", t("evAllowed")),
+      );
       return;
     }
 
     const tooBig = selected.find((f) => f.size > MAX_FILE_SIZE);
     if (tooBig) {
-      fail(`"${tooBig.name}" is larger than 10 MB.`);
+      fail(
+        t("evTooBig")
+          .replace("{name}", tooBig.name)
+          .replace("{size}", `${MAX_FILE_SIZE / (1024 * 1024)} MB`),
+      );
       return;
     }
 
@@ -334,7 +347,19 @@ export default function FileComplaint() {
         encType="multipart/form-data"
         className="mt-8 space-y-6"
         onSubmit={(event) => {
-          if (blocked) event.preventDefault();
+          if (blocked) {
+            event.preventDefault();
+            return;
+          }
+          // Every other mandatory control carries a native `required`; the
+          // incident picker is a button, so it is guarded here instead.
+          if (!incidentAt) {
+            event.preventDefault();
+            setIncidentError(t("fcPickIncident"));
+            document
+              .getElementById("incidentAt")
+              ?.scrollIntoView({ block: "center", behavior: "smooth" });
+          }
         }}
       >
 
@@ -556,24 +581,27 @@ export default function FileComplaint() {
               id="complainantName"
               name="complainantName"
               placeholder="Juan A. Dela Cruz"
+              required
               aria-invalid={!!fields.complainantName}
             />
             <FieldError message={fields.complainantName} />
           </Field>
-          <Field id="complainantAge" label={t("age")}>
+          <Field id="complainantAge" label={t("age")} hint={t("ageHint")}>
             <Input
               id="complainantAge"
               name="complainantAge"
               type="number"
               inputMode="numeric"
-              min={1}
+              min={18}
+              max={120}
               placeholder="34"
+              required
               aria-invalid={!!fields.complainantAge}
             />
             <FieldError message={fields.complainantAge} />
           </Field>
           <Field id="complainantPurok" label={t("purok")}>
-            <Select name="complainantPurok">
+            <Select name="complainantPurok" required>
               <SelectTrigger id="complainantPurok" className="w-full">
                 <SelectValue placeholder={t("selectPurok")} />
               </SelectTrigger>
@@ -587,7 +615,7 @@ export default function FileComplaint() {
             </Select>
             <FieldError message={fields.complainantPurok} />
           </Field>
-          <Field id="complainantContact" label={t("contactNumber")}>
+          <Field id="complainantContact" label={t("contactNumber")} hint={t("contactHint")}>
             <Input
               id="complainantContact"
               name="complainantContact"
@@ -595,6 +623,9 @@ export default function FileComplaint() {
               inputMode="tel"
               autoComplete="tel"
               placeholder="0917 000 0000"
+              pattern={PHONE_PATTERN}
+              title={t("contactHint")}
+              required
               aria-invalid={!!fields.complainantContact}
             />
             <FieldError message={fields.complainantContact} />
@@ -620,6 +651,7 @@ export default function FileComplaint() {
               id="complainantAddress"
               name="complainantAddress"
               placeholder="Blk / Lot / Street"
+              required
               aria-invalid={!!fields.complainantAddress}
             />
             <FieldError message={fields.complainantAddress} />
@@ -633,6 +665,7 @@ export default function FileComplaint() {
               id="respondentName"
               name="respondentName"
               placeholder={t("phRespName")}
+              required
               aria-invalid={!!fields.respondentName}
             />
             <FieldError message={fields.respondentName} />
@@ -669,6 +702,7 @@ export default function FileComplaint() {
               name="complaintType"
               value={complaintType}
               onValueChange={setComplaintType}
+              required
             >
               <SelectTrigger id="complaintType" className="w-full">
                 <SelectValue placeholder={t("selectType")} />
@@ -700,17 +734,22 @@ export default function FileComplaint() {
             <DateTimePicker
               id="incidentAt"
               value={incidentAt}
-              onChange={setIncidentAt}
-              aria-invalid={!!fields.incidentAt}
+              onChange={(next) => {
+                setIncidentAt(next);
+                setIncidentError(null);
+              }}
+              disableFuture
+              aria-invalid={!!(incidentError || fields.incidentAt)}
             />
             <input type="hidden" name="incidentAt" value={incidentAt} />
-            <FieldError message={fields.incidentAt} />
+            <FieldError message={incidentError ?? fields.incidentAt} />
           </Field>
           <Field id="incidentPlace" label={t("place")} full>
             <Input
               id="incidentPlace"
               name="incidentPlace"
               placeholder={t("phPlace")}
+              required
               aria-invalid={!!fields.incidentPlace}
             />
             <FieldError message={fields.incidentPlace} />
@@ -721,6 +760,7 @@ export default function FileComplaint() {
               name="narrative"
               rows={7}
               placeholder={t("phNarr")}
+              required
               aria-invalid={!!fields.narrative}
             />
             <FieldError message={fields.narrative} />
@@ -731,7 +771,7 @@ export default function FileComplaint() {
               <Upload className="size-6 text-muted-foreground" />
               <span>{t("dropFiles")}</span>
               <span className="flex items-center gap-1 text-sm text-muted-foreground">
-                <Paperclip className="size-3" /> {ALLOWED_LABEL}
+                <Paperclip className="size-3" /> {t("evAllowed")}
               </span>
               <input
                 id="evidence"
@@ -770,7 +810,13 @@ export default function FileComplaint() {
 
         {/* Consent */}
         <div className="flex items-start gap-3 rounded-lg bg-primary/5 px-5 py-6 ring-1 ring-border dark:ring-background">
-          <Checkbox id="consent" name="consent" className="mt-1" aria-invalid={!!fields.consent} />
+          <Checkbox
+            id="consent"
+            name="consent"
+            required
+            className="mt-1"
+            aria-invalid={!!fields.consent}
+          />
           <Label htmlFor="consent" className="text-sm font-normal leading-relaxed">
             <span>
               {t("consentA")}

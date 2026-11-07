@@ -38,6 +38,9 @@ type Props = {
   placeholder?: string
   minuteStep?: number
   className?: string
+  // For dates that cannot lie ahead (an incident, a filing): future days are
+  // unreachable and any time picked past now snaps back to now.
+  disableFuture?: boolean
   "aria-invalid"?: boolean
 }
 
@@ -49,6 +52,7 @@ export default function DateTimePicker({
   placeholder = "Select date & time",
   minuteStep = 5,
   className,
+  disableFuture,
   ...rest
 }: Props) {
   const selected = parseLocal(value)
@@ -58,6 +62,18 @@ export default function DateTimePicker({
     year: initial.getFullYear(),
     month: initial.getMonth(),
   })
+
+  // The cap reuses the module-scope NOW so no Date is built during render.
+  const cap = disableFuture ? NOW : null
+  const capParts = cap
+    ? { year: cap.getFullYear(), month: cap.getMonth(), day: cap.getDate() }
+    : null
+  const nextView =
+    view.month === 11 ? { year: view.year + 1, month: 0 } : { year: view.year, month: view.month + 1 }
+  const canGoNext =
+    !capParts ||
+    nextView.year < capParts.year ||
+    (nextView.year === capParts.year && nextView.month <= capParts.month)
 
   const hours = Array.from({ length: 12 }, (_, i) => i + 1)
   const minutes: number[] = []
@@ -77,7 +93,8 @@ export default function DateTimePicker({
   }
 
   function emit(next: Date) {
-    onChange(toLocalInput(next))
+    const clamped = cap && next.getTime() > cap.getTime() ? cap : next
+    onChange(toLocalInput(clamped))
   }
 
   function pickDay(day: number) {
@@ -177,6 +194,7 @@ export default function DateTimePicker({
             variant="ghost"
             size="icon-sm"
             aria-label="Next month"
+            disabled={!canGoNext}
             onClick={() =>
               setView((v) =>
                 v.month === 11 ? { year: v.year + 1, month: 0 } : { ...v, month: v.month + 1 },
@@ -207,16 +225,23 @@ export default function DateTimePicker({
               NOW.getFullYear() === view.year &&
               NOW.getMonth() === view.month &&
               NOW.getDate() === day
+            const isCapped =
+              !!capParts &&
+              view.year === capParts.year &&
+              view.month === capParts.month &&
+              day > capParts.day
             return (
               <button
                 key={`day-${day}`}
                 type="button"
+                disabled={isCapped}
                 onClick={() => pickDay(day)}
                 className={cn(
                   "flex size-8 items-center justify-center rounded-md text-sm transition-colors hover:bg-muted",
                   isToday && !isSelected && "font-semibold text-primary dark:text-status-ink",
                   isSelected &&
                     "bg-primary font-medium text-primary-foreground hover:bg-primary hover:text-primary-foreground",
+                  isCapped && "pointer-events-none opacity-30",
                 )}
               >
                 {day}

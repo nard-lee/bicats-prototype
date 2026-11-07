@@ -43,7 +43,13 @@ const optionalText = (max: number) =>
 export const createComplaintSchema = z
     .object({
         complainantName: z.string("required").trim().min(2).max(100),
-        complainantAge: z.coerce.number().int().min(1).max(120),
+        // Minors file through a parent or guardian at the hall; the online desk
+        // has no way to record who is actually filing on their behalf.
+        complainantAge: z.coerce
+            .number()
+            .int()
+            .min(18, "You must be 18 or older to file online. A parent or guardian can file at the barangay hall.")
+            .max(120, "Enter a valid age"),
         complainantPurok: z.string().trim().min(1).max(50),
         complainantContact: z.string().trim().min(7).max(20),
         complainantAddress: z.string().trim().min(3).max(200),
