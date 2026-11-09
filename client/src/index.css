@@ -205,6 +205,19 @@ main:has([data-save-bar]) {
 
 /* Printing a page (e.g. the analytics report) drops the app chrome. */
 @media print {
+  /* Chrome writes its own header (page title + URL) and footer (page number +
+     clock) into the @page margin band, and prints them unless the box in the
+     dialog is unticked. A zero margin leaves that band nowhere to render, so
+     the paper margins come from the sheet itself instead — and clone repeats
+     them on every page a multi-page record spills onto. */
+  @page {
+    margin: 0;
+  }
+  article {
+    padding: 14mm 18mm !important;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
   [data-slot="sidebar"],
   [data-slot="sidebar-gap"],
   [data-slot="sidebar-container"],
