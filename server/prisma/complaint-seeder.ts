@@ -648,7 +648,13 @@ async function main() {
   };
 
   const sessionsFor: Partial<Record<string, SessionPlan[]>> = {
-    mediation: [{ offsetDays: 3, kind: "mediation", status: "scheduled" }],
+    mediation: [
+      // A sitting that has already passed but was never written up: this is
+      // the state staff actually record attendance from, so the demo has a
+      // live row and the Overdue view has something in it.
+      { offsetDays: -1, kind: "mediation", status: "scheduled" },
+      { offsetDays: 3, kind: "mediation", status: "scheduled" },
+    ],
     conciliation: [
       { offsetDays: 4, kind: "conciliation", status: "scheduled" },
     ],
