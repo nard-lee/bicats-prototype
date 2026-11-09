@@ -27,6 +27,7 @@ const en = {
   roleLupon: "Lupon Member",
   themeLight: "Switch to light mode",
   themeDark: "Switch to dark mode",
+  language: "Language",
   auditSubtitle: "A record of who did what and when.",
   auditEmpty: "No activity recorded yet.",
   auditWhen: "When",
@@ -763,18 +764,110 @@ const en = {
   printDoc: "Print / Save as PDF",
   backToCase: "Back to case",
   doc_summons: "Summons",
-  doc_notice: "Notice of Mediation",
+  doc_notice: "Notice to Appear",
   doc_settlement: "Amicable Settlement",
   doc_cfa: "Certificate to File Action",
   lblPunongBarangay: "Punong Barangay",
   lblPangkatChairman: "Chairman, Pangkat ng Tagapagkasundo",
+  lblPangkatMember: "Pangkat Member",
   lblSecretary: "Barangay Secretary",
   lblWitnessedBy: "Signed in the presence of",
   cfaCertifiedBy: "Certified by",
-  cfaAttestedBy: "Attested by",
+  docNotedBy: "Noted by",
   lblComplainant: "Complainant",
   lblRespondent: "Respondent",
   lblAttestedBy: "Attested by",
+
+  // Shared paper furniture: the caption, the registry stamp and the receipt.
+  docCaptionIntro: "In the Matter of:",
+  docVersus: "-versus-",
+  docCaseNo: "Case No.",
+  docSubject: "Subject",
+  docDocNo: "Doc. No.",
+  docPageNo: "Page No.",
+  docSeriesOf: "Series of",
+  docReceiptHead: "Service Acknowledgement",
+  docReceivedBy: "Received by",
+  docReceivedWhen: "Date and time received",
+  docServedBy: "Served by",
+  docReceiptNote:
+    "Keep this paper until the hearing and bring it with you to the Barangay Hall.",
+
+  // Sentence segments. Each letter is assembled from these, so the values are
+  // deliberately bare: no leading spaces, and the markup supplies the spaces.
+  docTo: "TO",
+  docAnd: "and",
+  docAgainst: "against",
+  docDocketedAs: ", docketed as",
+  docForSubject: ", for",
+  docCommittedOn: ", committed on",
+  docAtPlace: "at",
+  docOnDate: ", on",
+  docAtTime: "at",
+  docIssuedOn: "Issued this",
+  docIssuedAt: "at",
+  docCountry: "Philippines",
+  docGreetings: "GREETINGS:",
+  docWarning: "IMPORTANT",
+
+  dSumP1a:
+    "You are hereby summoned to appear before the Punong Barangay in connection with the complaint filed by",
+  dSumP2a:
+    "You are required to appear at the Barangay Hall of",
+  dSumP2b:
+    "to answer the complaint and to attend the mediation proceedings.",
+  dSumWarn:
+    "Please appear personally on the date and time stated above. If you cannot attend for a valid reason, promptly inform the Barangay Office. Under Sections 408 to 412 of Republic Act No. 7160, your failure to appear without a valid reason is recorded, and after two consecutive failures to appear the Punong Barangay shall certify the case for filing before the proper court.",
+
+  dNotP1a:
+    "You are hereby notified to appear for the scheduled barangay proceeding concerning the complaint docketed as",
+  dNotP1b: ", filed by",
+  dNotProceeding: "Proceeding (marked according to the scheduled session):",
+  dNotMediation: "Mediation before the Punong Barangay",
+  dNotConciliation: "Conciliation or arbitration before the Pangkat ng Tagapagkasundo",
+  dNotP2a: "The proceeding will be held at the Barangay Hall of",
+  dNotP2b:
+    ". Please bring relevant documents and other evidence. Parties are generally required to appear personally, subject to the exceptions provided by law.",
+  dNotP3:
+    "This proceeding forms part of the Katarungang Pambarangay process under Republic Act No. 7160, where barangay conciliation is required by law before an action may be filed.",
+
+  dSetKnow: "KNOW ALL MEN BY THESE PRESENTS:",
+  dSetIntro:
+    "that the parties named above, having voluntarily submitted their dispute to the Katarungang Pambarangay of this barangay, have agreed to settle their dispute amicably on the following terms:",
+  dSetRecital1:
+    "That the Complainant and the Respondent are residents of this barangay and have brought their dispute before the Lupong Tagapamayapa under Republic Act No. 7160.",
+  dSetRecital2a: "That the dispute is a complaint for",
+  dSetRecital3:
+    "That the parties, preferring to settle their differences in a friendly manner, have executed this agreement before the officer who assisted them.",
+  dSetNow: "NOW THEREFORE,",
+  dSetAssistedA: "the parties, assisted by",
+  dSetAssistedPangkat: "the Pangkat ng Tagapagkasundo chaired by",
+  dSetAssistedPb: "the Punong Barangay, who chairs the Lupong Tagapamayapa,",
+  dSetAssistedB: "have agreed to settle their dispute amicably under the following terms and conditions:",
+  dSetTermsHead: "Terms and Conditions of Settlement",
+  dSetTermsHint:
+    "Write the specific obligations agreed to by the parties, including amounts, dates, manner of payment or performance, and any other agreed conditions. Do not use a general status-history note as the settlement terms.",
+  dSetRead:
+    "The parties confirm that they have read or have had the terms explained to them in a language or dialect they understand, and that they are signing this settlement voluntarily. Its legal effect and enforcement are governed by Section 413 of Republic Act No. 7160, including the rules on repudiation and on execution of the settlement.",
+  dSetWitnessA:
+    "IN WITNESS WHEREOF, the parties have signed this Amicable Settlement on",
+
+  dCfaToWhom: "TO WHOM IT MAY CONCERN:",
+  dCfaP1a: "This is to certify that a complaint for",
+  dCfaP1b: "was filed by",
+  dCfaP1c: "before this Office, docketed as",
+  dCfaP2:
+    "The records of this Office show that the applicable Katarungang Pambarangay proceedings for this dispute were conducted and that the ground supporting this certification is the following (the issuing officer must select and complete the applicable ground):",
+  dCfaG1: "☐ No amicable settlement was reached before the Punong Barangay.",
+  dCfaG2:
+    "☐ No amicable settlement was reached before the Pangkat ng Tagapagkasundo.",
+  dCfaG3:
+    "☐ An amicable settlement was repudiated on a ground and in the manner provided by law.",
+  dCfaG4:
+    "☐ A party failed to appear despite due summons or notice: after two consecutive failures to appear on two scheduled dates, Section 412 of Republic Act No. 7160 allows this certification to issue.",
+  dCfaG5: "☐ Other legally applicable ground:",
+  dCfaP3:
+    "This certification is issued pursuant to Section 412 of Republic Act No. 7160, otherwise known as the Local Government Code of 1991, only upon verification that the legal and procedural requirements for its issuance have been satisfied. It is intended to support the filing of the appropriate action with the proper court or government office, as applicable.",
 
   // Case summary report: a printed record of what the system holds, not a KP paper.
   doc_summary: "Case Summary Report",
@@ -920,6 +1013,7 @@ const tl: Record<Key, string> = {
   roleLupon: "Kagawad ng Lupon",
   themeLight: "Lumipat sa maliwanag na tema",
   themeDark: "Lumipat sa madilim na tema",
+  language: "Wika",
   auditSubtitle: "Talaan kung sino ang gumawa ng ano at kailan.",
   auditEmpty: "Wala pang naitalang gawain.",
   auditWhen: "Kailan",
@@ -1657,18 +1751,108 @@ const tl: Record<Key, string> = {
   printDoc: "I-print / I-save bilang PDF",
   backToCase: "Bumalik sa kaso",
   doc_summons: "Patawag (Summons)",
-  doc_notice: "Abiso ng Mediatasyon",
+  doc_notice: "Abiso ng Paglitaw",
   doc_settlement: "Kasunduang Pag-aayos",
   doc_cfa: "Sertipiko para Magsampa ng Kaso",
   lblPunongBarangay: "Punong Barangay",
   lblPangkatChairman: "Tagapangulo ng Pangkat ng Tagapagkasundo",
+  lblPangkatMember: "Kasapi ng Pangkat",
   lblSecretary: "Barangay Secretario",
   lblWitnessedBy: "Pinangdalahan ni",
   cfaCertifiedBy: "Sinertipohan ni",
-  cfaAttestedBy: "Pinatunayan ni",
+  docNotedBy: "Pinunan ni",
   lblComplainant: "Nagrereklamo",
   lblRespondent: "Inirereklamo",
   lblAttestedBy: "Pinatunayan ni",
+
+  // Shared paper furniture: the caption, the registry stamp and the receipt.
+  docCaptionIntro: "Sa isyu ng:",
+  docVersus: "laban kay",
+  docCaseNo: "Numero ng kaso",
+  docSubject: "Paksa",
+  docDocNo: "Doc. Blg.",
+  docPageNo: "Pahina Blg.",
+  docSeriesOf: "Sunod ng taon",
+  docReceiptHead: "Patunay ng Paghahatid",
+  docReceivedBy: "Tinanggap ni",
+  docReceivedWhen: "Petsa at oras ng pagtanggap",
+  docServedBy: "Ihinatid ni",
+  docReceiptNote:
+    "Itabi ang papel na ito hanggang sa pagdinig at dalhin sa Bahay Barangay.",
+
+  docTo: "SA KAY",
+  docAnd: "at",
+  docAgainst: "laban kay",
+  docDocketedAs: ", na nakatala bilang",
+  docForSubject: ", para sa",
+  docCommittedOn: ", nangyari noong",
+  docAtPlace: "sa",
+  docOnDate: ", noong",
+  docAtTime: "at",
+  docIssuedOn: "Inilabas ngayong",
+  docIssuedAt: "sa",
+  docCountry: "Pilipinas",
+  docGreetings: "MABUHAY:",
+  docWarning: "MAHALAGA",
+
+  dSumP1a:
+    "Kayo ay pinapatawag sa harapan ng Punong Barangay kaugnay ng reclamong isampa ni",
+  dSumP2a:
+    "Inaasahan ang inyong paglitaw sa Bahay Barangay ng",
+  dSumP2b:
+    "upang sagutin ang reclamo at makilahok sa mediatasyon.",
+  dSumWarn:
+    "Maaaring lumitaw personal sa petsa at orang nakasaad sa itaas. Kung may mahusay na dahilan kayo sa hindi paglitaw, agarang pabalitaan ang Tanggapan ng Barangay. Ayon sa Seksiyon 408 hanggang 412 ng Republika Blg. 7160, itinala ang inyong hindi paglitaw na walang makatwirang dahilan, at pagkatapos ng dalawang sunod-sunod na pagwalang-lihit ay naglalabas ang Punong Barangay ng sertipiko upang magsampa sa naaangkop na hukuman.",
+
+  dNotP1a:
+    "Kayo ay abisahang lumitaw sa nakatakdang suliranin ng barangay hinggil sa reclamong nakatala bilang",
+  dNotP1b: ", na isampa ni",
+  dNotProceeding: "Suliranin (minarkahan ayon sa nakatakdang sesyon):",
+  dNotMediation: "Mediatasyon sa harapan ng Punong Barangay",
+  dNotConciliation: "Konkiliasyon o arbitrasyon sa harapan ng Pangkat ng Tagapagkasundo",
+  dNotP2a: "Ang suliranin ay isagawa sa Bahay Barangay ng",
+  dNotP2b:
+    ". Mangyaring magdala ng mga dokumento at iba pang ebidensya. Sa kabuuan ay kinakailangang lumitaw personal ang mga partido, saklap ang mga pagbibigong-katwirang nakasaad sa batas.",
+  dNotP3:
+    "Ang suliraning ito ay bahagi ng proseso ng Katarungang Pambarangay sa ilalim ng Republika Blg. 7160, kung saan ang konkiliyasyon sa barangay ay kinakailangan ng batas bago magsampa ng kaso.",
+
+  dSetKnow: "SA LAHAT NG NANANAMPING TANAWIN:",
+  dSetIntro:
+    "ang mga partido na nakalista sa itaas, nang kusa nilang isumite ang kanilang away sa Katarungang Pambarangay ng barangay na ito, ay nagkasunduang ayusin ang kanilang di-pagkakaunawaan sa mga sumusunod na tuntunin:",
+  dSetRecital1:
+    "Na ang Nagrereklamo at ang Inirereklamo ay naninirahan sa barangay na ito at dinala ang kanilang away sa Lupong Tagapamayapa sa ilalim ng Republika Blg. 7160.",
+  dSetRecital2a: "Na ang di-pagkakaunawaan ay reclamo para sa",
+  dSetRecital3:
+    "Na ang mga partido, na mas nangipagbigay na ayusin ang kanilang di-pagkakaunawaan sa maayong paraan, ay nilagdaan ang kasunduang ito sa harapan ng opisyal na tumulong sa kanila.",
+  dSetNow: "KAYA NAMAN,",
+  dSetAssistedA: "ang mga partido, sa tulong ni",
+  dSetAssistedPangkat: "ng Pangkat ng Tagapagkasundo na pinamumunuan ni",
+  dSetAssistedPb: "ng Punong Barangay, na tagapangulo ng Lupong Tagapamayapa,",
+  dSetAssistedB: "ay nagkasunduang ayusin ang kanilang di-pagkakaunawaan sa mga sumusunod na tuntunin at kundisyon:",
+  dSetTermsHead: "Mga Tuntunin at Kundisyon ng Pag-aayos",
+  dSetTermsHint:
+    "Isulat ang mga tiyak na tungkuling pagkasunduan ng mga partido, kabilang ang halaga, petsa, paraan ng pagbabayad o pagtupad, at anumang ibang kondisyong napagkasunduan. Huwag gamitin ang pangkalahang tala ng status bilang tuntunin ng pag-aayos.",
+  dSetRead:
+    "Pinatutunayan ng mga partido na nabasa nila o naipaliwanag sa kanila ang mga tuntunin sa wika o diyalektong nauunawaan nila, at kusang-loob nilang nilagdaan ang kasunduang ito. Ang bisa at pagpapatupad nito ay sakop ng Seksiyon 413 ng Republika Blg. 7160, kabilang ang mga tuntunin sa pagtanggi at sa pagpapatupad ng pag-aayos.",
+  dSetWitnessA:
+    "BILANG PATUNAY NG MGA BAGAY NA ITO, ang mga partido ay naglagda ng Kasunduang Pag-aayos noong",
+
+  dCfaToWhom: "SA LAHAT NG AANGKOP MALAMAN:",
+  dCfaP1a: "Ito ay pagpapatunay na may reclamo para sa",
+  dCfaP1b: "na isampa ni",
+  dCfaP1c: "sa Tanggapan nang ito, na nakatala bilang",
+  dCfaP2:
+    "Ang mga talaan ng Tanggapan nang ito ay nagpapakita na isinagawa ang naaangkop na proseso ng Katarungang Pambarangay para sa di-pagkakaunawaang ito, at ang dahilan ng sertipikasyong ito ay ang sumusunod (ang naglabas na opisyal ay pumipili at punan ang naaangkop na dahilan):",
+  dCfaG1: "☐ Walang nagawang maayos na pag-aayos sa harapan ng Punong Barangay.",
+  dCfaG2:
+    "☐ Walang nagawang maayos na pag-aayos sa harapan ng Pangkat ng Tagapagkasundo.",
+  dCfaG3:
+    "☐ Isang partido ang tumanggi sa maayos na pag-aayos sa dahilan at paraang tinuturing ng batas.",
+  dCfaG4:
+    "☐ Isang partido ang hindi lumitaw sa kabila ng tamang patawag o abiso: pagkatapos ng dalawang sunod-sunod na pagwalang-lihit sa dalawang nakatakdang petsa, pinapayagan ng Seksiyon 412 ng Republika Blg. 7160 na ilabas ang sertipikasyong ito.",
+  dCfaG5: "☐ Ibang legal na naaangkop na dahilan:",
+  dCfaP3:
+    "Ang sertipikasyong ito ay inilalabas alinsunod sa Seksiyon 412 ng Republika Blg. 7160, kilala rin bilang Kode ng Pamahalaang Lokal ng 1991, pagkatapos lamang beripikahin na matugunan ang mga kinakailangang legal at prosesuar. Layunin nitong suportahan ang paglalahad ng naaangkop na aksyon sa tamang hukuman o tanggapan ng pamahalaan, kung naaangkop.",
 
   // Case summary report: a printed record of what the system holds, not a KP paper.
   doc_summary: "Ulat ng Buod ng Kaso",

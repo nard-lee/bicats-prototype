@@ -1,24 +1,37 @@
 import { useT, type Lang } from "@/lib/I18n";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+// A language names itself, so the two options stay untranslated on purpose.
+const LANGUAGES: Array<{ value: Lang; label: string }> = [
+  { value: "en", label: "English" },
+  { value: "tl", label: "Filipino" },
+];
 
 export default function LanguageToggle() {
-  const { lang, setLang } = useT();
+  const { lang, setLang, t } = useT();
 
   return (
-    <div className="flex overflow-hidden rounded-md border text-xs font-medium">
-      {(["tl", "en"] as Lang[]).map((l) => (
-        <button
-          key={l}
-          type="button"
-          onClick={() => setLang(l)}
-          aria-pressed={lang === l}
-          className={`px-2.5 py-1.5 ${lang === l
-            ? "bg-primary text-primary-foreground"
-            : "text-muted-foreground hover:text-foreground"
-            }`}
-        >
-          {l.toUpperCase()}
-        </button>
-      ))}
-    </div>
+    <Select value={lang} onValueChange={(value) => setLang(value as Lang)}>
+      <SelectTrigger
+        size="sm"
+        className="w-[7.25rem]"
+        aria-label={t("language")}
+      >
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {LANGUAGES.map((language) => (
+          <SelectItem key={language.value} value={language.value}>
+            {language.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
