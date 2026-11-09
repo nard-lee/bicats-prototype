@@ -219,7 +219,10 @@ export default function AdminLayout() {
       </Sidebar>
 
       <SidebarInset className="flex h-svh min-h-0 flex-col overflow-hidden">
-        <header className="sticky top-0 z-30 flex h-15 items-center justify-between border-b bg-background px-4">
+        {/* Above every page band on purpose: the mediation control row sticks
+            at z-30 inside <main>, and a tie resolves by DOM order, which would
+            slide the open notification panel underneath it. */}
+        <header className="sticky top-0 z-40 flex h-15 items-center justify-between border-b bg-background px-4">
           <div className="flex min-w-0 flex-1 items-center gap-2">
             <SidebarTrigger />
             
