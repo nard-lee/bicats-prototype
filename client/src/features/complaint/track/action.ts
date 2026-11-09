@@ -2,12 +2,14 @@ import type { ActionFunctionArgs } from "react-router";
 import { HTTPError } from "ky";
 import { api } from "@/lib/api";
 import type { Key } from "@/lib/I18n";
+import type { HearingKind } from "@/lib/session-kind";
 import { rememberReference } from "../reference";
 
 type Update = {
   status: string;
   publicNote: string | null;
   hearingAt: string | null;
+  hearingKind: HearingKind | null;
   createdAt: string;
 };
 

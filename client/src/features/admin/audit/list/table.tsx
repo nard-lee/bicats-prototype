@@ -29,19 +29,25 @@ import type { AuditRow, Paginated } from "./loader";
 
 const ENTITY_TYPES = ["complaint", "hearing", "notice", "user", "auth", "setting"] as const;
 
-// Friendly labels for the dotted action codes written by the server.
+// Friendly labels for the dotted action codes written by the server. One entry
+// per code in auditFromRequest calls, so no row ever shows the raw code.
 const ACTION_LABEL: Record<string, string> = {
   "auth.login": "Signed in",
+  "auth.token_reuse": "Token reuse detected",
   "user.create": "Account created",
   "user.update": "Account updated",
   "complaint.status.update": "Case status changed",
   "complaint.bulk_status": "Bulk status update",
   "complaint.reopen": "Case reopened",
   "complaint.pangkat.update": "Pangkat panel recorded",
+  "complaint.eligibility.update": "Eligibility reviewed",
+  "complaint.service.record": "Proof of service recorded",
+  "complaint.summary.generate": "Case summary generated",
   "complaint.notify.failed": "Complainant alert failed",
-  "hearing.create": "Mediation scheduled",
-  "hearing.update": "Mediation updated",
-  "hearing.cancel": "Mediation cancelled",
+  "hearing.create": "Session scheduled",
+  "hearing.update": "Session updated",
+  "hearing.cancel": "Session cancelled",
+  "hearing.attendance": "Attendance recorded",
   "notice.create": "Notice created",
   "notice.update": "Notice updated",
   "notice.delete": "Notice deleted",
@@ -50,7 +56,7 @@ const ACTION_LABEL: Record<string, string> = {
 
 const entityLabel: Record<string, string> = {
   complaint: "Complaint",
-  hearing: "Mediation",
+  hearing: "Session",
   notice: "Notice",
   user: "Account",
   auth: "Auth",

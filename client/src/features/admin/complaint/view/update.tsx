@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { readErrorMessage } from "@/lib/api-error";
-import { AlertTriangle, ArrowRight, NotebookPen } from "lucide-react";
+import { AlertTriangle, ArrowRight, NotebookPen, Scale } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -10,8 +12,19 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import DateTimePicker from "@/components/ui/date-time-picker";
 import { cn } from "cn";
 import { api } from "@/lib/api";
+import { toDateInput } from "@/lib/datetime";
 import { useT, type Key } from "@/lib/I18n";
-import type { ComplaintStatus } from "./loader";
+import {
+  choiceFromPanel,
+  isPangkatComplete,
+  type PangkatChoice,
+} from "@/lib/pangkat";
+import { PangkatPicker } from "./pangkat";
+import type {
+  ArbitrationMode,
+  ComplaintStatus,
+  PangkatMember,
+} from "./loader";
 
 // Mirrors COMPLAINT_TRANSITIONS on the server; the server still enforces it.
 const NEXT_STEPS: Record<ComplaintStatus, readonly ComplaintStatus[]> = {
@@ -39,10 +52,23 @@ function stepKeys(current: ComplaintStatus, step: ComplaintStatus): [Key, Key] {
 interface StageAdvanceDialogProps {
   complaintId: number;
   currentStatus: ComplaintStatus;
+  panel: PangkatMember[];
   onSuccess: () => void;
 }
 
-export function StageAdvanceDialog({ complaintId, currentStatus, onSuccess }: StageAdvanceDialogProps) {
+// Sec. 413 gives the parties two arbiters, and the choice decides whether the
+// step into arbitration also has to name a panel: the Pangkat hears it under
+// §413(b), the Punong Barangay alone under §413(a).
+const ARBITRATION_MODES: readonly ArbitrationMode[] = [
+  "punong_barangay",
+  "pangkat",
+];
+
+// Module-scope so we don't call new Date() during render. The agreement the
+// parties sign is always backdated, never scheduled.
+const TODAY = toDateInput(new Date());
+
+export function StageAdvanceDialog({ complaintId, currentStatus, panel, onSuccess }: StageAdvanceDialogProps) {
   const { t } = useT();
   const [open, setOpen] = useState(false);
   const [target, setTarget] = useState<ComplaintStatus | null>(null);
@@ -50,10 +76,30 @@ export function StageAdvanceDialog({ complaintId, currentStatus, onSuccess }: St
   const [internalNote, setInternalNote] = useState("");
   const [hearingAt, setHearingAt] = useState("");
   const [showNotes, setShowNotes] = useState(false);
+  const [choice, setChoice] = useState<PangkatChoice>({
+    memberIds: [],
+    chairmanId: null,
+  });
+  const [arbitrationBy, setArbitrationBy] = useState<ArbitrationMode | null>(null);
+  const [agreementSigned, setAgreementSigned] = useState(false);
+  const [agreementAt, setAgreementAt] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const nextSteps = NEXT_STEPS[currentStatus] ?? [];
   const closing = target !== null && CLOSED_STATUSES.includes(target);
+  const toArbitration = target === "arbitration";
+  const hasPanel = isPangkatComplete(choiceFromPanel(panel));
+  // Conciliation is always the Pangkat's; an arbitration is only when the
+  // parties gave it the panel.
+  const wantsPanel =
+    target === "conciliation" || (toArbitration && arbitrationBy === "pangkat");
+  const needsPanel = wantsPanel && !hasPanel;
+  const panelReady = !needsPanel || isPangkatComplete(choice);
+  // §413 opens with the parties' written agreement, so the step that enters the
+  // stage records who hears it and the date on that agreement.
+  const arbitrationReady =
+    !toArbitration || (arbitrationBy !== null && agreementSigned && agreementAt !== "");
+  const readyToAdvance = panelReady && arbitrationReady;
 
   function resetForm() {
     setTarget(null);
@@ -61,6 +107,10 @@ export function StageAdvanceDialog({ complaintId, currentStatus, onSuccess }: St
     setInternalNote("");
     setHearingAt("");
     setShowNotes(false);
+    setChoice({ memberIds: [], chairmanId: null });
+    setArbitrationBy(null);
+    setAgreementSigned(false);
+    setAgreementAt("");
   }
 
   function handleOpenChange(next: boolean) {
@@ -70,7 +120,7 @@ export function StageAdvanceDialog({ complaintId, currentStatus, onSuccess }: St
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!target || isSubmitting) return;
+    if (!target || !readyToAdvance || isSubmitting) return;
 
     setIsSubmitting(true);
     try {
@@ -80,6 +130,12 @@ export function StageAdvanceDialog({ complaintId, currentStatus, onSuccess }: St
           publicNote: publicNote || null,
           internalNote: internalNote || null,
           hearingAt: !closing && hearingAt ? hearingAt : null,
+          ...(toArbitration
+            ? { arbitrationBy, arbitrationAgreementAt: agreementAt }
+            : {}),
+          ...(needsPanel
+            ? { memberIds: choice.memberIds, chairmanId: choice.chairmanId }
+            : {}),
         },
       });
 
@@ -139,6 +195,102 @@ export function StageAdvanceDialog({ complaintId, currentStatus, onSuccess }: St
 
           {target && (
             <div className="space-y-4 rounded-lg bg-primary/5 p-3">
+              {toArbitration && (
+                <div className="space-y-3">
+                  <p className="text-sm font-medium">{t("updArbByLabel")}</p>
+                  <div className="grid gap-2">
+                    {ARBITRATION_MODES.map((mode) => {
+                      const picked = arbitrationBy === mode;
+                      return (
+                        <label
+                          key={mode}
+                          className={cn(
+                            "flex cursor-pointer items-start gap-3 rounded-md border px-3 py-2.5 text-sm transition-colors",
+                            picked
+                              ? "border-primary/40 bg-primary/5 font-medium text-primary dark:text-status-ink"
+                              : "text-muted-foreground hover:bg-primary/5 hover:text-foreground",
+                          )}
+                        >
+                          <input
+                            type="radio"
+                            name="arbitrationBy"
+                            checked={picked}
+                            onChange={() => setArbitrationBy(mode)}
+                            className="peer sr-only"
+                          />
+                          <span
+                            aria-hidden="true"
+                            className={cn(
+                              "mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-card",
+                              picked ? "border-primary dark:border-status-ink" : "border-input",
+                            )}
+                          >
+                            {picked && (
+                              <span className="size-2 rounded-full bg-primary dark:bg-status-ink" />
+                            )}
+                          </span>
+                          <span>
+                            <span className="block">{t(`arbBy_${mode}` as Key)}</span>
+                            <span className="mt-0.5 block text-sm font-normal text-muted-foreground">
+                              {t(`arbBy_${mode}Desc` as Key)}
+                            </span>
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      id="arbSigned"
+                      checked={agreementSigned}
+                      onCheckedChange={(value) => setAgreementSigned(value === true)}
+                      className="mt-0.5"
+                    />
+                    <div className="grid gap-1">
+                      <Label htmlFor="arbSigned" className="font-normal">
+                        {t("updArbSigned")}
+                      </Label>
+                      <p className="text-sm text-muted-foreground">
+                        {t("updArbSignedHint")}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="arbAgreementAt">{t("updArbDate")}</Label>
+                    <Input
+                      id="arbAgreementAt"
+                      type="date"
+                      value={agreementAt}
+                      max={TODAY}
+                      onChange={(event) => setAgreementAt(event.target.value)}
+                      // The picker sits inside the advance form, where Enter
+                      // would submit the stage change mid-entry.
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") event.preventDefault();
+                      }}
+                      className="h-10 w-full sm:w-[200px]"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {wantsPanel &&
+                (hasPanel ? (
+                  <p className="text-sm text-muted-foreground">
+                    {t("updPangkatRecorded")}
+                  </p>
+                ) : (
+                  <div className="space-y-4">
+                    <p className="flex items-start gap-2 text-sm text-status-ink">
+                      <Scale className="mt-0.5 h-4 w-4 shrink-0" />
+                      {t("updPangkatNeeded")}
+                    </p>
+                    <PangkatPicker initial={choice} onChange={setChoice} />
+                  </div>
+                ))}
+
               {closing ? (
                 <p className="flex items-start gap-2 text-sm text-status-ink">
                   <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
@@ -208,7 +360,7 @@ export function StageAdvanceDialog({ complaintId, currentStatus, onSuccess }: St
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               {t("updCancel")}
             </Button>
-            <Button type="submit" disabled={!target || isSubmitting}>
+            <Button type="submit" disabled={!target || !readyToAdvance || isSubmitting}>
               {isSubmitting
                 ? t("saving")
                 : target

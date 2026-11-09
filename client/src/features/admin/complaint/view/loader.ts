@@ -1,8 +1,8 @@
 import { api } from "@/lib/api";
 import type { LoaderFunctionArgs } from "react-router";
+import type { HearingKind } from "@/lib/session-kind";
 import type {
   AttendanceStatus,
-  HearingKind,
   HearingStatus,
 } from "@/features/admin/hearing/loader";
 
@@ -30,6 +30,10 @@ export type PangkatMember = {
   fullName: string;
   isChairman: boolean;
 };
+
+// RA 7160 §413: which arbiter hears an arbitration, chosen on the move into
+// the stage and fixed from then on.
+export type ArbitrationMode = "punong_barangay" | "pangkat";
 
 export type ServiceRecord = {
   id: number;
@@ -63,7 +67,7 @@ export type ComplaintDetail = {
   createdAt: string;
   dueAt: string | null;
   nextHearingAt: string | null;
-  nextHearingKind: string | null;
+  nextHearingKind: HearingKind | null;
   description: string;
   eligibilityStatus: EligibilityStatus;
   eligibilityAnswers: EligibilityAnswers | null;
@@ -72,6 +76,8 @@ export type ComplaintDetail = {
   eligibilityReviewedAt: string | null;
   pangkatMembers: PangkatMember[];
   pangkatChairman: string | null;
+  arbitrationBy: ArbitrationMode | null;
+  arbitrationAgreementAt: string | null;
   evidence: Array<{
     originalName: string;
     url: string;
@@ -101,6 +107,7 @@ export type ComplaintDetail = {
     internalNote?: string;
     by: string;
     hearingAt?: string;
+    hearingKind?: HearingKind | null;
     serviceResult?: ServiceResult;
     serverName?: string;
   }>;

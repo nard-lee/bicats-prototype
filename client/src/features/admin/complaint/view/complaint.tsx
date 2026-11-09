@@ -29,11 +29,13 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import { useT, type Key } from "@/lib/I18n";
+import { KIND_KEY, kindKeyForEntry } from "@/lib/session-kind";
 import type { ComplaintDetail } from "./loader";
 import { StageAdvanceDialog, NoteDialog } from "./update";
 import ReopenCaseModal from "./reopen";
 import EligibilityCard from "./eligibility";
 import PangkatCard from "./pangkat";
+import ArbitrationCard from "./arbitration";
 import ServiceRecordCard from "./service";
 import { DOCUMENT_TYPES } from "../documents/loader";
 import { complaintTypeLabel } from "../type-label";
@@ -165,12 +167,14 @@ export default function ComplaintView() {
     !["received", "dismissed"].includes(complaint.status);
 
   // Mediation is handled by the Punong Barangay; the Pangkat is only formed at
-  // conciliation and keeps the case through arbitration, so keep the card out
-  // of the way unless one was recorded.
+  // conciliation and keeps the case through an arbitration the parties gave it,
+  // so keep the card out of the way unless one was recorded.
   const showPangkatCard =
     complaint.pangkatMembers.length > 0 ||
     !!complaint.pangkatChairman ||
-    ["conciliation", "arbitration"].includes(complaint.status);
+    complaint.status === "conciliation" ||
+    (complaint.status === "arbitration" &&
+      complaint.arbitrationBy !== "punong_barangay");
 
   const isClosed = ["settled", "certified", "dismissed"].includes(complaint.status);
 
@@ -214,6 +218,7 @@ export default function ComplaintView() {
                 <StageAdvanceDialog
                   complaintId={complaint.id}
                   currentStatus={complaint.status}
+                  panel={complaint.pangkatMembers}
                   onSuccess={() => revalidator.revalidate()}
                 />
               )}
@@ -277,8 +282,11 @@ export default function ComplaintView() {
               )}
             />
             <Fact label={t("filedDate")} value={formatDateTime(complaint.createdAt)} />
-            {complaint.nextHearingAt && (
-              <Fact label={t("hearing")} value={formatDateTime(complaint.nextHearingAt)} />
+            {complaint.nextHearingAt && complaint.nextHearingKind && (
+              <Fact
+                label={t(KIND_KEY[complaint.nextHearingKind])}
+                value={formatDateTime(complaint.nextHearingAt)}
+              />
             )}
             {complaint.dueAt ? (
               <Fact
@@ -318,6 +326,8 @@ export default function ComplaintView() {
               canWrite={canWrite}
               onSuccess={() => revalidator.revalidate()}
             />
+
+            <ArbitrationCard complaint={complaint} />
 
             {showPangkatCard && (
               <PangkatCard
@@ -486,7 +496,8 @@ export default function ComplaintView() {
                           )}
                           {event.hearingAt && (
                             <p className="text-sm font-medium">
-                              {t("hearing")}: {formatDateTime(event.hearingAt)}
+                              {t(kindKeyForEntry(event))}:{" "}
+                              {formatDateTime(event.hearingAt)}
                             </p>
                           )}
                         </TimelineContent>

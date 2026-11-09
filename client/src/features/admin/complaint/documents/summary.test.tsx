@@ -37,6 +37,8 @@ const complaint: ComplaintDetail = {
     { id: 2, fullName: 'Ben Torres', isChairman: false },
   ],
   pangkatChairman: 'Ana Cruz',
+  arbitrationBy: null,
+  arbitrationAgreementAt: null,
   evidence: [
     { originalName: 'receipt.jpg', url: '/uploads/receipt.jpg', mimeType: 'image/jpeg', size: 1024 },
   ],

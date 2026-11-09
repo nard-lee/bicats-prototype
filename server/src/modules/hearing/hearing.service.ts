@@ -11,6 +11,7 @@ import type {
 } from "./hearing.schema.js";
 import type {
   HearingComplaintOption,
+  HearingKind,
   HearingListFilters,
   HearingRow,
 } from "./hearing.types.js";
@@ -20,6 +21,7 @@ import {
   assertSchedulingAllowed,
   mapHearing,
 } from "./hearing.helpers.js";
+import { kindForStatus } from "./hearing.schema.js";
 import { TERMINAL_STATUSES } from "../complaint/complaint.schema.js";
 
 const hearingSelect = {
@@ -45,7 +47,7 @@ const hearingSelect = {
   },
 } satisfies Prisma.HearingSelect;
 
-const KIND_LABEL: Record<string, string> = {
+const KIND_LABEL: Record<HearingKind, string> = {
   mediation: "Mediation",
   conciliation: "Conciliation",
   hearing: "Arbitration",
@@ -107,6 +109,7 @@ const hearingService = {
   ): Promise<{
     id: number;
     reference: string;
+    kind: HearingKind;
     location: string | null;
     status: string;
   }> {
@@ -124,6 +127,10 @@ const hearingService = {
         409,
       );
     }
+
+    // The session type comes from the case's stage, not from the request, so
+    // a booking can never be labelled a stage the case hasn't reached.
+    const kind = kindForStatus(complaint.status);
 
     // A past time is only accepted when the desk records a session that was
     // actually held; a live booking may not open in the past.
@@ -161,7 +168,7 @@ const hearingService = {
         data: {
           complaintId: input.complaintId,
           scheduledAt: input.scheduledAt,
-          kind: input.kind,
+          kind,
           status: input.status,
           location: input.location ?? (settings.defaultHearingLocation || null),
           notes: input.notes,
@@ -180,8 +187,8 @@ const hearingService = {
           hearingAt: input.scheduledAt,
           internalNote:
             input.status === "scheduled"
-              ? `${KIND_LABEL[input.kind] ?? "Session"} scheduled for ${formatWhen(input.scheduledAt)}.`
-              : `${KIND_LABEL[input.kind] ?? "Session"} held on ${formatWhen(input.scheduledAt)} (${input.status.replace("_", " ")}).`,
+              ? `${KIND_LABEL[kind]} scheduled for ${formatWhen(input.scheduledAt)}.`
+              : `${KIND_LABEL[kind]} held on ${formatWhen(input.scheduledAt)} (${input.status.replace("_", " ")}).`,
           createdById: userId ?? null,
         },
       });
@@ -192,6 +199,7 @@ const hearingService = {
     return {
       id: hearing.id,
       reference: complaint.reference,
+      kind,
       location: hearing.location,
       status: hearing.status,
     };
@@ -203,7 +211,7 @@ const hearingService = {
     userId?: number,
   ): Promise<{
     complaintId: number;
-    kind: string;
+    kind: HearingKind;
     location: string | null;
     scheduledAt: Date;
     rescheduled: boolean;
@@ -225,7 +233,11 @@ const hearingService = {
       },
     });
 
-    if (!existing) throw new CustomError("Mediation not found", undefined, 404);
+    if (!existing) throw new CustomError("Session not found", undefined, 404);
+
+    // The column is a plain string, so the type is narrowed once here and every
+    // label built from it can be a total lookup.
+    const kind = existing.kind as HearingKind;
 
     // Work out what the hearing will look like after this save.
     const finalStatus = input.status ?? existing.status;
@@ -233,7 +245,6 @@ const hearingService = {
     const timeChanged =
       !!input.scheduledAt &&
       input.scheduledAt.getTime() !== existing.scheduledAt.getTime();
-    const kindChanged = !!input.kind && input.kind !== existing.kind;
     const locationChanged =
       input.location !== undefined &&
       input.location !== (existing.location ?? null);
@@ -264,7 +275,7 @@ const hearingService = {
       );
     }
 
-    if (finished && (timeChanged || kindChanged)) {
+    if (finished && timeChanged) {
       throw new CustomError(
         "A finished session can't be rescheduled. Schedule a new session instead.",
         undefined,
@@ -272,7 +283,7 @@ const hearingService = {
       );
     }
 
-    if (caseClosed && (timeChanged || kindChanged || reactivating)) {
+    if (caseClosed && (timeChanged || reactivating)) {
       throw new CustomError(
         "This case is closed. Reopen it before scheduling a session.",
         undefined,
@@ -311,19 +322,16 @@ const hearingService = {
 
     const data: Prisma.HearingUpdateInput = {};
     if (input.scheduledAt) data.scheduledAt = input.scheduledAt;
-    if (input.kind) data.kind = input.kind;
     if (input.status) data.status = input.status;
     if (input.location !== undefined) data.location = input.location;
     if (input.notes !== undefined) data.notes = input.notes;
     if (input.outcome !== undefined) data.outcome = input.outcome;
 
-    const finalKind = input.kind ?? existing.kind;
-
     const updated = await prisma.$transaction(async (tx) => {
       const row = await tx.hearing.update({
         where: { id },
         data,
-        select: { complaintId: true, kind: true, location: true },
+        select: { complaintId: true, location: true },
       });
 
       // A move is a case event: record both the old and new schedule so the
@@ -334,7 +342,7 @@ const hearingService = {
             complaintId: existing.complaintId,
             status: existing.complaint.status,
             hearingAt: finalTime,
-            internalNote: `${KIND_LABEL[finalKind] ?? "Session"} rescheduled from ${formatWhen(existing.scheduledAt)} to ${formatWhen(finalTime)}.`,
+            internalNote: `${KIND_LABEL[kind]} rescheduled from ${formatWhen(existing.scheduledAt)} to ${formatWhen(finalTime)}.`,
             createdById: userId ?? null,
           },
         });
@@ -351,6 +359,7 @@ const hearingService = {
 
     return {
       ...updated,
+      kind,
       scheduledAt: finalTime,
       rescheduled,
       reopened,
@@ -364,7 +373,7 @@ const hearingService = {
     input: RecordAttendanceInput,
   ): Promise<{
     complaintId: number;
-    kind: string;
+    kind: HearingKind;
     reference: string;
     previousStatus: string;
     status: string;
@@ -381,7 +390,7 @@ const hearingService = {
       },
     });
 
-    if (!existing) throw new CustomError("Mediation not found", undefined, 404);
+    if (!existing) throw new CustomError("Session not found", undefined, 404);
 
     if (TERMINAL_STATUSES.includes(existing.complaint.status)) {
       throw new CustomError(
@@ -428,7 +437,7 @@ const hearingService = {
 
     return {
       complaintId: existing.complaintId,
-      kind: existing.kind,
+      kind: existing.kind as HearingKind,
       reference: existing.complaint.reference,
       previousStatus: existing.status,
       status,
@@ -440,7 +449,7 @@ const hearingService = {
     id: number,
   ): Promise<{
     complaintId: number;
-    kind: string;
+    kind: HearingKind;
     reference: string;
     previousStatus: string;
   }> {
@@ -449,7 +458,7 @@ const hearingService = {
       select: { id: true, status: true },
     });
 
-    if (!existing) throw new CustomError("Mediation not found", undefined, 404);
+    if (!existing) throw new CustomError("Session not found", undefined, 404);
 
     // Cancelling twice is a harmless repeat, but a session that already
     // happened can't be called off after the fact.
@@ -475,7 +484,7 @@ const hearingService = {
 
     return {
       complaintId: updated.complaintId,
-      kind: updated.kind,
+      kind: updated.kind as HearingKind,
       reference: updated.complaint.reference,
       previousStatus: existing.status,
     };

@@ -2,6 +2,7 @@ import type { Request } from "express";
 
 import { prisma } from "../../db.js";
 import type { Prisma } from "../../generated/prisma/client.js";
+import type { HearingKind } from "../hearing/hearing.types.js";
 import type {
   AuditListResult,
   AuditListRow,
@@ -37,7 +38,7 @@ function buildWhere(query: { entityType?: string | undefined; q?: string | undef
 
 type AuditRecord = Omit<AuditListRow, "target">;
 
-const HEARING_KIND_LABEL: Record<string, string> = {
+const HEARING_KIND_LABEL: Record<HearingKind, string> = {
   mediation: "Mediation",
   conciliation: "Conciliation",
   hearing: "Arbitration",
@@ -109,8 +110,8 @@ async function attachTargets(rows: AuditRecord[]): Promise<AuditListRow[]> {
     }
     if (row.entityType === "hearing") {
       const hearing = hearingMap.get(id);
-      if (!hearing) return `Mediation #${id} (record deleted)`;
-      return `${hearing.complaint.reference} (${HEARING_KIND_LABEL[hearing.kind] ?? "Session"})`;
+      if (!hearing) return `Session #${id} (record deleted)`;
+      return `${hearing.complaint.reference} (${HEARING_KIND_LABEL[hearing.kind as HearingKind]})`;
     }
     if (row.entityType === "user") {
       return userMap.get(id) ?? `Account #${id} (record deleted)`;
@@ -141,7 +142,7 @@ async function attachTargets(rows: AuditRecord[]): Promise<AuditListRow[]> {
     if (row.entityType === "hearing") {
       summary = summary.replace(/mediation session #(\d+)/gi, () =>
         `mediation for ${
-          caseReference ?? `Mediation #${row.entityId} (record deleted)`
+          caseReference ?? `Session #${row.entityId} (record deleted)`
         }`,
       );
     }

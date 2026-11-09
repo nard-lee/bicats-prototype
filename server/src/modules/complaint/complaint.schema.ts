@@ -176,6 +176,30 @@ export const COMPLAINT_STATUSES = [
   "dismissed",
 ] as const;
 
+// Sec. 413 gives the parties two arbiters: the Punong Barangay alone (a) when
+// the case reaches arbitration before a Pangkat exists, and the Pangkat itself
+// (b) once one has been constituted. Staff pick which at the move into the
+// stage; the choice is never revisited.
+export const ARBITRATION_MODES = ["punong_barangay", "pangkat"] as const;
+
+export type ArbitrationMode = (typeof ARBITRATION_MODES)[number];
+
+// The mode and the date on the parties' written agreement travel together, and
+// both belong to the request that enters arbitration.
+export const updateArbitrationSchema = z
+  .object({
+    arbitrationBy: z.enum(ARBITRATION_MODES, {
+      error: "Choose who hears the arbitration",
+    }),
+    arbitrationAgreementAt: z.coerce.date({
+      error: "Enter the date the parties agreed in writing to arbitrate",
+    }),
+  })
+  .refine((d) => d.arbitrationAgreementAt <= new Date(), {
+    path: ["arbitrationAgreementAt"],
+    message: "The agreement can't be dated in the future",
+  });
+
 // Cases that no longer have a pending step (no deadline).
 export const TERMINAL_STATUSES: readonly ComplaintStatus[] = [
   "settled",
@@ -187,8 +211,8 @@ export const TERMINAL_STATUSES: readonly ComplaintStatus[] = [
 // Sec. 413 lets the parties agree in writing to arbitration "at any stage of the
 // proceedings", so the move is offered from mediation and from conciliation, and
 // never from intake: a case that has not yet been heard has no proceeding to
-// arbitrate. The Punong Barangay sits as lupon chairman when arbitration is
-// agreed during mediation, which is why no Pangkat panel is required to enter it.
+// arbitrate. Which arbiter hears it is chosen on that move — the Punong Barangay
+// alone needs no panel, the Pangkat does.
 export const COMPLAINT_TRANSITIONS: Record<
   ComplaintStatus,
   readonly ComplaintStatus[]
@@ -223,7 +247,7 @@ export const KP_DEADLINE_DAYS: DeadlineDays = {
   summoned: 15, // hold mediation within 15 days of the summons
   mediation: 15, // conclude mediation (from the first meeting of the parties)
   conciliation: 15, // conclude the Pangkat conciliation
-  arbitration: 15, // render the Pangkat arbitration award
+  arbitration: 15, // render the arbitration award
 };
 
 // Build the deadline rules from the admin-configurable barangay settings.

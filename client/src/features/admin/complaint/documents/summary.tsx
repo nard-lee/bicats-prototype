@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useT, type Key } from "@/lib/I18n";
+import { KIND_KEY } from "@/lib/session-kind";
 import { complaintTypeLabel } from "../type-label";
 import type {
   ComplaintDetail,
@@ -8,7 +9,6 @@ import type {
 } from "../view/loader";
 import type {
   AttendanceStatus,
-  HearingKind,
   HearingStatus,
 } from "@/features/admin/hearing/loader";
 
@@ -30,12 +30,6 @@ const SERVICE_KEY: Record<ServiceResult, Key> = {
   received: "serviceReceived",
   refused: "serviceRefused",
   not_found: "serviceNotFound",
-};
-
-const KIND_KEY: Record<HearingKind, Key> = {
-  mediation: "sumKindMediation",
-  conciliation: "sumKindConciliation",
-  hearing: "sumKindArbitration",
 };
 
 const HEARING_STATUS_KEY: Record<HearingStatus, Key> = {
@@ -335,8 +329,17 @@ export default function CaseSummaryReport({
 
       <Section title={t("sumSecAward")}>
         <dl>
+          <Field label={t("sumAwardHeardBy")}>
+            {complaint.arbitrationBy
+              ? t(`arbBy_${complaint.arbitrationBy}` as Key)
+              : "-"}
+          </Field>
           <Field label={t("sumAwardAgreedOn")}>
-            {arbitrationStart ? longDate(arbitrationStart.date) : "-"}
+            {complaint.arbitrationAgreementAt
+              ? longDate(complaint.arbitrationAgreementAt)
+              : arbitrationStart
+                ? longDate(arbitrationStart.date)
+                : "-"}
           </Field>
           {award ? (
             <>

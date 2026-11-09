@@ -109,9 +109,14 @@ export default function ComplaintDocument() {
 
   // RA 7160 §409: the Punong Barangay chairs the Lupon and personally conducts
   // mediation, so the PB signs the mediation papers. The Pangkat only exists once
-  // mediation fails, and from there on its own chairman signs (§412).
+  // mediation fails, and from there on its own chairman signs (§412) — except
+  // under §413(a), where the parties gave the arbitration to the PB alone and
+  // the PB signs the award papers too. The mode outlives the stage, so a case
+  // closed after a PB arbitration still signs with the PB.
   const pangkatChairman = complaint.pangkatChairman;
+  const arbitratedByPb = complaint.arbitrationBy === "punong_barangay";
   const viaPangkat =
+    !arbitratedByPb &&
     !!pangkatChairman &&
     (type === "settlement" ||
       type === "cfa" ||

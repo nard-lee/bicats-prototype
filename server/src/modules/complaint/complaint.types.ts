@@ -3,10 +3,24 @@ import type {
     EligibilityStatus,
 } from "./complaint.eligibility.js";
 import type { ServiceResult } from "./complaint.service-record.js";
-import type { COMPLAINT_STATUSES, COMPLAINT_TYPES } from "./complaint.schema.js";
+import type {
+    ArbitrationMode,
+    COMPLAINT_STATUSES,
+    COMPLAINT_TYPES,
+} from "./complaint.schema.js";
+import type { HearingKind } from "../hearing/hearing.types.js";
 
 export type ComplaintStatus = (typeof COMPLAINT_STATUSES)[number];
 export type ComplaintType = (typeof COMPLAINT_TYPES)[number];
+export type { ArbitrationMode };
+
+// RA 7160 §413: who hears an arbitration, and the date on the parties' written
+// agreement to be arbitrated. Both are recorded once, at the move into the
+// stage, and never changed afterwards.
+export type ArbitrationChoice = {
+    by: ArbitrationMode;
+    agreementAt: Date;
+};
 
 // Snapshot of a lupon member on one case. Names are frozen at assignment so a
 // later roster rename or removal never rewrites the case record.
@@ -16,10 +30,17 @@ export type PangkatMember = {
     isChairman: boolean;
 };
 
+// The panel as staff submit it: which three members, and which of them chairs.
+export type PangkatChoice = {
+    memberIds: number[];
+    chairmanId: number;
+};
+
 export type ComplaintTrackUpdate = {
     status: string;
     publicNote: string | null;
     hearingAt: string | null;
+    hearingKind: HearingKind | null;
     createdAt: string;
 };
 
@@ -78,7 +99,7 @@ export type ComplaintDetail = {
     createdAt: string;
     dueAt: string | null;
     nextHearingAt: string | null;
-    nextHearingKind: string | null;
+    nextHearingKind: HearingKind | null;
     description: string;
     eligibilityStatus: EligibilityStatus;
     eligibilityAnswers: EligibilityAnswers | null;
@@ -87,6 +108,8 @@ export type ComplaintDetail = {
     eligibilityReviewedAt: string | null;
     pangkatMembers: PangkatMember[];
     pangkatChairman: string | null;
+    arbitrationBy: ArbitrationMode | null;
+    arbitrationAgreementAt: string | null;
     evidence: Array<{
         originalName: string;
         url: string;
@@ -113,6 +136,10 @@ export type ComplaintDetail = {
         internalNote?: string;
         by: string;
         hearingAt?: string;
+        // The type of the session booked on that date, so a dated status entry
+        // is labelled from its own session row instead of the stage it was
+        // recorded in. Null when the session was later moved off that date.
+        hearingKind?: HearingKind | null;
         serviceResult?: ServiceResult;
         serverName?: string;
     }>;

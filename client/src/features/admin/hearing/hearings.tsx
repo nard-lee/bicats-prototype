@@ -5,10 +5,17 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useT } from "@/lib/I18n";
 import AttendanceDialog from "./attendance-dialog";
+import LayoutSwitch from "./components/layout-switch";
 import MonthCalendar from "./components/month-calendar";
 import SessionsTable from "./components/sessions-table";
 import ViewSwitch from "./components/view-switch";
-import { PAGE_SIZE, dayKey, pad, type HearingView } from "./components/constants";
+import {
+  PAGE_SIZE,
+  dayKey,
+  pad,
+  type HearingLayout,
+  type HearingView,
+} from "./components/constants";
 import HearingDialog, { type HearingDialogMode } from "./dialog";
 import type { HearingsData, HearingItem } from "./loader";
 
@@ -38,10 +45,8 @@ export default function HearingsPage() {
       ? requestedView
       : "month";
 
-  const monthLabel = new Date(year, month, 1).toLocaleDateString(locale, {
-    month: "long",
-    year: "numeric",
-  });
+  const activeLayout: HearingLayout =
+    searchParams.get("layout") === "list" ? "list" : "grid";
 
   const today = NOW;
   const todayKey = dayKey(today);
@@ -137,6 +142,14 @@ export default function HearingsPage() {
     setPage(1);
   };
 
+  const setLayout = (layout: HearingLayout) => {
+    const params = new URLSearchParams(searchParams);
+    if (layout === "grid") params.delete("layout");
+    else params.set("layout", layout);
+    setSearchParams(params);
+    setPage(1);
+  };
+
   const refresh = () => revalidator.revalidate();
 
   const createOn = (date: Date) => {
@@ -145,9 +158,21 @@ export default function HearingsPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-end gap-3">
+    <div className="-mx-4 space-y-6 sm:-mx-6">
+      {/* The controls stay put while the month scrolls, so this row is the
+          page's header: it carries the gutter padding the shapes below it
+          give up and covers <main>'s padding band. It is 76px tall (24 top
+          + 40 controls + 12 bottom), and the weekday / table-header bands pin
+          52px below the scroll edge so they stack under it rather than
+          sliding behind. */}
+      <div className="-top-4 sticky z-30 flex flex-wrap items-center justify-between gap-3 bg-background px-4 pb-3 pt-4 sm:-top-6 sm:px-6 sm:pt-6">
         <h1 className="sr-only">Mediation</h1>
+        <div className="flex flex-wrap items-center gap-2">
+          {activeView === "month" && (
+            <LayoutSwitch activeLayout={activeLayout} onLayoutChange={setLayout} />
+          )}
+          <ViewSwitch activeView={activeView} viewCounts={viewCounts} onViewChange={setView} />
+        </div>
         <div className="flex flex-wrap items-center gap-2">
           {activeView === "month" && (
             <>
@@ -163,7 +188,7 @@ export default function HearingsPage() {
                   setPage(1);
                 }}
               >
-                <SelectTrigger size="sm" className="w-[180px]" aria-label="Month">
+                <SelectTrigger size="sm" className="w-[140px]" aria-label="Month">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -188,28 +213,26 @@ export default function HearingsPage() {
         </div>
       </div>
 
-      <ViewSwitch activeView={activeView} viewCounts={viewCounts} onViewChange={setView} />
-
-      {activeView === "month" && (
+      {activeView === "month" && activeLayout === "grid" ? (
         <MonthCalendar
-          monthLabel={monthLabel} scheduledCount={scheduledCount}
+          scheduledCount={scheduledCount}
           overdueCount={overdueCount} cells={cells}
           byDay={byDay} todayKey={todayKey}
           hoveredDay={hoveredDay} setHoveredDay={setHoveredDay}
           complaintsAvailable={data.complaints.length > 0} fmtTime={fmtTime}
           onCreate={createOn} onEdit={(hearing) => setDialog({ type: "edit", hearing })}
         />
+      ) : (
+        <SessionsTable
+          activeView={activeView} rows={rows}
+          visibleRows={visibleRows} currentPage={currentPage}
+          totalPages={totalPages}
+          fmtDate={fmtDate} fmtTime={fmtTime}
+          onAttendance={setAttendanceFor}
+          onEdit={(hearing) => setDialog({ type: "edit", hearing })}
+          onPageChange={setPage}
+        />
       )}
-
-      <SessionsTable
-        activeView={activeView} rows={rows}
-        visibleRows={visibleRows} currentPage={currentPage}
-        totalPages={totalPages}
-        fmtDate={fmtDate} fmtTime={fmtTime}
-        onAttendance={setAttendanceFor}
-        onEdit={(hearing) => setDialog({ type: "edit", hearing })}
-        onPageChange={setPage}
-      />
 
       {dialog && (
         <HearingDialog

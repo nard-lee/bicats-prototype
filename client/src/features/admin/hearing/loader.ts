@@ -1,9 +1,9 @@
 import { api } from "@/lib/api";
+import type { HearingKind } from "@/lib/session-kind";
 import type { LoaderFunctionArgs } from "react-router";
 import type { BarangaySettings } from "@/features/admin/setting/loader";
 
 export type HearingStatus = "scheduled" | "completed" | "cancelled" | "no_show";
-export type HearingKind = "mediation" | "conciliation" | "hearing";
 export type AttendanceStatus = "present" | "absent" | "excused";
 
 export type HearingItem = {

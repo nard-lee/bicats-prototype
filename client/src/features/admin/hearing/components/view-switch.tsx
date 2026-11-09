@@ -21,7 +21,7 @@ export default function ViewSwitch({
           aria-pressed={activeView === view}
           onClick={() => onViewChange(view)}
           className={cn(
-            "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            "inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring",
             activeView === view
               ? "bg-background text-primary dark:text-status-ink"
               : "text-muted-foreground hover:text-foreground",

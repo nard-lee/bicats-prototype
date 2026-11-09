@@ -16,6 +16,16 @@ const patchText = (max: number) =>
     .transform((v) => (v === undefined ? v : v || null));
 
 export const HEARING_KINDS = ["mediation", "conciliation", "hearing"] as const;
+
+// A session's type is not something the desk chooses — it is whatever the
+// case's stage calls for. Everything up to mediation is prep for mediation,
+// and a case has to reach conciliation or arbitration to hold either of those.
+export function kindForStatus(status: string): (typeof HEARING_KINDS)[number] {
+  if (status === "conciliation") return "conciliation";
+  if (status === "arbitration") return "hearing";
+  return "mediation";
+}
+
 export const HEARING_STATUSES = [
   "scheduled",
   "completed",
@@ -47,7 +57,6 @@ const BOOKABLE_STATUSES = ["scheduled", "completed", "no_show"] as const;
 export const createHearingSchema = z.object({
   complaintId: z.coerce.number().int().positive(),
   scheduledAt: z.coerce.date(),
-  kind: z.enum(HEARING_KINDS).default("mediation"),
   status: z.enum(BOOKABLE_STATUSES).default("scheduled"),
   location: optionalText(200),
   notes: optionalText(1000),
@@ -56,7 +65,6 @@ export const createHearingSchema = z.object({
 
 export const updateHearingSchema = z.object({
   scheduledAt: z.coerce.date().optional(),
-  kind: z.enum(HEARING_KINDS).optional(),
   status: z.enum(HEARING_STATUSES).optional(),
   location: patchText(200),
   notes: patchText(1000),

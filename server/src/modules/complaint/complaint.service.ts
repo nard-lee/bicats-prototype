@@ -8,12 +8,14 @@ import type { CreateComplaintInput } from "./complaint.schema.js";
 import type { UpdateEligibilityInput } from "./complaint.eligibility.js";
 import type { CreateServiceRecordInput, ServiceResult } from "./complaint.service-record.js";
 import type {
+    ArbitrationChoice,
     ComplaintDetail,
     ComplaintListFilters,
     ComplaintListRow,
     ComplaintStatus,
     ComplaintTrackResult,
     Paginated,
+    PangkatChoice,
     PangkatMember,
 } from "./complaint.types.js";
 import { getEvidenceUrl, nextReference, normalizePhone, referencePeriod } from "./complaint.helpers.js";
@@ -23,7 +25,10 @@ import {
     assertNoConflict,
     assertNoDuplicateForComplaint,
     assertSchedulingAllowed,
+    phDayRange,
 } from "../hearing/hearing.helpers.js";
+import { kindForStatus } from "../hearing/hearing.schema.js";
+import type { HearingKind } from "../hearing/hearing.types.js";
 
 // Closing a case takes its booked sessions with it, and the complainant was
 // promised those dates, so hand back enough to tell them what was cancelled.
@@ -51,11 +56,60 @@ async function cancelScheduledHearings(
     }));
 }
 
+// A case only counts as panelled once all three seats and their chair are on
+// the record; a partial snapshot must not open a Pangkat stage.
+function isPangkatRecorded(members: unknown): boolean {
+    const panel = (members as PangkatMember[] | null) ?? [];
+    return panel.length === 3 && panel.some((member) => member.isChairman);
+}
+
 async function clearHearingNotifications(hearingIds: number[]): Promise<void> {
     for (const id of hearingIds) {
         await notificationService.clearByDedupePrefix(`hearing_overdue:${id}:`);
         await notificationService.clearByDedupePrefix(`hearing_upcoming:${id}:`);
     }
+}
+
+// Both the Pangkat screen and a move into conciliation write the panel, so the
+// same helper validates the roster and freezes the names chair-first.
+async function buildPangkat(
+    tx: Prisma.TransactionClient,
+    memberIds: number[],
+    chairmanId: number,
+): Promise<{ panel: PangkatMember[]; chairmanName: string }> {
+    // A duplicate, inactive, or unknown id leaves fewer than three rows.
+    const members = await tx.luponMember.findMany({
+        where: { id: { in: memberIds }, isActive: true },
+        select: { id: true, fullName: true },
+    });
+
+    if (members.length !== 3) {
+        throw new CustomError("Pick three active Lupon members.", undefined, 400);
+    }
+
+    const byId = new Map(members.map((member) => [member.id, member]));
+    const chairman = byId.get(chairmanId);
+
+    if (!chairman) {
+        throw new CustomError(
+            "The chairman must be one of the three selected members.",
+            undefined,
+            400,
+        );
+    }
+
+    // Snapshot the names so a later roster rename never rewrites the case.
+    const panel: PangkatMember[] = [
+        { id: chairman.id, fullName: chairman.fullName, isChairman: true },
+        ...memberIds
+            .filter((memberId) => memberId !== chairmanId)
+            .map((memberId) => {
+                const member = byId.get(memberId)!;
+                return { id: member.id, fullName: member.fullName, isChairman: false };
+            }),
+    ];
+
+    return { panel, chairmanName: chairman.fullName };
 }
 
 const complaintService = {
@@ -312,6 +366,17 @@ const complaintService = {
         const latestUpdate = complaint.updates[0];
         const currentStatus = latestUpdate?.status ?? complaint.status;
 
+        // A session keeps the type it was booked under even after the case moves
+        // on, so each dated status entry is labelled from its own session row.
+        // Matched on the scheduled time because the status entry stores the date,
+        // not the session id.
+        const kindByDate = new Map(
+            hearings.map((hearing) => [
+                hearing.scheduledAt.getTime(),
+                hearing.kind as HearingKind,
+            ]),
+        );
+
         const serviceResultLabel: Record<ServiceResult, string> = {
             received: "Summons received",
             refused: "Summons refused",
@@ -333,6 +398,8 @@ const complaintService = {
             ...(update.hearingAt
                 ? {
                     hearingAt: update.hearingAt.toISOString(),
+                    hearingKind:
+                        kindByDate.get(update.hearingAt.getTime()) ?? null,
                 }
                 : {}),
         }));
@@ -375,7 +442,7 @@ const complaintService = {
             createdAt: complaint.createdAt.toISOString(),
             dueAt: complaint.dueAt ? complaint.dueAt.toISOString() : null,
             nextHearingAt: complaint.hearings[0]?.scheduledAt.toISOString() ?? null,
-            nextHearingKind: complaint.hearings[0]?.kind ?? null,
+            nextHearingKind: (complaint.hearings[0]?.kind as HearingKind) ?? null,
             description: complaint.narrative,
 
             eligibilityStatus: complaint.eligibilityStatus as ComplaintDetail["eligibilityStatus"],
@@ -386,6 +453,9 @@ const complaintService = {
                 complaint.eligibilityReviewedAt?.toISOString() ?? null,
             pangkatMembers,
             pangkatChairman,
+            arbitrationBy: complaint.arbitrationBy as ComplaintDetail["arbitrationBy"],
+            arbitrationAgreementAt:
+                complaint.arbitrationAgreementAt?.toISOString() ?? null,
 
             evidence: complaint.evidence.map((evidence) => ({
                 originalName: evidence.originalName,
@@ -446,6 +516,9 @@ const complaintService = {
                         createdAt: true,
                     },
                 },
+                hearings: {
+                    select: { scheduledAt: true, kind: true },
+                },
             },
         });
 
@@ -455,6 +528,12 @@ const complaintService = {
         }
 
         const latest = complaint.updates.at(-1);
+        const kindByDate = new Map(
+            complaint.hearings.map((hearing) => [
+                hearing.scheduledAt.getTime(),
+                hearing.kind as HearingKind,
+            ]),
+        );
 
         return {
             reference: complaint.reference,
@@ -463,19 +542,30 @@ const complaintService = {
                 status: update.status,
                 publicNote: update.publicNote,
                 hearingAt: update.hearingAt ? update.hearingAt.toISOString() : null,
+                hearingKind: update.hearingAt
+                    ? kindByDate.get(update.hearingAt.getTime()) ?? null
+                    : null,
                 createdAt: update.createdAt.toISOString(),
             })),
         };
     },
 
-    async updateStatus(id: number, status: ComplaintStatus, publicNote?: string, internalNote?: string, hearingAt?: Date, userId?: number) {
+    async updateStatus(id: number, status: ComplaintStatus, publicNote?: string, internalNote?: string, hearingAt?: Date, userId?: number, panel?: PangkatChoice, arbitration?: ArbitrationChoice) {
         const settings = await settingService.get();
         const deadlines = deadlineConfigFrom(settings);
 
         const result = await prisma.$transaction(async (tx) => {
             const previous = await tx.complaint.findUnique({
                 where: { id },
-                select: { reference: true, status: true, dueAt: true, eligibilityStatus: true },
+                select: {
+                    reference: true,
+                    status: true,
+                    dueAt: true,
+                    eligibilityStatus: true,
+                    pangkatMembers: true,
+                    pangkatChairman: true,
+                    arbitrationBy: true,
+                },
             });
 
             if (!previous) {
@@ -512,6 +602,57 @@ const complaintService = {
                 );
             }
 
+            // Sec. 413 offers two arbiters, and the choice decides whether a
+            // panel is needed at all: the Punong Barangay sits alone as lupon
+            // chairman (§413(a)), the Pangkat hears it when the parties hand it
+            // to the panel (§413(b)). It is made with the parties' written
+            // agreement on the move into the stage and never revisited.
+            const enteringArbitration = changingStatus && status === "arbitration";
+
+            if (enteringArbitration && !arbitration) {
+                throw new CustomError(
+                    "Record the parties' written agreement to arbitrate and who hears the case — the Punong Barangay alone or the Pangkat ng Tagapagkasundo — before moving it to arbitration.",
+                    undefined,
+                    409,
+                );
+            }
+
+            if (
+                arbitration &&
+                !enteringArbitration &&
+                previous.arbitrationBy &&
+                previous.arbitrationBy !== arbitration.by
+            ) {
+                throw new CustomError(
+                    "The arbiter was chosen when this case entered arbitration and cannot be changed afterwards.",
+                    undefined,
+                    409,
+                );
+            }
+
+            // Mediation is the Punong Barangay alone; conciliation belongs to
+            // the Pangkat, and so does an arbitration the parties gave the
+            // panel. Staff can supply the panel in the same request, which is
+            // how the advance dialog collects it.
+            const needsPangkat =
+                changingStatus &&
+                (status === "conciliation" ||
+                    (enteringArbitration && arbitration?.by === "pangkat"));
+            const hasPanel = isPangkatRecorded(previous.pangkatMembers);
+
+            if (needsPangkat && !hasPanel && !panel) {
+                throw new CustomError(
+                    `Record the Pangkat ng Tagapagkasundo — three members and the chairman they elect — before moving this case to ${status}.`,
+                    undefined,
+                    409,
+                );
+            }
+
+            const panelToWrite =
+                needsPangkat && panel
+                    ? await buildPangkat(tx, panel.memberIds, panel.chairmanId)
+                    : null;
+
             // A note-only save keeps the current step's clock running.
             const dueAt = changingStatus
                 ? computeNextDueAt(status, new Date(), deadlines)
@@ -528,6 +669,18 @@ const complaintService = {
                 data: {
                     status,
                     dueAt,
+                    ...(enteringArbitration && arbitration
+                        ? {
+                              arbitrationBy: arbitration.by,
+                              arbitrationAgreementAt: arbitration.agreementAt,
+                          }
+                        : {}),
+                    ...(panelToWrite
+                        ? {
+                              pangkatMembers: panelToWrite.panel,
+                              pangkatChairman: panelToWrite.chairmanName,
+                          }
+                        : {}),
                 },
             });
 
@@ -537,16 +690,14 @@ const complaintService = {
             let hearingChanged = false;
 
             if (hearingDate) {
-                const kind =
-                    status === "conciliation"
-                        ? "conciliation"
-                        : status === "arbitration"
-                          ? "hearing"
-                          : "mediation";
+                const kind = kindForStatus(status);
 
-                const existing = await tx.hearing.findFirst({
+                // The stage's own session, if the case already has one booked
+                // ahead: it is the thing the chosen date should move.
+                const staged = await tx.hearing.findFirst({
                     where: {
                         complaintId: id,
+                        kind,
                         status: "scheduled",
                         scheduledAt: { gte: new Date() },
                     },
@@ -554,23 +705,48 @@ const complaintService = {
                     select: { id: true, scheduledAt: true },
                 });
 
-                if (existing) {
-                    if (existing.scheduledAt.getTime() !== hearingDate.getTime()) {
+                // Failing that, a booking already sitting on the chosen day is
+                // the session staff pencilled for this date, whatever stage
+                // they booked it under, so it is the one to convert.
+                const bookedThatDay = staged
+                    ? null
+                    : await tx.hearing.findFirst({
+                          where: {
+                              complaintId: id,
+                              status: "scheduled",
+                              scheduledAt: phDayRange(hearingDate),
+                          },
+                          orderBy: { scheduledAt: "asc" },
+                          select: { id: true, scheduledAt: true },
+                        });
+
+                const target = staged ?? bookedThatDay;
+
+                if (target) {
+                    const moved =
+                        target.scheduledAt.getTime() !== hearingDate.getTime();
+
+                    // The stage's session already sits on that day, so the
+                    // booking is exactly what was asked for and there is
+                    // nothing to write.
+                    if (moved || !staged) {
                         assertSchedulingAllowed(hearingDate, settings);
-                        await assertNoDuplicateForComplaint(
-                            id,
-                            hearingDate,
-                            existing.id,
-                            tx,
-                        );
-                        await assertNoConflict(
-                            hearingDate,
-                            settings.hearingDurationMinutes,
-                            existing.id,
-                            tx,
-                        );
+                        if (moved) {
+                            await assertNoDuplicateForComplaint(
+                                id,
+                                hearingDate,
+                                target.id,
+                                tx,
+                            );
+                            await assertNoConflict(
+                                hearingDate,
+                                settings.hearingDurationMinutes,
+                                target.id,
+                                tx,
+                            );
+                        }
                         await tx.hearing.update({
-                            where: { id: existing.id },
+                            where: { id: target.id },
                             data: { scheduledAt: hearingDate, kind },
                         });
                         hearingChanged = true;
@@ -612,11 +788,23 @@ const complaintService = {
                       })
                     : null;
 
+            const previousChairman = isPangkatRecorded(previous.pangkatMembers)
+                ? ((previous.pangkatMembers as PangkatMember[]).find(
+                          (member) => member.isChairman,
+                      )?.fullName ?? previous.pangkatChairman)
+                : null;
+
             return {
                 reference: previous.reference,
                 previousStatus: previous.status,
                 entry,
                 cancelledHearings,
+                arbitrationBy: enteringArbitration
+                    ? (arbitration?.by ?? null)
+                    : null,
+                pangkat: panelToWrite
+                    ? { panel: panelToWrite.panel, previousChairman }
+                    : null,
             };
         });
 
@@ -691,7 +879,13 @@ const complaintService = {
         const result = await prisma.$transaction(async (tx) => {
             const existing = await tx.complaint.findMany({
                 where: { id: { in: ids } },
-                select: { id: true, reference: true, status: true, eligibilityStatus: true },
+                select: {
+                    id: true,
+                    reference: true,
+                    status: true,
+                    eligibilityStatus: true,
+                    pangkatMembers: true,
+                },
             });
 
             const held = existing.filter(
@@ -734,6 +928,17 @@ const complaintService = {
                 };
             }
 
+            // Bulk moves have no panel picker, so they can only carry cases
+            // whose Pangkat is already on the record — and a bulk arbitration is
+            // therefore always the §413(b) route, the panel rendering the award.
+            if ((status === "conciliation" || status === "arbitration") && !changing.every((row) => isPangkatRecorded(row.pangkatMembers))) {
+                throw new CustomError(
+                    "Record the Pangkat ng Tagapagkasundo on each case before moving it to this stage in bulk.",
+                    undefined,
+                    409,
+                );
+            }
+
             const targetIds = changing.map((row) => row.id);
             const dueAt = computeNextDueAt(status, new Date(), deadlines);
             const closing = TERMINAL_STATUSES.includes(
@@ -745,6 +950,12 @@ const complaintService = {
                 data: {
                     status,
                     dueAt,
+                    ...(status === "arbitration"
+                        ? {
+                              arbitrationBy: "pangkat",
+                              arbitrationAgreementAt: new Date(),
+                          }
+                        : {}),
                 },
             });
 
@@ -836,6 +1047,7 @@ const complaintService = {
                 status: true,
                 pangkatMembers: true,
                 pangkatChairman: true,
+                arbitrationBy: true,
             },
         });
 
@@ -866,45 +1078,22 @@ const complaintService = {
             );
         }
 
+        // §413(a) arbitration belongs to the Punong Barangay alone, and the
+        // arbiter is fixed at the move into the stage, so such a case has no
+        // panel to edit.
+        if (
+            existing.status === "arbitration" &&
+            existing.arbitrationBy === "punong_barangay"
+        ) {
+            throw new CustomError(
+                "This case is arbitrated by the Punong Barangay alone, so it has no Pangkat to change.",
+                undefined,
+                409,
+            );
+        }
+
         // A duplicate, inactive, or unknown id leaves fewer than three rows.
-        const members = await prisma.luponMember.findMany({
-            where: { id: { in: memberIds }, isActive: true },
-            select: { id: true, fullName: true },
-        });
-
-        if (members.length !== 3) {
-            throw new CustomError(
-                "Pick three active Lupon members.",
-                undefined,
-                400,
-            );
-        }
-
-        const byId = new Map(members.map((member) => [member.id, member]));
-        const chairman = byId.get(chairmanId);
-
-        if (!chairman) {
-            throw new CustomError(
-                "The chairman must be one of the three selected members.",
-                undefined,
-                400,
-            );
-        }
-
-        // Snapshot the names so a later roster rename never rewrites the case.
-        const panel: PangkatMember[] = [
-            { id: chairman.id, fullName: chairman.fullName, isChairman: true },
-            ...memberIds
-                .filter((memberId) => memberId !== chairmanId)
-                .map((memberId) => {
-                    const member = byId.get(memberId)!;
-                    return {
-                        id: member.id,
-                        fullName: member.fullName,
-                        isChairman: false,
-                    };
-                }),
-        ];
+        const { panel, chairmanName } = await buildPangkat(prisma, memberIds, chairmanId);
 
         const previousPanel =
             (existing.pangkatMembers as PangkatMember[] | null) ?? [];
@@ -916,7 +1105,7 @@ const complaintService = {
             where: { id },
             data: {
                 pangkatMembers: panel,
-                pangkatChairman: chairman.fullName,
+                pangkatChairman: chairmanName,
             },
             select: { reference: true },
         });

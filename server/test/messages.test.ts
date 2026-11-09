@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   intakeReceivedSms,
   mediationScheduledSms,
+  statusUpdateSms,
 } from "../src/modules/sms/sms.messages.js";
 import { statusUpdateEmail } from "../src/modules/email/email.messages.js";
 import { formatShortWhen } from "../src/modules/notify/format.js";
@@ -52,5 +53,36 @@ describe("outbound message wording", () => {
     expect(mail.text).toContain(note);
     expect(mail.html).toContain("ID &amp; documents &lt;2pm&gt;");
     expect(mail.html).not.toContain(note);
+  });
+
+  // The stage the message announces is also the stage that decides the session
+  // type, so the two must never name different kinds of hearing.
+  it("names the session type the new stage calls for", () => {
+    const expected: Record<string, string> = {
+      mediation: "mediation",
+      conciliation: "conciliation",
+      arbitration: "arbitration",
+    };
+
+    for (const [status, word] of Object.entries(expected)) {
+      const body = statusUpdateSms({
+        reference: "26-11-0001",
+        status,
+        hearingAt: morning,
+        lang: "en",
+      });
+
+      expect(body).toContain(`Your ${word} is set on`);
+      expect(body).not.toContain("Mediation set on");
+    }
+
+    const tl = statusUpdateEmail({
+      reference: "26-11-0001",
+      status: "arbitration",
+      hearingAt: morning,
+      lang: "tl",
+    });
+
+    expect(tl.text).toContain("Itinakda ang inyong arbitrasyon sa");
   });
 });

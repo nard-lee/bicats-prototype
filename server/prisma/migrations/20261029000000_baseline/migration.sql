@@ -95,6 +95,8 @@ CREATE TABLE "Complaint" (
     "eligibilityReviewedAt" TIMESTAMP(3),
     "pangkatMembers" JSONB,
     "pangkatChairman" TEXT,
+    "arbitrationBy" TEXT,
+    "arbitrationAgreementAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 

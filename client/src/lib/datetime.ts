@@ -21,6 +21,11 @@ export function toLocalInput(value: Date): string {
   return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}T${pad(value.getHours())}:${pad(value.getMinutes())}`
 }
 
+// Value for <input type="date">, in the viewer's own day.
+export function toDateInput(value: Date): string {
+  return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}`
+}
+
 export function formatDisplay(value: Date, now: Date): string {
   const sameDay =
     value.getFullYear() === now.getFullYear() &&

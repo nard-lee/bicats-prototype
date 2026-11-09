@@ -1,4 +1,5 @@
-import type { AttendanceStatus, HearingKind, HearingStatus } from "./loader";
+import type { AttendanceStatus, HearingStatus } from "./loader";
+import type { HearingKind } from "@/lib/session-kind";
 import {
   DOT_ACTION,
   DOT_NEUTRAL,

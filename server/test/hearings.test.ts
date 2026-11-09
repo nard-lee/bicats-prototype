@@ -6,7 +6,14 @@ import { prisma } from "../src/db.js";
 import emailService from "../src/modules/email/email.service.js";
 import complainantNotifier from "../src/modules/notify/complainant.notifier.js";
 import smsService from "../src/modules/sms/sms.service.js";
-import { createUser, csrfToken, loginAgent, submitComplaint } from "./helpers.js";
+import {
+  createUser,
+  csrfToken,
+  loginAgent,
+  luponRoster,
+  pangkatOf,
+  submitComplaint,
+} from "./helpers.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -25,10 +32,14 @@ async function filedComplaintId(): Promise<number> {
 
 // Hearings.test.ts is at the public intake cap, so build cases straight in the
 // database when a test only needs a complaint to hang a session off.
-async function directComplaint(status: "mediation" | "settled"): Promise<number> {
+async function directComplaint(
+  status: "received" | "mediation" | "conciliation" | "settled",
+): Promise<number> {
   const complaint = await prisma.complaint.create({
     data: {
-      reference: `TEST-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      // Uppercase because the tracker uppercases the reference it is given, and
+      // real intake references never carry letters.
+      reference: `TEST-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`,
       complainantName: "Juan Dela Cruz",
       complainantAge: 34,
       complainantPurok: "Session Road",
@@ -43,6 +54,8 @@ async function directComplaint(status: "mediation" | "settled"): Promise<number>
       incidentPlace: "Purok 2 covered court",
       narrative: "Loud videoke until past midnight.",
       status,
+      // Screened, so a test can move the case through its stages.
+      eligibilityStatus: "eligible",
       consentAt: new Date(),
     },
     select: { id: true },
@@ -101,7 +114,7 @@ describe("mediation management", () => {
     });
   });
 
-  it("returns 404 for cancelling or updating a mediation that does not exist", async () => {
+  it("returns 404 for cancelling or updating a session that does not exist", async () => {
     await createUser("admin");
     const { agent, token } = await loginAgent("admin");
     const missingId = 999_999;
@@ -110,20 +123,20 @@ describe("mediation management", () => {
       .delete(`/api/hearings/${missingId}`)
       .set("x-csrf-token", token)
       .expect(404);
-    expect(cancelled.body).toEqual({ message: "Mediation not found" });
+    expect(cancelled.body).toEqual({ message: "Session not found" });
 
     const updated = await agent
       .patch(`/api/hearings/${missingId}`)
       .set("x-csrf-token", token)
       .send({ status: "completed" })
       .expect(404);
-    expect(updated.body).toEqual({ message: "Mediation not found" });
+    expect(updated.body).toEqual({ message: "Session not found" });
 
     const invalid = await agent
       .delete("/api/hearings/not-a-number")
       .set("x-csrf-token", token)
       .expect(400);
-    expect(invalid.body).toEqual({ message: "Invalid mediation ID" });
+    expect(invalid.body).toEqual({ message: "Invalid session ID" });
 
     expect(await prisma.hearing.count()).toBe(0);
   });
@@ -293,7 +306,6 @@ describe("mediation management", () => {
       .send({
         complaintId,
         scheduledAt: slotIn(3).toISOString(),
-        kind: "conciliation",
       })
       .expect(201);
     const hearingId = created.body.id as number;
@@ -440,7 +452,6 @@ describe("mediation management", () => {
       .send({
         complaintId,
         scheduledAt: slotIn(8).toISOString(),
-        kind: "conciliation",
       })
       .expect(201);
 
@@ -457,9 +468,9 @@ describe("mediation management", () => {
     await vi.waitFor(() => {
       expect(cancellations).toHaveBeenCalledTimes(1);
     });
-    expect(cancellations).toHaveBeenCalledWith(complaintId, {
-      kind: "conciliation",
-    });
+    // The case was filed, so its booked session is a mediation one whatever
+    // the request said.
+    expect(cancellations).toHaveBeenCalledWith(complaintId, { kind: "mediation" });
 
     const hearing = await prisma.hearing.findUnique({
       where: { id: created.body.id as number },
@@ -500,12 +511,15 @@ describe("mediation management", () => {
       .send({
         complaintId,
         scheduledAt: slotIn(-2).toISOString(),
-        kind: "conciliation",
         status: "no_show",
         outcome: "Neither party appeared.",
       })
       .expect(201);
-    expect(recorded.body).toMatchObject({ success: true, status: "no_show" });
+    expect(recorded.body).toMatchObject({
+      success: true,
+      kind: "mediation",
+      status: "no_show",
+    });
 
     const hearingId = recorded.body.id as number;
     const hearing = await prisma.hearing.findUnique({ where: { id: hearingId } });
@@ -532,7 +546,7 @@ describe("mediation management", () => {
       const entry = await prisma.auditLog.findFirst({
         where: { action: "hearing.create", entityId: hearingId },
       });
-      expect(entry!.summary).toContain("Recorded a conciliation session held for");
+      expect(entry!.summary).toContain("Recorded a mediation session held for");
     });
 
     // A session that has not happened yet can only be scheduled.
@@ -675,12 +689,19 @@ describe("mediation management", () => {
       .expect(409);
     expect(moved.body.message).toContain("finished session");
 
-    const retyped = await agent
+    // A stale client can still send a type; it is not a field any more, so
+    // the save goes through and the stored type stands.
+    await agent
       .patch(`/api/hearings/${hearingId}`)
       .set("x-csrf-token", token)
       .send({ kind: "conciliation" })
-      .expect(409);
-    expect(retyped.body.message).toContain("finished session");
+      .expect(200);
+
+    const stillMediation = await prisma.hearing.findUnique({
+      where: { id: hearingId },
+      select: { kind: true },
+    });
+    expect(stillMediation!.kind).toBe("mediation");
 
     // Venue and outcome are part of the record too.
     for (const patch of [
@@ -787,5 +808,146 @@ describe("mediation management", () => {
     });
     expect(rows.map((row) => row.status)).toEqual(["scheduled", "cancelled"]);
     expect(rows[0]!.scheduledAt.getTime()).toBe(slotIn(5).getTime());
+  });
+
+  it("stores the session type the case's stage calls for, not the one sent", async () => {
+    await createUser("admin");
+    const complaintId = await directComplaint("conciliation");
+    const { agent, token } = await loginAgent("admin");
+
+    const created = await agent
+      .post("/api/hearings")
+      .set("x-csrf-token", token)
+      .send({
+        complaintId,
+        scheduledAt: slotIn(3).toISOString(),
+        kind: "mediation",
+      })
+      .expect(201);
+    expect(created.body.kind).toBe("conciliation");
+
+    const hearing = await prisma.hearing.findUnique({
+      where: { id: created.body.id as number },
+    });
+    expect(hearing!.kind).toBe("conciliation");
+
+    // The audit trail reads the stored type too, so a staff entry cannot
+    // claim a mediation for a case that was already in conciliation.
+    await vi.waitFor(async () => {
+      const entry = await prisma.auditLog.findFirst({
+        where: { action: "hearing.create", entityId: created.body.id as number },
+      });
+      expect(entry!.summary).toContain(
+        `Scheduled a conciliation session for ${created.body.reference as string}`,
+      );
+    });
+
+    // A move reads as the same session type, not as a fresh mediation.
+    await agent
+      .patch(`/api/hearings/${created.body.id as number}`)
+      .set("x-csrf-token", token)
+      .send({ scheduledAt: slotIn(8).toISOString() })
+      .expect(200);
+
+    await vi.waitFor(async () => {
+      const entry = await prisma.auditLog.findFirst({
+        where: { action: "hearing.update", entityId: created.body.id as number },
+      });
+      expect(entry!.summary).toContain(
+        `Rescheduled conciliation for ${created.body.reference as string}`,
+      );
+    });
+  });
+
+  it("books the next stage beside an earlier stage's session, not over it", async () => {
+    await createUser("admin");
+    const complaintId = await directComplaint("mediation");
+    const { agent, token } = await loginAgent("admin");
+
+    const mediation = await prisma.hearing.create({
+      data: { complaintId, scheduledAt: slotIn(4), kind: "mediation" },
+    });
+
+    // Entering conciliation carries the Pangkat with it.
+    await agent
+      .patch(`/api/complaints/${complaintId}/status`)
+      .set("x-csrf-token", token)
+      .send({
+        status: "conciliation",
+        hearingAt: slotIn(9).toISOString(),
+        ...pangkatOf(await luponRoster()),
+      })
+      .expect(200);
+
+    const sessions = await prisma.hearing.findMany({
+      where: { complaintId },
+      orderBy: { scheduledAt: "asc" },
+    });
+    expect(sessions).toHaveLength(2);
+    expect(sessions[0]!.id).toBe(mediation.id);
+    expect(sessions[0]!.kind).toBe("mediation");
+    expect(sessions[0]!.scheduledAt.getTime()).toBe(slotIn(4).getTime());
+    expect(sessions[1]!.kind).toBe("conciliation");
+    expect(sessions[1]!.scheduledAt.getTime()).toBe(slotIn(9).getTime());
+  });
+
+  it("takes over the session already pencilled on the day a stage change picks", async () => {
+    await createUser("admin");
+    const complaintId = await directComplaint("mediation");
+    const { agent, token } = await loginAgent("admin");
+
+    const booked = await prisma.hearing.create({
+      data: { complaintId, scheduledAt: slotIn(4), kind: "mediation" },
+    });
+
+    await agent
+      .patch(`/api/complaints/${complaintId}/status`)
+      .set("x-csrf-token", token)
+      .send({
+        status: "conciliation",
+        hearingAt: slotIn(4).toISOString(),
+        ...pangkatOf(await luponRoster()),
+      })
+      .expect(200);
+
+    // One session, now the stage the case actually reached.
+    expect(await prisma.hearing.count({ where: { complaintId } })).toBe(1);
+    const converted = await prisma.hearing.findUnique({ where: { id: booked.id } });
+    expect(converted!.kind).toBe("conciliation");
+    expect(converted!.scheduledAt.getTime()).toBe(slotIn(4).getTime());
+  });
+
+  it("labels a dated timeline entry with the session booked on that day", async () => {
+    await createUser("admin");
+    const complaintId = await directComplaint("conciliation");
+    const { agent, token } = await loginAgent("admin");
+
+    // The session row carries the type; the status note that announced it can
+    // still name an earlier stage. Both trackers read the date off the session.
+    const day = slotIn(6);
+    await prisma.hearing.create({
+      data: { complaintId, scheduledAt: day, kind: "conciliation" },
+    });
+    await prisma.statusUpdate.create({
+      data: { complaintId, status: "mediation", hearingAt: day, publicNote: "Set." },
+    });
+
+    const entry = (
+      await agent.get(`/api/complaints/${complaintId}`).expect(200)
+    ).body.history.find((item: { hearingAt?: string }) => item.hearingAt);
+    expect(entry.hearingKind).toBe("conciliation");
+
+    const { reference, contactNormalized } = (await prisma.complaint.findUnique({
+      where: { id: complaintId },
+      select: { reference: true, contactNormalized: true },
+    }))!;
+    const tracked = await agent
+      .post("/api/complaints/track")
+      .set("x-csrf-token", token)
+      .send({ reference, phone: contactNormalized })
+      .expect(200);
+    expect(tracked.body.updates[0]).toMatchObject({
+      hearingKind: "conciliation",
+    });
   });
 });

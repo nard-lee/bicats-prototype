@@ -26,8 +26,9 @@ import { STATUS_ACTION } from "@/lib/status";
 import DateTimePicker from "@/components/ui/date-time-picker";
 import { toLocalInput } from "@/lib/datetime";
 import { KIND_LABEL, STATUS_LABEL } from "./labels";
+import { kindForStatus } from "@/lib/session-kind";
 import ComplaintPicker from "./complaint-picker";
-import type { ComplaintOption, HearingItem, HearingKind, HearingStatus } from "./loader";
+import type { ComplaintOption, HearingItem, HearingStatus } from "./loader";
 import type { BarangaySettings } from "@/features/admin/setting/loader";
 
 export type HearingDialogMode =
@@ -42,7 +43,6 @@ type Props = {
   onSaved: () => void;
 };
 
-const KINDS: HearingKind[] = ["mediation", "conciliation", "hearing"];
 const STATUSES: HearingStatus[] = [
   "scheduled",
   "completed",
@@ -111,7 +111,6 @@ export default function HearingDialog({
       ? isoToLocalInput(editing.scheduledAt)
       : defaultInput(mode.type === "create" ? mode.date : NOW, settings),
   );
-  const [kind, setKind] = useState<HearingKind>(editing?.kind ?? "mediation");
   const [status, setStatus] = useState<HearingStatus>(editing?.status ?? "scheduled");
   const [location, setLocation] = useState(
     editing ? (editing.location ?? "") : settings.defaultHearingLocation,
@@ -122,6 +121,11 @@ export default function HearingDialog({
   // Cancelling texts the complainant that their session is off, so it takes
   // two deliberate clicks rather than the one that closes a dialog does.
   const [confirmCancel, setConfirmCancel] = useState(false);
+
+  // The session type is not chosen here: it follows the case's stage, which is
+  // what the server stores whatever a client sends.
+  const selected = complaints.find((c) => String(c.id) === complaintId);
+  const kind = editing ? editing.kind : kindForStatus(selected?.status ?? "");
 
   // Completed / no show mean the session already took place, which is what
   // makes a past date acceptable.
@@ -170,27 +174,27 @@ export default function HearingDialog({
         await api.patch(`/hearings/${editing.id}`, {
           json: {
             scheduledAt: new Date(scheduled).toISOString(),
-            kind,
             status,
             location: location || null,
             notes: notes || null,
             outcome: outcome || null,
           },
         });
-        toast.success("Mediation updated.");
+        toast.success(`${KIND_LABEL[kind]} updated.`);
       } else {
         await api.post("/hearings", {
           json: {
             complaintId: Number(complaintId),
             scheduledAt: new Date(scheduled).toISOString(),
-            kind,
             status,
             location: location || null,
             notes: notes || null,
             outcome: outcome || null,
           },
         });
-        toast.success(held ? "Session recorded." : "Mediation scheduled.");
+        toast.success(
+          held ? "Session recorded." : `${KIND_LABEL[kind]} scheduled.`,
+        );
       }
       onSaved();
     } catch (err) {
@@ -216,7 +220,7 @@ export default function HearingDialog({
                 </span>
               </span>
             ) : (
-              "Set a mediation, conciliation, or arbitration session for a case."
+              "Schedule a session for a case. Its type follows the case's stage."
             )}
           </DialogDescription>
         </DialogHeader>
@@ -267,23 +271,13 @@ export default function HearingDialog({
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-2">
-              <Label htmlFor="kind">Type</Label>
-              <Select
-                value={kind}
-                onValueChange={(v) => setKind(v as HearingKind)}
-                disabled={scheduleLocked}
-              >
-                <SelectTrigger id="kind">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {KINDS.map((k) => (
-                    <SelectItem key={k} value={k}>
-                      {KIND_LABEL[k]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <span className="text-sm leading-none font-medium">Type</span>
+              <p className="flex h-9 items-center rounded-md border border-input bg-muted/40 px-2.5 text-sm">
+                {KIND_LABEL[kind]}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Follows the case's stage.
+              </p>
             </div>
 
             <div className="grid gap-2">

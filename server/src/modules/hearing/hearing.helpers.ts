@@ -142,7 +142,7 @@ export async function assertNoConflict(
 
   if (conflict) {
     throw new CustomError(
-      "Another mediation session is already scheduled at that time",
+      "Another session is already scheduled at that time",
       { scheduledAt: "That slot is already taken" },
       409,
     );

@@ -6,6 +6,7 @@
 // is corresponding with.
 
 import { formatLongWhen, trackingUrl, type MsgLang } from "../notify/format.js";
+import { kindForStatus } from "../hearing/hearing.schema.js";
 import { kindLabel, statusLabel } from "../notify/labels.js";
 import type { EmailMessage } from "./email.types.js";
 
@@ -88,7 +89,8 @@ export function statusUpdateEmail(input: {
   let lines = [head];
   if (input.hearingAt) {
     const when = formatLongWhen(input.hearingAt, input.lang);
-    lines.push(pick(input.lang, `A mediation session is set on ${when}.`, `Itinakda ang mediasyon sa ${when}.`));
+    const kind = kindLabel(kindForStatus(input.status), input.lang);
+    lines.push(pick(input.lang, `Your ${kind} is set on ${when}.`, `Itinakda ang inyong ${kind} sa ${when}.`));
   }
   lines = note(lines, input.publicNote);
   lines.push(

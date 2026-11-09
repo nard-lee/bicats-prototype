@@ -14,7 +14,12 @@ export default function SaveBar({
   updatedAt: string;
   onReset: () => void;
 }) {
-  const { t } = useT();
+  const { t, lang } = useT();
+
+  const when = new Date(updatedAt).toLocaleString(
+    lang === "tl" ? "fil-PH" : "en-PH",
+    { dateStyle: "medium", timeStyle: "short" },
+  );
 
   return (
     <div
@@ -26,7 +31,7 @@ export default function SaveBar({
           t("unsavedChanges")
         ) : (
           <>
-            {t("lastUpdated")}: {new Date(updatedAt).toLocaleString()}
+            {t("lastUpdated")}: {when}
           </>
         )}
       </p>

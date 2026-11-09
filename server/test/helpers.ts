@@ -97,6 +97,56 @@ export function submitComplaint(
   return req;
 }
 
+// Entering conciliation or arbitration now requires the panel on the record,
+// so a test that walks a case into those stages needs three members to elect a
+// chair from.
+export async function luponRoster(
+  names: string[] = ["Ana Mendoza", "Ben Torres", "Cesar Lim"],
+) {
+  const members = [];
+
+  for (const fullName of names) {
+    members.push(await prisma.luponMember.create({ data: { fullName } }));
+  }
+
+  return members;
+}
+
+// The body a status PATCH carries when it moves into a Pangkat stage. The
+// first member chairs unless the test says otherwise.
+export function pangkatOf(members: { id: number }[]) {
+  return {
+    memberIds: members.map((member) => member.id),
+    chairmanId: members[0]!.id,
+  };
+}
+
+// The body a status PATCH carries on the move into arbitration: the date on
+// the parties' written agreement and, per §413, which arbiter hears it.
+export function arbitrationOf(
+  by: "punong_barangay" | "pangkat" = "pangkat",
+  agreementAt = new Date(),
+) {
+  return {
+    arbitrationBy: by,
+    arbitrationAgreementAt: agreementAt.toISOString(),
+  };
+}
+
+// The same panel as frozen onto a case, for fixtures that start mid-process.
+export function pangkatSnapshotOf(members: { id: number; fullName: string }[]) {
+  const [chairman, ...rest] = members;
+
+  return [
+    { id: chairman!.id, fullName: chairman!.fullName, isChairman: true },
+    ...rest.map((member) => ({
+      id: member.id,
+      fullName: member.fullName,
+      isChairman: false,
+    })),
+  ];
+}
+
 export function refreshTokenFrom(headers: Record<string, unknown>): string | undefined {
   const cookies = headers["set-cookie"];
   const list = Array.isArray(cookies)

@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useT, type Key } from "@/lib/I18n";
+import { kindKeyForEntry } from "@/lib/session-kind";
 import {
   clearRecentReferences,
   loadRecentReferences,
@@ -217,7 +218,8 @@ export default function Track() {
                         )}
                         {event.hearingAt && (
                           <p className="text-sm font-medium">
-                            {t("hearing")}: {fmt(event.hearingAt)}
+                            {t(kindKeyForEntry(event))}:{" "}
+                            {fmt(event.hearingAt)}
                           </p>
                         )}
                       </TimelineContent>

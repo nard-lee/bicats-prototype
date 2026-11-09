@@ -6,6 +6,7 @@
 // originator, so the body does not repeat a barangay name — every character
 // here is billed.
 
+import { kindForStatus } from "../hearing/hearing.schema.js";
 import { formatShortWhen, trackingUrl, type MsgLang } from "../notify/format.js";
 import { kindLabel, statusLabel } from "../notify/labels.js";
 
@@ -51,7 +52,8 @@ export function statusUpdateSms(input: {
 
   if (input.hearingAt) {
     const when = formatShortWhen(input.hearingAt, input.lang);
-    parts.push(pick(input.lang, `Mediation set on ${when}.`, `Itinakda ang mediasyon sa ${when}.`));
+    const kind = kindLabel(kindForStatus(input.status), input.lang);
+    parts.push(pick(input.lang, `Your ${kind} is set on ${when}.`, `Itinakda ang inyong ${kind} sa ${when}.`));
   }
 
   return [...parts, ...note(input), ...closing(input.lang, input.reference)].join(" ");

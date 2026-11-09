@@ -5,6 +5,7 @@ import { CustomError } from "../../utils/custom.exception.js";
 import { auditFromRequest } from "../audit/audit.service.js";
 import { runSideEffect } from "../../utils/side-effect.js";
 import complainantNotifier from "../notify/complainant.notifier.js";
+import { kindLabel } from "../notify/labels.js";
 import hearingService from "./hearing.service.js";
 import {
   createHearingSchema,
@@ -12,12 +13,11 @@ import {
   recordAttendanceSchema,
   updateHearingSchema,
 } from "./hearing.schema.js";
+import type { HearingKind } from "./hearing.types.js";
 
-const KIND_LABEL: Record<string, string> = {
-  mediation: "mediation",
-  conciliation: "conciliation",
-  hearing: "arbitration",
-};
+// The audit trail is written in English, and the resident-facing wording
+// already names each session type, so both stay in step by using it.
+const kindWord = (kind: HearingKind) => kindLabel(kind, "en");
 
 const hearingController = {
   async list(req: Request, res: Response): Promise<void> {
@@ -43,9 +43,9 @@ const hearingController = {
       entityType: "hearing",
       entityId: created.id,
       summary: held
-        ? `Recorded a ${KIND_LABEL[input.kind] ?? "mediation"} session held for ${created.reference}`
-        : `Scheduled a ${KIND_LABEL[input.kind] ?? "mediation"} session for ${created.reference}`,
-      meta: { complaintId: input.complaintId, reference: created.reference, kind: input.kind, status: created.status, scheduledAt: input.scheduledAt.toISOString() },
+        ? `Recorded a ${kindWord(created.kind)} session held for ${created.reference}`
+        : `Scheduled a ${kindWord(created.kind)} session for ${created.reference}`,
+      meta: { complaintId: input.complaintId, reference: created.reference, kind: created.kind, status: created.status, scheduledAt: input.scheduledAt.toISOString() },
     });
 
     // Text/email the complainant that their session is booked. A session
@@ -53,9 +53,9 @@ const hearingController = {
     // venue because a blank request inherits the settings default.
     if (!held) {
       runSideEffect(
-        "notifications: mediation scheduled",
+        `notifications: ${kindWord(created.kind)} scheduled`,
         complainantNotifier.mediationScheduled(input.complaintId, {
-          kind: input.kind,
+          kind: created.kind,
           scheduledAt: input.scheduledAt,
           location: created.location,
         }),
@@ -67,7 +67,7 @@ const hearingController = {
     const id = Number(req.params.id);
 
     if (!id || Number.isNaN(id)) {
-      throw new CustomError("Invalid mediation ID", undefined, 400);
+      throw new CustomError("Invalid session ID", undefined, 400);
     }
 
     const input = validateRequest(updateHearingSchema, req.body);
@@ -84,12 +84,12 @@ const hearingController = {
       entityId: id,
       summary:
         updated.rescheduled && !held
-          ? `Rescheduled mediation for ${updated.reference}`
+          ? `Rescheduled ${kindWord(updated.kind)} for ${updated.reference}`
           : updated.rescheduled
-            ? `Recorded a ${KIND_LABEL[updated.kind] ?? "mediation"} session held for ${updated.reference}`
+            ? `Recorded a ${kindWord(updated.kind)} session held for ${updated.reference}`
             : input.status
-              ? `Marked mediation for ${updated.reference} as ${input.status.replace("_", " ")}`
-              : `Updated mediation details for ${updated.reference}`,
+              ? `Marked ${kindWord(updated.kind)} for ${updated.reference} as ${input.status.replace("_", " ")}`
+              : `Updated ${kindWord(updated.kind)} details for ${updated.reference}`,
       meta: {
         reference: updated.reference,
         ...(input.status ? { status: input.status } : {}),
@@ -102,7 +102,7 @@ const hearingController = {
     // only flips the status still names where and when.
     if ((updated.rescheduled || updated.reopened) && !held) {
       runSideEffect(
-        "notifications: mediation rescheduled",
+        `notifications: ${kindWord(updated.kind)} rescheduled`,
         complainantNotifier.mediationScheduled(updated.complaintId, {
           kind: updated.kind,
           scheduledAt: updated.scheduledAt,
@@ -114,7 +114,7 @@ const hearingController = {
 
     if (input.status === "cancelled" && updated.previousStatus !== "cancelled") {
       runSideEffect(
-        "notifications: mediation cancelled",
+        `notifications: ${kindWord(updated.kind)} cancelled`,
         complainantNotifier.mediationCancelled(updated.complaintId, {
           kind: updated.kind,
         }),
@@ -126,7 +126,7 @@ const hearingController = {
     const id = Number(req.params.id);
 
     if (!id || Number.isNaN(id)) {
-      throw new CustomError("Invalid mediation ID", undefined, 400);
+      throw new CustomError("Invalid session ID", undefined, 400);
     }
 
     const input = validateRequest(recordAttendanceSchema, req.body);
@@ -141,7 +141,7 @@ const hearingController = {
       action: "hearing.attendance",
       entityType: "hearing",
       entityId: id,
-      summary: `Recorded attendance for ${KIND_LABEL[recorded.kind] ?? "mediation"} on ${recorded.reference}: complainant ${input.complainant}, respondent ${input.respondent}`,
+      summary: `Recorded attendance for ${kindWord(recorded.kind)} on ${recorded.reference}: complainant ${input.complainant}, respondent ${input.respondent}`,
       meta: {
         reference: recorded.reference,
         complainant: input.complainant,
@@ -156,7 +156,7 @@ const hearingController = {
     const id = Number(req.params.id);
 
     if (!id || Number.isNaN(id)) {
-      throw new CustomError("Invalid mediation ID", undefined, 400);
+      throw new CustomError("Invalid session ID", undefined, 400);
     }
 
     const cancelled = await hearingService.cancel(id);
@@ -166,7 +166,7 @@ const hearingController = {
       action: "hearing.cancel",
       entityType: "hearing",
       entityId: id,
-      summary: `Cancelled mediation for ${cancelled.reference}`,
+      summary: `Cancelled ${kindWord(cancelled.kind)} for ${cancelled.reference}`,
       meta: { reference: cancelled.reference },
     });
 
@@ -174,7 +174,7 @@ const hearingController = {
     // the PATCH guard above, so a repeat cancel doesn't alert again.
     if (cancelled.previousStatus !== "cancelled") {
       runSideEffect(
-        "notifications: mediation cancelled",
+        `notifications: ${kindWord(cancelled.kind)} cancelled`,
         complainantNotifier.mediationCancelled(cancelled.complaintId, {
           kind: cancelled.kind,
         }),

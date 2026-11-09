@@ -274,6 +274,11 @@ async function main() {
         pangkatMembers: panel as unknown as Prisma.InputJsonValue,
         pangkatChairman: panel[0]!.fullName,
 
+        // The case reached arbitration out of a failed conciliation, so the
+        // Pangkat ng Tagapagkasundo (§413(b)) heard it, not the Punong Barangay.
+        arbitrationBy: "pangkat",
+        arbitrationAgreementAt: at(24, 15, 10),
+
         createdAt: at(0, 8, 30),
 
         evidence: { create: evidence },
@@ -582,7 +587,7 @@ async function main() {
       entityType: "complaint",
       entityId: complaint.id,
       summary: `${ref}: status changed from "conciliation" to "arbitration"`,
-      meta: { status: "arbitration", previousStatus: "conciliation", hasPublicNote: true, hasInternalNote: true },
+      meta: { status: "arbitration", previousStatus: "conciliation", arbitrationBy: "pangkat", hasPublicNote: true, hasInternalNote: true },
     });
     record({
       when: at(26, 15, 45),

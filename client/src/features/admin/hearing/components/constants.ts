@@ -5,6 +5,16 @@ export type HearingView = "month" | "overdue" | "upcoming" | "week";
 
 export const VIEWS: HearingView[] = ["month", "overdue", "upcoming", "week"];
 
+// Only "This month" has two shapes; the other three views are lists already.
+export type HearingLayout = "grid" | "list";
+
+export const LAYOUTS: HearingLayout[] = ["grid", "list"];
+
+export const LAYOUT_LABEL: Record<HearingLayout, string> = {
+  grid: "Grid",
+  list: "List",
+};
+
 export const VIEW_LABEL: Record<HearingView, string> = {
   month: "This month",
   overdue: "Overdue",

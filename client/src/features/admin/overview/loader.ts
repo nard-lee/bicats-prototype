@@ -1,4 +1,5 @@
 import { api } from "@/lib/api";
+import type { HearingKind } from "@/lib/session-kind";
 
 export type RecentComplaint = {
   id: number;
@@ -13,7 +14,7 @@ export type RecentComplaint = {
 export type UpcomingHearing = {
   id: number;
   scheduledAt: string;
-  kind: string;
+  kind: HearingKind;
   status: string;
   location: string | null;
   complaint: {

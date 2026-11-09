@@ -5,7 +5,11 @@ import {
   referencePeriod,
 } from "../src/modules/complaint/complaint.helpers.js";
 import { faker } from "@faker-js/faker";
-import { makeEvidence } from "./fake-evidence.js";
+import {
+  evaluateEligibility,
+  type EligibilityAnswers,
+} from "../src/modules/complaint/complaint.eligibility.js";
+import { makeEvidence, removeEvidenceFiles } from "./fake-evidence.js";
 import {
   BARANGAY_DEMO_OFFICIALS,
   DEMO_SECRETARY,
@@ -36,12 +40,20 @@ async function main() {
 
   // Clean up existing data (Evidence/ServiceRecords cascade from Complaint).
   // Staff accounts, their sessions, notices and settings are kept.
+  const replacedEvidence = await prisma.evidence.findMany({
+    select: { storedName: true },
+  });
+
   await prisma.notification.deleteMany();
   await prisma.hearing.deleteMany();
   await prisma.statusUpdate.deleteMany();
   await prisma.complaint.deleteMany();
   await prisma.notice.deleteMany();
   await prisma.auditLog.deleteMany();
+
+  // The rows cascaded away with the complaints, so their files have to be
+  // removed here or every reseed leaks the uploads it replaced.
+  await removeEvidenceFiles(replacedEvidence.map((file) => file.storedName));
 
   // Demo cases are numbered per month from 0001, like live filings, so a
   // reseed leaves the counters just past the last reference it issued.
@@ -116,34 +128,134 @@ async function main() {
     console.log(`✅ Seeded ${BARANGAY_DEMO_OFFICIALS.length} barangay officials.`);
   }
 
-  // One case per lifecycle stage so every screen (list, calendar, mediation,
-  // reports) has something real to show.
+  // A handful of cases per lifecycle stage so every screen (list, calendar,
+  // mediation, reports) has something real to show.
+  type SeedStatus =
+    | "received"
+    | "summoned"
+    | "mediation"
+    | "conciliation"
+    | "arbitration"
+    | "settled"
+    | "certified"
+    | "dismissed";
+
+  // The KP screening each case got at intake, and what the staff did next.
+  type ScreenKind = "clean" | "uncertain" | "legacy" | "outside";
+
   type SeedPlan = {
-    status:
-      | "received"
-      | "summoned"
-      | "mediation"
-      | "conciliation"
-      | "arbitration"
-      | "settled"
-      | "certified";
+    // Where the case would stand once the screening clears it. Only "clean"
+    // cases actually get the stage; see the screen gate below.
+    status: SeedStatus;
     ageDays: number; // how long ago the complaint was filed
+    screen: ScreenKind;
+    // For an arbitration: who the parties gave the case to (§413). The
+    // Punong Barangay alone is the route taken during mediation, so that case
+    // never has a Pangkat; the panel route follows a failed conciliation.
+    arbitrationBy?: "punong_barangay" | "pangkat";
+  };
+
+  const SAME_CITY: EligibilityAnswers = {
+    respondentResidency: "same_barangay",
+    adjoiningAgreement: null,
+    againstGovernment: "no",
+    seriousOffenseOrVawc: "no",
+    propertyOutsideCity: "not_applicable",
+    propertyAgreement: null,
+  };
+
+  const SCREENS: Record<
+    ScreenKind,
+    { answers: EligibilityAnswers | null; notes: string | null }
+  > = {
+    clean: { answers: SAME_CITY, notes: null },
+    uncertain: {
+      answers: { ...SAME_CITY, seriousOffenseOrVawc: "unsure" },
+      notes: null,
+    },
+    // Filed before the intake questionnaire existed: nothing to screen against.
+    legacy: { answers: null, notes: null },
+    outside: {
+      answers: {
+        ...SAME_CITY,
+        propertyOutsideCity: "yes",
+        propertyAgreement: "no",
+      },
+      notes:
+        "The property in dispute is outside the city and the parties' barangays do not adjoin. Referred to the proper court.",
+    },
   };
 
   const plan: SeedPlan[] = [
-    { status: "received", ageDays: 0 },
-    { status: "summoned", ageDays: 4 },
-    { status: "mediation", ageDays: 12 },
-    { status: "conciliation", ageDays: 22 },
-    { status: "arbitration", ageDays: 26 },
-    { status: "settled", ageDays: 30 },
-    { status: "certified", ageDays: 45 },
+    // Cleared for KP and waiting to be opened.
+    { status: "received", ageDays: 0, screen: "clean" },
+    { status: "received", ageDays: 1, screen: "clean" },
+    // Planned past intake, but the screen holds them there: a case with an
+    // uncertain answer, or no screening answers at all, cannot be advanced.
+    { status: "mediation", ageDays: 2, screen: "uncertain" },
+    { status: "conciliation", ageDays: 3, screen: "uncertain" },
+    { status: "arbitration", ageDays: 3, screen: "legacy" },
+    { status: "settled", ageDays: 4, screen: "legacy" },
+    // Screened outside the lupon's authority, so it closed at intake.
+    { status: "received", ageDays: 5, screen: "outside" },
+    { status: "received", ageDays: 9, screen: "outside" },
+
+    { status: "summoned", ageDays: 4, screen: "clean" },
+    { status: "summoned", ageDays: 8, screen: "clean" },
+    { status: "summoned", ageDays: 11, screen: "clean" },
+
+    { status: "mediation", ageDays: 12, screen: "clean" },
+    { status: "mediation", ageDays: 16, screen: "clean" },
+    { status: "mediation", ageDays: 20, screen: "clean" },
+
+    { status: "conciliation", ageDays: 22, screen: "clean" },
+    { status: "conciliation", ageDays: 27, screen: "clean" },
+
+    // Both §413 routes: the Punong Barangay alone, and the Pangkat.
+    {
+      status: "arbitration",
+      ageDays: 29,
+      screen: "clean",
+      arbitrationBy: "punong_barangay",
+    },
+    { status: "arbitration", ageDays: 33, screen: "clean", arbitrationBy: "pangkat" },
+
+    { status: "settled", ageDays: 30, screen: "clean" },
+    { status: "settled", ageDays: 38, screen: "clean" },
+
+    { status: "certified", ageDays: 45, screen: "clean" },
+    { status: "certified", ageDays: 52, screen: "clean" },
   ];
 
-  const TERMINAL = ["settled", "certified", "dismissed"];
+  const TERMINAL: SeedStatus[] = ["settled", "certified", "dismissed"];
   const NOW = new Date();
 
-  for (const item of plan) {
+  // Panels are stored chairman-first, the way the server freezes a snapshot,
+  // and rotate through the roster so cases do not all show the same three
+  // members with the same chair.
+  function panelFor(index: number, status: SeedStatus) {
+    if (
+      roster.length < 3 ||
+      !["conciliation", "arbitration", "certified"].includes(status)
+    ) {
+      return [];
+    }
+
+    const seats = [0, 1, 2].map(
+      (offset) => roster[(index + offset) % roster.length]!,
+    );
+    const chair = index % 3;
+
+    return [...seats.slice(chair), ...seats.slice(0, chair)].map(
+      (member, seat) => ({
+        id: member.id,
+        fullName: member.fullName,
+        isChairman: seat === 0,
+      }),
+    );
+  }
+
+  for (const [caseIndex, item] of plan.entries()) {
     const createdAt = new Date(NOW.getTime() - item.ageDays * DAY_MS);
     const incidentAt = faker.date.between({
       from: new Date(createdAt.getTime() - 365 * DAY_MS),
@@ -160,19 +272,36 @@ async function main() {
         ? faker.date.between({ from: createdAt, to: new Date() })
         : null;
 
-    const isTerminal = TERMINAL.includes(item.status);
+    // The screening decides how far a case may have got. Nothing is worked on
+    // before it is cleared for KP: a pending or unscreened case waits at
+    // intake, and a case screened outside the lupon's authority closes there.
+    const screen = SCREENS[item.screen];
+    const evaluation = screen.answers
+      ? evaluateEligibility(screen.answers)
+      : null;
+    const eligibilityStatus = evaluation?.status ?? "unreviewed";
+    const status: SeedStatus =
+      eligibilityStatus === "eligible"
+        ? item.status
+        : eligibilityStatus === "outside_kp"
+          ? "dismissed"
+          : "received";
 
-    // Only cases that reached conciliation carry a Pangkat; mediation itself is
-    // handled by the Punong Barangay.
+    // Only a staff decision leaves a review stamp; intake screens itself.
+    const reviewedAt =
+      eligibilityStatus === "outside_kp"
+        ? faker.date.between({ from: createdAt, to: NOW })
+        : null;
+
+    const isTerminal = TERMINAL.includes(status);
+    // §413: which arbiter an arbitration case is given to. Defaults to the
+    // panel, the route a case takes after its conciliation fails.
+    const arbitrationBy =
+      status === "arbitration" ? (item.arbitrationBy ?? "pangkat") : null;
+    // Mediation is the Punong Barangay alone, and so is a §413(a) arbitration:
+    // only cases that reached a Pangkat carry a panel.
     const panel =
-      roster.length >= 3 &&
-      ["conciliation", "arbitration", "certified"].includes(item.status)
-        ? roster.slice(0, 3).map((member, index) => ({
-            id: member.id,
-            fullName: member.fullName,
-            isChairman: index === 0,
-          }))
-        : [];
+      arbitrationBy === "punong_barangay" ? [] : panelFor(caseIndex, status);
 
     const updates: {
       status: string;
@@ -189,8 +318,20 @@ async function main() {
     ];
 
     let dueAt: Date | null;
+    // Set on the walk into arbitration; nothing else carries an agreement.
+    let arbitrationAgreementAt: Date | null = null;
 
-    if (item.status === "mediation") {
+    if (status === "dismissed") {
+      // Closed on the screening, before any summons was issued.
+      updates.push({
+        status: "dismissed",
+        publicNote:
+          "Case dismissed: the complaint falls outside the authority of the Katarungang Pambarangay.",
+        internalNote: screen.notes,
+        createdAt: reviewedAt!,
+      });
+      dueAt = null;
+    } else if (status === "mediation") {
       // Walk the case through the real KP steps so the history timeline
       // has several pages of events, not just one.
       const summonedAt = faker.date.between({
@@ -216,7 +357,7 @@ async function main() {
         }),
       });
       dueAt = new Date(mediationStarted.getTime() + deadlineDays.mediation * DAY_MS);
-    } else if (item.status === "conciliation") {
+    } else if (status === "conciliation") {
       // Mediation before the Punong Barangay failed, so the Pangkat now
       // handles the conciliation stage.
       const summonedAt = faker.date.between({
@@ -254,9 +395,10 @@ async function main() {
       dueAt = new Date(
         conciliationStarted.getTime() + deadlineDays.conciliation * DAY_MS,
       );
-    } else if (item.status === "arbitration") {
-      // Mediation failed, the Pangkat was constituted, and then the parties
-      // agreed in writing to abide by an arbitration award (RA 7160 §413).
+    } else if (status === "arbitration") {
+      // RA 7160 §413: the parties agreed in writing to abide by an arbitration
+      // award. Either the Pangkat takes it after a failed conciliation, §413(b),
+      // or the Punong Barangay hears it alone straight out of mediation, §413(a).
       const summonedAt = faker.date.between({
         from: new Date(createdAt.getTime() + DAY_MS),
         to: new Date(NOW.getTime() - 6 * DAY_MS),
@@ -265,14 +407,19 @@ async function main() {
         from: summonedAt,
         to: new Date(NOW.getTime() - 5 * DAY_MS),
       });
-      const conciliationStarted = faker.date.between({
-        from: mediationStarted,
-        to: new Date(NOW.getTime() - 3 * DAY_MS),
-      });
+      const byPangkat = arbitrationBy === "pangkat";
+      const conciliationStarted = byPangkat
+        ? faker.date.between({
+            from: mediationStarted,
+            to: new Date(NOW.getTime() - 3 * DAY_MS),
+          })
+        : mediationStarted;
       const agreementAt = faker.date.between({
         from: conciliationStarted,
         to: new Date(NOW.getTime() - DAY_MS),
       });
+      arbitrationAgreementAt = agreementAt;
+
       updates.push({
         status: "summoned",
         publicNote: "Respondent was summoned before the Punong Barangay.",
@@ -284,22 +431,25 @@ async function main() {
         createdAt: mediationStarted,
         hearingAt: mediationStarted,
       });
-      updates.push({
-        status: "conciliation",
-        publicNote: "Conciliation before the Pangkat ng Tagapagkasundo.",
-        createdAt: conciliationStarted,
-        hearingAt: conciliationStarted,
-      });
+      if (byPangkat) {
+        updates.push({
+          status: "conciliation",
+          publicNote: "Conciliation before the Pangkat ng Tagapagkasundo.",
+          createdAt: conciliationStarted,
+          hearingAt: conciliationStarted,
+        });
+      }
       updates.push({
         status: "arbitration",
-        publicNote:
-          "The parties agreed in writing to abide by the arbitration award.",
+        publicNote: byPangkat
+          ? "The parties agreed in writing to have the Pangkat arbitrate the case."
+          : "The parties agreed in writing to have the Punong Barangay alone arbitrate the case.",
         createdAt: agreementAt,
       });
       dueAt = new Date(
         agreementAt.getTime() + deadlineDays.arbitration * DAY_MS,
       );
-    } else if (item.status === "summoned") {
+    } else if (status === "summoned") {
       const summonedAt = faker.date.between({
         from: new Date(createdAt.getTime() + DAY_MS / 2),
         to: NOW,
@@ -334,7 +484,7 @@ async function main() {
 
       let lastStepAt = mediationStarted;
 
-      if (item.status === "certified") {
+      if (status === "certified") {
         // Mediation failed, so the Pangkat was constituted for conciliation,
         // which also failed — hence the certification for court filing.
         lastStepAt = faker.date.between({
@@ -353,9 +503,9 @@ async function main() {
         settled: "The parties reached an amicable settlement.",
         certified: "No amicable settlement was reached; certified for court filing.",
         dismissed: "The complaint was dismissed for lack of merit.",
-      }[item.status];
+      }[status];
       updates.push({
-        status: item.status,
+        status,
         publicNote: note,
         createdAt: resolvedAt,
         internalNote: "Seed data entry.",
@@ -396,17 +546,27 @@ async function main() {
         incidentPlace: faker.location.city(),
         narrative: faker.lorem.paragraphs(2),
 
-        status: item.status,
+        status,
         dueAt,
         createdAt,
         consentAt: faker.date.between({ from: createdAt, to: new Date() }),
         viewedAt: openedAt,
+
+        eligibilityStatus,
+        eligibilityAnswers: screen.answers ?? undefined,
+        eligibilityReason: evaluation?.reason ?? null,
+        eligibilityNotes: screen.notes,
+        eligibilityReviewedAt: reviewedAt,
 
         ...(panel.length > 0 && {
           pangkatMembers: panel,
           pangkatChairman: panel[0]!.fullName,
         }),
 
+        ...(arbitrationBy && {
+          arbitrationBy,
+          arbitrationAgreementAt,
+        }),
 
         evidence: { create: evidence },
         updates: { create: updates },
@@ -422,8 +582,12 @@ async function main() {
     });
   }
 
+  const heldForScreen = plan.filter(
+    (item) => item.screen === "uncertain" || item.screen === "legacy",
+  ).length;
+
   console.log(
-    `✅ Seeded ${plan.length} complaints with evidence (mixed freshness/statuses).`,
+    `✅ Seeded ${plan.length} complaints with evidence (mixed freshness/statuses), ${heldForScreen} of them waiting on the eligibility screen.`,
   );
 
   // ---- Staff inbox: recent cases with a mix of read and unread alerts ----

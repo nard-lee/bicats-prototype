@@ -161,6 +161,12 @@ model Complaint {
   pangkatMembers  Json?
   pangkatChairman String?
 
+  // RA 7160 §413: the parties may agree in writing to arbitration. §413(a) has
+  // the Punong Barangay alone render the award, §413(b) hands it to the Pangkat.
+  // Staff choose which at the move into arbitration and it never changes after.
+  arbitrationBy          String?   // "punong_barangay" | "pangkat"
+  arbitrationAgreementAt DateTime? // when both parties signed the agreement
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 

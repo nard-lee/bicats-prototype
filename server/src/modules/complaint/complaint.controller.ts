@@ -4,9 +4,11 @@ import { validateRequest } from "../../utils/custom.validator.js";
 import complaintService from "./complaint.service.js";
 import notificationService from "../notification/notification.service.js";
 import complainantNotifier from "../notify/complainant.notifier.js";
+import { kindLabel } from "../notify/labels.js";
 import { auditFromRequest } from "../audit/audit.service.js";
 import { CustomError } from "../../utils/custom.exception.js";
-import { createComplaintSchema, isComplaintStatus, trackComplaintSchema, updatePangkatSchema } from "./complaint.schema.js";
+import { createComplaintSchema, isComplaintStatus, trackComplaintSchema, updateArbitrationSchema, updatePangkatSchema } from "./complaint.schema.js";
+import type { PangkatMember } from "./complaint.types.js";
 import { updateEligibilitySchema } from "./complaint.eligibility.js";
 import { createServiceRecordSchema } from "./complaint.service-record.js";
 import { removeUploadedFiles } from "../../utils/upload.js";
@@ -26,10 +28,20 @@ function notifyCancelledSessions(
 
     for (const [complaintId, kind] of firstKind) {
         runSideEffect(
-            "notifications: mediation cancelled",
+            `notifications: ${kindLabel(kind, "en")} cancelled`,
             complainantNotifier.mediationCancelled(complaintId, { kind }),
         );
     }
+}
+
+// The audit line names the panel in one place, whether it was recorded on the
+// Pangkat screen or written by the move into conciliation.
+function pangkatListing(panel: PangkatMember[]): string {
+    return panel
+        .map((member) =>
+            member.isChairman ? `${member.fullName} (chairman)` : member.fullName,
+        )
+        .join(", ");
 }
 
 const complaintController = {
@@ -158,7 +170,16 @@ const complaintController = {
 
     async updateStatus(req: Request, res: Response): Promise<void> {
         const id = Number(req.params.id);
-        const { status, publicNote, internalNote, hearingAt } = req.body;
+        const {
+            status,
+            publicNote,
+            internalNote,
+            hearingAt,
+            memberIds,
+            chairmanId,
+            arbitrationBy,
+            arbitrationAgreementAt,
+        } = req.body;
 
         if (!id || isNaN(id)) {
             throw new CustomError("Invalid complaint ID", undefined, 400);
@@ -170,12 +191,41 @@ const complaintController = {
 
         const hearingDate = hearingAt ? new Date(hearingAt) : undefined;
         if (hearingDate && isNaN(hearingDate.getTime())) {
-            throw new CustomError("Invalid mediation date", undefined, 400);
+            throw new CustomError("Invalid session date", undefined, 400);
         }
 
         const userId = req.user?.userId;
 
-        const updated = await complaintService.updateStatus(id, status, publicNote, internalNote, hearingDate, userId);
+        // The advance-to-conciliation step collects the panel in the same
+        // request, so it is optional here and validated only when present.
+        const panel =
+            memberIds === undefined && chairmanId === undefined
+                ? undefined
+                : validateRequest(updatePangkatSchema, { memberIds, chairmanId });
+
+        // The step into arbitration carries the sec. 413 choice — which arbiter
+        // hears it and the date on the parties' written agreement — and the
+        // service decides whether this is the request that enters the stage.
+        const choice =
+            arbitrationBy === undefined && arbitrationAgreementAt === undefined
+                ? undefined
+                : validateRequest(updateArbitrationSchema, {
+                      arbitrationBy,
+                      arbitrationAgreementAt,
+                  });
+
+        const updated = await complaintService.updateStatus(
+            id,
+            status,
+            publicNote,
+            internalNote,
+            hearingDate,
+            userId,
+            panel,
+            choice
+                ? { by: choice.arbitrationBy, agreementAt: choice.arbitrationAgreementAt }
+                : undefined,
+        );
         res.json({ success: true });
 
         await auditFromRequest(req, {
@@ -183,8 +233,26 @@ const complaintController = {
             entityType: "complaint",
             entityId: id,
             summary: `${updated.reference}: status changed from "${updated.previousStatus}" to "${status}"`,
-            meta: { status, previousStatus: updated.previousStatus, hasPublicNote: !!publicNote, hasInternalNote: !!internalNote },
+            meta: { status, previousStatus: updated.previousStatus, arbitrationBy: updated.arbitrationBy, hasPublicNote: !!publicNote, hasInternalNote: !!internalNote },
         });
+
+        // A panel written by this move is a separate fact on the record.
+        if (updated.pangkat) {
+            await auditFromRequest(req, {
+                action: "complaint.pangkat.update",
+                entityType: "complaint",
+                entityId: id,
+                summary: updated.pangkat.previousChairman
+                    ? `${updated.reference}: Pangkat changed from "${updated.pangkat.previousChairman}" to "${pangkatListing(updated.pangkat.panel)}"`
+                    : `${updated.reference}: Pangkat recorded as "${pangkatListing(updated.pangkat.panel)}"`,
+                meta: {
+                    memberIds: panel?.memberIds,
+                    chairmanId: panel?.chairmanId,
+                    previous: updated.pangkat.previousChairman,
+                    withStatusChange: true,
+                },
+            });
+        }
 
         // Text/email the complainant about the new step (and any mediation date).
         runSideEffect(
@@ -288,11 +356,7 @@ const complaintController = {
 
         res.json({ success: true });
 
-        const listing = updated.panel
-            .map((member) =>
-                member.isChairman ? `${member.fullName} (chairman)` : member.fullName,
-            )
-            .join(", ");
+        const listing = pangkatListing(updated.panel);
 
         await auditFromRequest(req, {
             action: "complaint.pangkat.update",

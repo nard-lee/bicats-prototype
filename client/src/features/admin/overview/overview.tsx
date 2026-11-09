@@ -10,6 +10,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { cn } from "cn";
 import { useT, type Key } from "@/lib/I18n";
+import { KIND_KEY } from "@/lib/session-kind";
 import { DOT_ACTIVE, DOT_NEUTRAL, STATUS_ACTION } from "@/lib/status";
 import type { Overview } from "./loader";
 
@@ -180,7 +181,7 @@ export default function AdminOverview() {
           </CardHeader>
           <CardContent>
             {data.upcomingHearings.length === 0 ? (
-              <EmptyState message={t("ovNoMediation")} />
+              <EmptyState message={t("ovNoSessions")} />
             ) : (
               <div className="divide-y">
                 {data.upcomingHearings.map((hearing) => (
@@ -188,6 +189,9 @@ export default function AdminOverview() {
                     key={hearing.id}
                     className="flex items-baseline gap-3 py-2.5"
                   >
+                    <span className="shrink-0 text-sm text-muted-foreground">
+                      {t(KIND_KEY[hearing.kind])}
+                    </span>
                     <span className="shrink-0 text-sm font-medium tabular-nums">
                       {formatDateTime(hearing.scheduledAt)}
                     </span>
