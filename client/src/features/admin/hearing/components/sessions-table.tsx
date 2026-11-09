@@ -88,6 +88,34 @@ export default function SessionsTable({
                 hearing.respondentAttendance,
               );
 
+              // Attendance is only a live action for a session that has begun
+              // on a case that is still open, so a row that cannot record it
+              // shows the held record and nothing else.
+              const canRecord =
+                hearing.status !== "cancelled" &&
+                hearing.started &&
+                !["settled", "certified", "dismissed"].includes(
+                  hearing.complaintStatus,
+                );
+
+              const perParty = `Complainant: ${hearing.complainantAttendance ?? "not recorded"} · Respondent: ${hearing.respondentAttendance ?? "not recorded"}`;
+
+              const summary = attendance ? (
+                <span className="flex items-center gap-1.5">
+                  <span
+                    className={cn(
+                      "size-1.5 shrink-0 rounded-full",
+                      ATTENDANCE_DOT[attendance.tone],
+                    )}
+                  />
+                  {attendance.text}
+                </span>
+              ) : canRecord ? (
+                "Record"
+              ) : (
+                "—"
+              );
+
               return (
                 <TableRow key={hearing.id}>
                   <TableCell className="pl-4 sm:pl-6">
@@ -124,22 +152,23 @@ export default function SessionsTable({
                       {hearing.overdue ? "Overdue" : STATUS_LABEL[hearing.status]}
                     </Badge>
                   </TableCell>
-                  <TableCell
-                    className="text-muted-foreground"
-                    title={`Complainant: ${hearing.complainantAttendance ?? "not recorded"} · Respondent: ${hearing.respondentAttendance ?? "not recorded"}`}
-                  >
-                    {attendance ? (
-                      <span className="flex items-center gap-1.5">
-                        <span
-                          className={cn(
-                            "size-1.5 shrink-0 rounded-full",
-                            ATTENDANCE_DOT[attendance.tone],
-                          )}
-                        />
-                        {attendance.text}
-                      </span>
+                  <TableCell className="text-muted-foreground">
+                    {canRecord ? (
+                      // The cell is the entry point: the column already says
+                      // Attendance, so staff find the input under the heading
+                      // it belongs to.
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="-ml-2 h-7 max-w-[14rem] justify-start gap-1.5 px-2 text-sm font-normal text-muted-foreground hover:bg-primary/5 hover:text-foreground"
+                        title={perParty}
+                        onClick={() => onAttendance(hearing)}
+                      >
+                        {summary}
+                      </Button>
                     ) : (
-                      "—"
+                      <span title={perParty}>{summary}</span>
                     )}
                   </TableCell>
                   <TableCell className="hidden text-muted-foreground 2xl:table-cell">
@@ -147,19 +176,6 @@ export default function SessionsTable({
                   </TableCell>
                   <TableCell className="pr-4 text-right sm:pr-6">
                     <div className="flex justify-end gap-2">
-                      {hearing.status !== "cancelled" &&
-                        hearing.started &&
-                        !["settled", "certified", "dismissed"].includes(
-                          hearing.complaintStatus,
-                        ) && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => onAttendance(hearing)}
-                          >
-                            Attendance
-                          </Button>
-                        )}
                       <Button variant="outline" size="sm" onClick={() => onEdit(hearing)}>
                         Edit
                       </Button>
