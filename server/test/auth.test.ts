@@ -2,6 +2,7 @@ import request from "supertest";
 import { describe, expect, it } from "vitest";
 
 import app from "../src/app.js";
+import { loginSchema } from "../src/modules/auth/auth.schema.js";
 import authService from "../src/modules/auth/auth.service.js";
 import { prisma } from "../src/db.js";
 import { hashRefreshToken } from "../src/utils/jwt.js";
@@ -30,6 +31,24 @@ function setCookie(
 const isSessionCookie = (cookie: string | undefined) =>
   !!cookie && !/Max-Age=/i.test(cookie) && !/Expires=/i.test(cookie);
 
+describe("login identifier normalization", () => {
+  const normalize = (identifier: string) =>
+    loginSchema.parse({ identifier, password: "password123" }).identifier;
+
+  it("lower-cases usernames and emails without eating username dots", () => {
+    expect(normalize("  MarioSantos ")).toBe("mariosantos");
+    expect(normalize("mario.santos")).toBe("mario.santos");
+    expect(normalize("JUAN@example.com")).toBe("juan@example.com");
+  });
+
+  it("collapses every typed phone shape to one E.164 value", () => {
+    expect(normalize("0917 123 4567")).toBe("+639171234567");
+    expect(normalize("(0917) 123-4567")).toBe("+639171234567");
+    expect(normalize("+63 917 123 4567")).toBe("+639171234567");
+    expect(normalize("639171234567")).toBe("+639171234567");
+  });
+});
+
 describe("authentication", () => {
   it("rejects state-changing requests without a CSRF token", async () => {
     const response = await request(app)
@@ -52,6 +71,50 @@ describe("authentication", () => {
       role: "admin",
     });
     expect(me.body.passwordHash).toBeUndefined();
+  });
+
+  it("signs in through the identifier shapes staff actually type", async () => {
+    const user = await createUser("admin");
+    // Seeded staff rows are stored in E.164 while the test helper keeps the
+    // local shape, so put the real format on this row before calling it.
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { phone: "+639171000001" },
+    });
+
+    for (const identifier of ["ADMIN", " Admin@Bicats.TEST ", "(0917) 100-0001"]) {
+      const agent = request.agent(app);
+      const token = await csrfToken(agent);
+
+      await agent
+        .post("/api/auth/log-in")
+        .set("x-csrf-token", token)
+        .send({ identifier, password: PASSWORD })
+        .expect(200);
+
+      const me = await agent.get("/api/auth/me").expect(200);
+      expect(me.body.id).toBe(user.id);
+    }
+  });
+
+  it("signs in with a dotted username", async () => {
+    const user = await createUser("staff");
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { username: "mario.santos" },
+    });
+
+    const agent = request.agent(app);
+    const token = await csrfToken(agent);
+
+    await agent
+      .post("/api/auth/log-in")
+      .set("x-csrf-token", token)
+      .send({ identifier: "Mario.Santos", password: PASSWORD })
+      .expect(200);
+
+    const me = await agent.get("/api/auth/me").expect(200);
+    expect(me.body.id).toBe(user.id);
   });
 
   it("uses the shared error envelope for bad credentials and validation", async () => {

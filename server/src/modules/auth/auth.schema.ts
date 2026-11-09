@@ -21,17 +21,21 @@ export const loginSchema = z.object({
   identifier: z
     .string()
     .trim()
-    .min(1, "Email, username, or phone number is required")
+    .min(1, "Username, email, or phone number is required")
     .transform((v) => {
-      if (v.includes("@")) return v.toLowerCase();
-
-      const normalized = v.replace(/[\s\-().]/g, "");
-
-      if (/^09\d{9}$/.test(normalized)) {
-        return `+63${normalized.slice(1)}`;
+      // Only a phone-shaped value loses its punctuation: usernames are allowed
+      // dots and underscores, so stripping them here would make those accounts
+      // impossible to sign into. Stored usernames and emails are already
+      // lowercase, so one lower-casing covers both.
+      const phone = v.replace(/[\s\-().+]/g, "");
+      if (/^09\d{9}$/.test(phone)) {
+        return `+63${phone.slice(1)}`;
+      }
+      if (/^639\d{9}$/.test(phone)) {
+        return `+${phone}`;
       }
 
-      return normalized;
+      return v.toLowerCase();
     }),
   password: z.string().min(1, "Password is required"),
   remember: z.boolean().optional().default(false),

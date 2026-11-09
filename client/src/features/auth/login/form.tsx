@@ -54,12 +54,17 @@ export default function Login() {
             id="identifier"
             name="identifier"
             type="text"
-            placeholder="juan@example.com"
+            placeholder="mariosantos"
             autoComplete="username"
+            autoCapitalize="none"
+            spellCheck={false}
             className="h-11"
             aria-invalid={!!fields.identifier}
             required
           />
+          <p className="text-sm text-muted-foreground">
+            {t("loginIdentifierHint")}
+          </p>
           <FieldError message={fields.identifier} />
         </div>
 
