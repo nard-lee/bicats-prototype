@@ -192,6 +192,15 @@ function Sidebar({
               "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
             } as React.CSSProperties
           }
+          // Tapping any link inside the mobile drawer dismisses it, whether or
+          // not the route actually changes: navigating to the page already open
+          // leaves the location untouched, so a route-change effect alone would
+          // leave the drawer covering the screen.
+          onClickCapture={(event) => {
+            if (event.target instanceof Element && event.target.closest("a")) {
+              setOpenMobile(false)
+            }
+          }}
           side={side}
         >
           <SheetHeader className="sr-only">
