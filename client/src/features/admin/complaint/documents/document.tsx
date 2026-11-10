@@ -60,7 +60,7 @@ function Caption({
 }) {
   const { t } = useT();
   return (
-    <table className="mt-6 w-full border-collapse break-inside-avoid text-left text-[13px]">
+    <table className="mt-4 w-full border-collapse break-inside-avoid text-left text-[13px]">
       <tbody>
         <tr>
           <td className="w-[58%] align-top">
@@ -93,7 +93,7 @@ function Caption({
 function DocStamp({ series }: { series: number }) {
   const { t } = useT();
   return (
-    <table className="mx-auto mt-6 w-full max-w-[130mm] border-collapse break-inside-avoid text-right text-[11px] sm:ml-auto">
+    <table className="mx-auto mt-4 w-full max-w-[130mm] border-collapse break-inside-avoid text-right text-[11px] sm:ml-auto">
       <tbody>
         <tr>
           <td className="w-1/3 border border-black px-2 py-1.5">
@@ -118,7 +118,7 @@ function DocStamp({ series }: { series: number }) {
 function Receipt({ serverName }: { serverName: string | null }) {
   const { t } = useT();
   return (
-    <div className="mt-10 break-inside-avoid border-t border-black pt-2 text-[11px]">
+    <div className="mt-6 break-inside-avoid border-t border-black pt-2 text-[11px]">
       <p className="font-semibold uppercase">{t("docReceiptHead")}</p>
       <table className="mt-2 w-full border-collapse">
         <tbody>
@@ -154,7 +154,7 @@ function SignLine({
   signatureUrl?: string;
 }) {
   return (
-    <div className="pt-10 text-center">
+    <div className="pt-8 text-center">
       {signatureUrl && (
         <img
           src={signatureUrl}
@@ -174,7 +174,7 @@ function SignLine({
 // next sheet, so the pair travels whole.
 function SignRow({ children }: { children: ReactNode }) {
   return (
-    <div className="mt-12 flex flex-wrap justify-between gap-10 break-inside-avoid">
+    <div className="mt-6 flex flex-wrap justify-between gap-10 break-inside-avoid">
       {children}
     </div>
   );
@@ -304,12 +304,12 @@ export default function ComplaintDocument() {
           />
         )}
 
-        <h1 className="mt-8 text-center text-base font-bold tracking-wide uppercase">
+        <h1 className="mt-6 text-center text-base font-bold tracking-wide uppercase">
           {title}
         </h1>
 
         {type === "summons" && (
-          <div className="mt-8 space-y-4">
+          <div className="mt-6 space-y-3">
             <div>
               <p className="font-semibold">
                 {t("docTo")}: {complaint.respondentName}
@@ -363,7 +363,7 @@ export default function ComplaintDocument() {
         )}
 
         {type === "notice" && (
-          <div className="mt-8 space-y-4">
+          <div className="mt-6 space-y-3">
             <div>
               <p className="font-semibold">
                 {t("docTo")}: {complaint.respondentName}, {t("docAnd")}{" "}
@@ -426,7 +426,7 @@ export default function ComplaintDocument() {
         )}
 
         {type === "settlement" && (
-          <div className="mt-8 space-y-4">
+          <div className="mt-6 space-y-3">
             <Paragraph>
               <span className="font-semibold">{t("dSetKnow")}</span>{" "}
               {t("dSetIntro")}
@@ -523,7 +523,7 @@ export default function ComplaintDocument() {
         )}
 
         {type === "cfa" && (
-          <div className="mt-8 space-y-4">
+          <div className="mt-6 space-y-3">
             <Paragraph>
               <span className="mr-2 font-semibold">{t("dCfaToWhom")}</span>{" "}
               {t("dCfaP1a")} {subject} {t("dCfaP1b")}{" "}
