@@ -22,7 +22,7 @@ type Notification = {
 type Payload = { items: Notification[]; unread: number };
 
 const dotColor = (type: string) => {
-  if (type === "overdue" || type === "escalation" || type === "hearing_overdue")
+  if (type === "overdue" || type === "hearing_overdue")
     return DOT_ACTION;
   if (type === "reminder" || type === "new_complaint") return DOT_ACTIVE;
   return DOT_NEUTRAL;

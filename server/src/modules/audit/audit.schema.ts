@@ -21,7 +21,6 @@ export type AuditListRow = {
   entityType: string;
   entityId: number | null;
   summary: string;
-  meta: unknown;
   ip: string | null;
   createdAt: Date;
   target: string;

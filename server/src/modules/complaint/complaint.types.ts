@@ -114,7 +114,6 @@ export type ComplaintDetail = {
         originalName: string;
         url: string;
         mimeType: string;
-        size: number;
     }>;
     serviceRecords: Array<{
         id: number;

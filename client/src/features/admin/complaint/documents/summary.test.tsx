@@ -40,7 +40,7 @@ const complaint: ComplaintDetail = {
   arbitrationBy: null,
   arbitrationAgreementAt: null,
   evidence: [
-    { originalName: 'receipt.jpg', url: '/uploads/receipt.jpg', mimeType: 'image/jpeg', size: 1024 },
+    { originalName: 'receipt.jpg', url: '/uploads/receipt.jpg', mimeType: 'image/jpeg' },
   ],
   serviceRecords: [
     {

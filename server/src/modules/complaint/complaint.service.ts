@@ -461,7 +461,6 @@ const complaintService = {
                 originalName: evidence.originalName,
                 url: getEvidenceUrl(evidence.storedName),
                 mimeType: evidence.mimeType,
-                size: evidence.size,
             })),
 
             serviceRecords: complaint.serviceRecords.map((record) => ({

@@ -85,7 +85,6 @@ export type ComplaintDetail = {
     originalName: string;
     url: string;
     mimeType: string;
-    size: number;
   }>;
   serviceRecords: ServiceRecord[];
   hearings: Array<{

@@ -298,7 +298,9 @@ model Notification {
   id          Int        @id @default(autoincrement())
   userId      Int
   user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type        String    @default("info") // reminder | overdue | escalation | hearing_overdue | hearing_upcoming | new_complaint | info
+  // The five kinds the app actually creates; "info" is only the fallback for a
+  // write that names none of them.
+  type        String    @default("info") // new_complaint | reminder | overdue | hearing_upcoming | hearing_overdue
   title       String
   body        String
   complaintId Int?
