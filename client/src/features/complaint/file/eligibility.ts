@@ -7,6 +7,8 @@ export type EligibilityFormState = {
     | "unsure";
   eligAdjoining: "" | "yes" | "no" | "unsure";
   eligGovernment: "" | "yes" | "no" | "unsure";
+  eligNaturalPersons: "" | "yes" | "no" | "unsure";
+  eligPrivateParty: "" | "yes" | "no" | "unsure";
   eligOffense: "" | "yes" | "no" | "unsure";
   eligProperty: "" | "yes" | "no" | "not_applicable" | "unsure";
   eligPropertyAgreement: "" | "yes" | "no" | "unsure";
@@ -16,6 +18,8 @@ export const EMPTY_ELIGIBILITY: EligibilityFormState = {
   eligResidency: "",
   eligAdjoining: "",
   eligGovernment: "",
+  eligNaturalPersons: "",
+  eligPrivateParty: "",
   eligOffense: "",
   eligProperty: "",
   eligPropertyAgreement: "",
@@ -35,6 +39,8 @@ export function evaluateIntakeEligibility(
   if (
     !form.eligResidency ||
     !form.eligGovernment ||
+    !form.eligNaturalPersons ||
+    !form.eligPrivateParty ||
     !form.eligOffense ||
     !form.eligProperty
   ) {
@@ -54,6 +60,8 @@ export function evaluateIntakeEligibility(
   }
 
   if (form.eligGovernment === "yes") return "outside_kp";
+  if (form.eligNaturalPersons === "no") return "outside_kp";
+  if (form.eligPrivateParty === "no") return "outside_kp";
   if (form.eligOffense === "yes") return "outside_kp";
 
   if (form.eligProperty === "yes") {
@@ -65,6 +73,8 @@ export function evaluateIntakeEligibility(
   if (
     form.eligResidency === "unsure" ||
     form.eligGovernment === "unsure" ||
+    form.eligNaturalPersons === "unsure" ||
+    form.eligPrivateParty === "unsure" ||
     form.eligOffense === "unsure" ||
     form.eligProperty === "unsure"
   ) {

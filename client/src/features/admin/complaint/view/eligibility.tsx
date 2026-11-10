@@ -308,6 +308,18 @@ export default function EligibilityCard({
               label={t("eligAnsGovernment")}
               value={t(yesNoKey(answers.againstGovernment))}
             />
+            {answers.naturalPersonsOnly && (
+              <AnswerRow
+                label={t("eligAnsNaturalPersons")}
+                value={t(yesNoKey(answers.naturalPersonsOnly))}
+              />
+            )}
+            {answers.privateOffendedParty && (
+              <AnswerRow
+                label={t("eligAnsPrivateParty")}
+                value={t(yesNoKey(answers.privateOffendedParty))}
+              />
+            )}
             <AnswerRow
               label={t("eligAnsOffense")}
               value={t(yesNoKey(answers.seriousOffenseOrVawc))}

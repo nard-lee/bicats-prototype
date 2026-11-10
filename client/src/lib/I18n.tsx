@@ -281,6 +281,10 @@ const en = {
     "Do the two barangays share a boundary, and do both of you agree to settle the case at the barangay?",
   eligGovernmentQ:
     "Is the complaint against the government, or against a public officer or employee because of their official work?",
+  eligNaturalPersonsQ:
+    "Are both of you individuals — not a company, business, or organization?",
+  eligPrivatePartyQ:
+    "Was a person or family directly wronged by what happened? Offenses like curfew or barangay ordinance violations have no private offended party.",
   eligOffenseQ:
     "Is this a VAWC case or a serious criminal offense that may be punished by more than one year in prison?",
   eligPropertyQ:
@@ -708,6 +712,8 @@ const en = {
   eligAnsResidency: "Respondent's residence",
   eligAnsAdjoining: "Adjoining barangays agreed",
   eligAnsGovernment: "Government / public officer",
+  eligAnsNaturalPersons: "Parties are individuals",
+  eligAnsPrivateParty: "Private offended party",
   eligAnsOffense: "VAWC / serious offense",
   eligAnsProperty: "Property in another city",
   eligAnsPropertyAgreement: "Property settlement agreed",
@@ -1262,6 +1268,10 @@ const tl: Record<Key, string> = {
     "Magkadikit ba ang dalawang barangay, at pareho ba kayong pumapayag na dito ayusin ang kaso?",
   eligGovernmentQ:
     "Ang reklamo ba ay laban sa gobyerno, o laban sa isang pampublikong opisyal o empleyado dahil sa kanyang tungkulin?",
+  eligNaturalPersonsQ:
+    "Ang magkabilang panig ba ay indibidwal na tao — hindi kumpanya, negosyo, o organisasyon?",
+  eligPrivatePartyQ:
+    "May tao o pamilyang direktang naapi o naaway dahil sa nangyari? Ang mga paglabag tulad ng curfew o ordinansa ng barangay ay walang pribadong inaapi.",
   eligOffenseQ:
     "Ito ba ay kaso ng VAWC o isang mabigat na krimen na maaaring parusahan ng mahigit isang taon sa kulungan?",
   eligPropertyQ:
@@ -1694,6 +1704,8 @@ const tl: Record<Key, string> = {
   eligAnsResidency: "Tirahan ng inirereklamo",
   eligAnsAdjoining: "Kasunduan sa magkadikit na barangay",
   eligAnsGovernment: "Gobyerno / pampublikong opisyal",
+  eligAnsNaturalPersons: "Indibidwal ang mga panig",
+  eligAnsPrivateParty: "Pribadong inaapi",
   eligAnsOffense: "VAWC / mabigat na krimen",
   eligAnsProperty: "Ari-arian sa ibang lungsod",
   eligAnsPropertyAgreement: "Kasunduan sa usapin ng ari-arian",

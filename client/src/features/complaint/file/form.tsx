@@ -318,29 +318,10 @@ export default function FileComplaint() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12">
-      <div className="rounded-xl bg-primary/5 px-5 py-8 text-center ring-1 ring-border dark:ring-background sm:px-7 sm:py-10">
-        <p className="font-heading text-xs font-semibold uppercase tracking-[0.28em] text-primary dark:text-status-ink">
-          Barangay Kabayanihan · Online Desk
-        </p>
-        <h1 className="mt-4 font-heading text-3xl font-extrabold tracking-tight sm:text-4xl">{t("fcTitle")}</h1>
-        <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">{t("fcIntro")}</p>
-
-        <ol className="mt-8 grid gap-x-8 gap-y-6 text-sm sm:grid-cols-3">
-          {[
-            ["1", "Your details", "Tell us how to contact you."],
-            ["2", "Incident", "Describe what happened."],
-            ["3", "Submit", "Keep your reference number."],
-          ].map(([step, title, description]) => (
-            <li key={step} className="flex flex-col items-center">
-              <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 font-heading text-sm font-bold tabular-nums text-primary dark:bg-primary/25 dark:text-status-ink">
-                {step}
-              </span>
-              <p className="mt-2 font-medium">{title}</p>
-              <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
-            </li>
-          ))}
-        </ol>
-      </div>
+      <h1 className="font-heading text-3xl font-extrabold tracking-tight">
+        {t("fcTitle")}
+      </h1>
+      <p className="mt-2 text-sm text-muted-foreground">{t("fcIntro")}</p>
 
       <Form
         method="post"
@@ -458,6 +439,62 @@ export default function FileComplaint() {
                   onChange={(next) =>
                     updateEligibility({
                       eligGovernment: next as EligibilityFormState["eligGovernment"],
+                    })
+                  }
+                >
+                  {t(key)}
+                </Choice>
+              ))}
+            </ScreeningQuestion>
+
+            <ScreeningQuestion
+              label={t("eligNaturalPersonsQ")}
+              error={fields.eligNaturalPersons}
+            >
+              {(
+                [
+                  ["yes", "eligYes"],
+                  ["no", "eligNo"],
+                  ["unsure", "eligUnsure"],
+                ] as const
+              ).map(([value, key]) => (
+                <Choice
+                  key={value}
+                  name="eligNaturalPersons"
+                  value={value}
+                  checked={eligibility.eligNaturalPersons === value}
+                  onChange={(next) =>
+                    updateEligibility({
+                      eligNaturalPersons:
+                        next as EligibilityFormState["eligNaturalPersons"],
+                    })
+                  }
+                >
+                  {t(key)}
+                </Choice>
+              ))}
+            </ScreeningQuestion>
+
+            <ScreeningQuestion
+              label={t("eligPrivatePartyQ")}
+              error={fields.eligPrivateParty}
+            >
+              {(
+                [
+                  ["yes", "eligYes"],
+                  ["no", "eligNo"],
+                  ["unsure", "eligUnsure"],
+                ] as const
+              ).map(([value, key]) => (
+                <Choice
+                  key={value}
+                  name="eligPrivateParty"
+                  value={value}
+                  checked={eligibility.eligPrivateParty === value}
+                  onChange={(next) =>
+                    updateEligibility({
+                      eligPrivateParty:
+                        next as EligibilityFormState["eligPrivateParty"],
                     })
                   }
                 >

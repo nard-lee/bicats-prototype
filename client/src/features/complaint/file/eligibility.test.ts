@@ -10,6 +10,8 @@ function form(patch: Partial<EligibilityFormState>): EligibilityFormState {
     ...EMPTY_ELIGIBILITY,
     eligResidency: "same_barangay",
     eligGovernment: "no",
+    eligNaturalPersons: "yes",
+    eligPrivateParty: "yes",
     eligOffense: "no",
     eligProperty: "not_applicable",
     ...patch,
@@ -64,6 +66,21 @@ describe("evaluateIntakeEligibility", () => {
     );
   });
 
+  it("blocks organizations and complaints with nobody wronged", () => {
+    expect(
+      evaluateIntakeEligibility(form({ eligNaturalPersons: "no" })),
+    ).toBe("outside_kp");
+    expect(evaluateIntakeEligibility(form({ eligPrivateParty: "no" }))).toBe(
+      "outside_kp",
+    );
+    expect(
+      evaluateIntakeEligibility(form({ eligNaturalPersons: "" })),
+    ).toBe("incomplete");
+    expect(evaluateIntakeEligibility(form({ eligPrivateParty: "" }))).toBe(
+      "incomplete",
+    );
+  });
+
   it("blocks property in another city unless the parties agreed", () => {
     expect(
       evaluateIntakeEligibility(
@@ -86,6 +103,8 @@ describe("evaluateIntakeEligibility", () => {
     for (const patch of [
       { eligResidency: "unsure" },
       { eligGovernment: "unsure" },
+      { eligNaturalPersons: "unsure" },
+      { eligPrivateParty: "unsure" },
       { eligOffense: "unsure" },
       { eligProperty: "unsure" },
     ] satisfies Partial<EligibilityFormState>[]) {

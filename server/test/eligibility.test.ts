@@ -4,6 +4,13 @@ import { describe, expect, it, vi } from "vitest";
 import app from "../src/app.js";
 import { prisma } from "../src/db.js";
 import {
+  eligibilityIssueField,
+  evaluateEligibility,
+  type EligibilityReason,
+  type IntakeEligibilityInput,
+  toEligibilityAnswers,
+} from "../src/modules/complaint/complaint.eligibility.js";
+import {
   createUser,
   csrfToken,
   loginAgent,
@@ -44,6 +51,8 @@ describe("eligibility screening", () => {
       respondentResidency: "same_barangay",
       adjoiningAgreement: null,
       againstGovernment: "no",
+      naturalPersonsOnly: "yes",
+      privateOffendedParty: "yes",
       seriousOffenseOrVawc: "unsure",
       propertyOutsideCity: "not_applicable",
       propertyAgreement: null,
@@ -71,6 +80,8 @@ describe("eligibility screening", () => {
     expect(detail.body.eligibilityAnswers).toMatchObject({
       respondentResidency: "same_barangay",
       againstGovernment: "no",
+      naturalPersonsOnly: "yes",
+      privateOffendedParty: "yes",
       seriousOffenseOrVawc: "no",
       propertyOutsideCity: "not_applicable",
     });
@@ -379,5 +390,96 @@ describe("eligibility screening", () => {
       select: { status: true },
     });
     expect(unchanged!.status).toBe("received");
+  });
+});
+
+// Neither screen is a judgement call by staff — the complainant answers it —
+// so each answer has exactly one destination: block, review, or continue.
+describe("party screens", () => {
+  const answered: IntakeEligibilityInput = {
+    eligResidency: "same_barangay",
+    eligGovernment: "no",
+    eligNaturalPersons: "yes",
+    eligPrivateParty: "yes",
+    eligOffense: "no",
+    eligProperty: "not_applicable",
+  };
+
+  it("keeps a dispute between individuals inside KP", () => {
+    expect(evaluateEligibility(toEligibilityAnswers(answered))).toEqual({
+      status: "eligible",
+      reason: null,
+    });
+  });
+
+  it("puts a claim against a company or organization outside KP", () => {
+    const evaluation = evaluateEligibility(
+      toEligibilityAnswers({ ...answered, eligNaturalPersons: "no" }),
+    );
+
+    expect(evaluation).toEqual({
+      status: "outside_kp",
+      reason: "not_natural_persons",
+    });
+    expect(eligibilityIssueField(evaluation.reason!)).toBe("eligNaturalPersons");
+  });
+
+  it("puts an offense with no private offended party outside KP", () => {
+    const evaluation = evaluateEligibility(
+      toEligibilityAnswers({ ...answered, eligPrivateParty: "no" }),
+    );
+
+    expect(evaluation).toEqual({
+      status: "outside_kp",
+      reason: "no_private_offended_party",
+    });
+    expect(eligibilityIssueField(evaluation.reason!)).toBe("eligPrivateParty");
+  });
+
+  it("sends an unsure party answer to staff", () => {
+    for (const field of ["eligNaturalPersons", "eligPrivateParty"] as const) {
+      expect(
+        evaluateEligibility(toEligibilityAnswers({ ...answered, [field]: "unsure" }))
+          .status,
+      ).toBe("needs_review");
+    }
+  });
+
+  // Answers saved before these questions existed carry neither key. Treating a
+  // missing answer as a "no" would silently reject every older case.
+  it("reads an answer that was never asked as no exclusion", () => {
+    expect(
+      evaluateEligibility({
+        respondentResidency: "same_barangay",
+        adjoiningAgreement: null,
+        againstGovernment: "no",
+        seriousOffenseOrVawc: "no",
+        propertyOutsideCity: "not_applicable",
+        propertyAgreement: null,
+      }).status,
+    ).toBe("eligible");
+  });
+
+  // Declaring the table exhaustively is the check: a reason added without a
+  // question to land on fails the build.
+  it("lands every reason on the question that produced it", () => {
+    const fieldForReason: Record<EligibilityReason, keyof IntakeEligibilityInput> =
+      {
+        different_city: "eligAdjoining",
+        different_city_unverified: "eligAdjoining",
+        adjoining_barangays: "eligAdjoining",
+        government_party: "eligGovernment",
+        not_natural_persons: "eligNaturalPersons",
+        no_private_offended_party: "eligPrivateParty",
+        excluded_offense: "eligOffense",
+        property_elsewhere: "eligPropertyAgreement",
+        property_elsewhere_unverified: "eligPropertyAgreement",
+        property_elsewhere_agreed: "eligPropertyAgreement",
+        uncertain_answers: "eligResidency",
+      };
+
+    for (const [reason, field] of Object.entries(fieldForReason)) {
+      expect(eligibilityIssueField(reason as EligibilityReason)).toBe(field);
+    }
   });
 });

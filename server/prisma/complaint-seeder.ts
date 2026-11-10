@@ -159,6 +159,8 @@ async function main() {
     respondentResidency: "same_barangay",
     adjoiningAgreement: null,
     againstGovernment: "no",
+    naturalPersonsOnly: "yes",
+    privateOffendedParty: "yes",
     seriousOffenseOrVawc: "no",
     propertyOutsideCity: "not_applicable",
     propertyAgreement: null,

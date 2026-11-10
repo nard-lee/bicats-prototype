@@ -49,6 +49,9 @@ export type EligibilityAnswers = {
   respondentResidency: "same_barangay" | "same_city" | "different_city" | "unsure";
   adjoiningAgreement: "yes" | "no" | "unsure" | null;
   againstGovernment: "yes" | "no" | "unsure";
+  // Optional: cases screened before these two questions existed carry neither.
+  naturalPersonsOnly?: "yes" | "no" | "unsure";
+  privateOffendedParty?: "yes" | "no" | "unsure";
   seriousOffenseOrVawc: "yes" | "no" | "unsure";
   propertyOutsideCity: "yes" | "no" | "not_applicable" | "unsure";
   propertyAgreement: "yes" | "no" | "unsure" | null;

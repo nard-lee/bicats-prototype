@@ -74,6 +74,8 @@ export function complaintFields(
     narrative: "Loud videoke until past midnight, disturbing the neighborhood.",
     eligResidency: "same_barangay",
     eligGovernment: "no",
+    eligNaturalPersons: "yes",
+    eligPrivateParty: "yes",
     eligOffense: "no",
     eligProperty: "not_applicable",
     consent: "on",

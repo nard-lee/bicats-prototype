@@ -23,6 +23,8 @@ export const intakeEligibilitySchema = z.object({
   ),
   eligAdjoining: z.enum(["yes", "no", "unsure"]).optional(),
   eligGovernment: yesNoUnsure,
+  eligNaturalPersons: yesNoUnsure,
+  eligPrivateParty: yesNoUnsure,
   eligOffense: yesNoUnsure,
   eligProperty: z.enum(["yes", "no", "not_applicable", "unsure"], {
     error: "Select an option",
@@ -36,6 +38,12 @@ export type EligibilityAnswers = {
   respondentResidency: "same_barangay" | "same_city" | "different_city" | "unsure";
   adjoiningAgreement: "yes" | "no" | "unsure" | null;
   againstGovernment: "yes" | "no" | "unsure";
+  // Optional because cases screened before these two questions existed carry
+  // neither key, and the answers come straight out of a Json column that
+  // nothing validates on read. An absent answer is "not asked", never an
+  // exclusion.
+  naturalPersonsOnly?: "yes" | "no" | "unsure";
+  privateOffendedParty?: "yes" | "no" | "unsure";
   seriousOffenseOrVawc: "yes" | "no" | "unsure";
   propertyOutsideCity: "yes" | "no" | "not_applicable" | "unsure";
   propertyAgreement: "yes" | "no" | "unsure" | null;
@@ -46,6 +54,8 @@ export type EligibilityReason =
   | "different_city_unverified"
   | "adjoining_barangays"
   | "government_party"
+  | "not_natural_persons"
+  | "no_private_offended_party"
   | "excluded_offense"
   | "property_elsewhere"
   | "property_elsewhere_unverified"
@@ -67,6 +77,8 @@ export function toEligibilityAnswers(
         ? input.eligAdjoining ?? null
         : null,
     againstGovernment: input.eligGovernment,
+    naturalPersonsOnly: input.eligNaturalPersons,
+    privateOffendedParty: input.eligPrivateParty,
     seriousOffenseOrVawc: input.eligOffense,
     propertyOutsideCity: input.eligProperty,
     propertyAgreement:
@@ -95,6 +107,19 @@ export function evaluateEligibility(
     return { status: "outside_kp", reason: "government_party" };
   }
 
+  // The Lupon settles disputes between people; a claim against a company,
+  // business or organization is heard by the court or the agency that
+  // regulates it.
+  if (answers.naturalPersonsOnly === "no") {
+    return { status: "outside_kp", reason: "not_natural_persons" };
+  }
+
+  // An offense with no private offended party — a curfew or ordinance
+  // violation, say — has no one for the barangay to bring together.
+  if (answers.privateOffendedParty === "no") {
+    return { status: "outside_kp", reason: "no_private_offended_party" };
+  }
+
   if (answers.seriousOffenseOrVawc === "yes") {
     return { status: "outside_kp", reason: "excluded_offense" };
   }
@@ -112,6 +137,8 @@ export function evaluateEligibility(
   if (
     answers.respondentResidency === "unsure" ||
     answers.againstGovernment === "unsure" ||
+    answers.naturalPersonsOnly === "unsure" ||
+    answers.privateOffendedParty === "unsure" ||
     answers.seriousOffenseOrVawc === "unsure" ||
     answers.propertyOutsideCity === "unsure"
   ) {
@@ -121,19 +148,30 @@ export function evaluateEligibility(
   return { status: "eligible", reason: null };
 }
 
+// Which question the intake error lands on. Exhaustive on purpose: a reason
+// added here without a case must fail the build rather than silently flag the
+// residency question.
 export function eligibilityIssueField(
   reason: EligibilityReason,
 ): keyof IntakeEligibilityInput {
   switch (reason) {
-    case "different_city":
-      return "eligAdjoining";
     case "government_party":
       return "eligGovernment";
+    case "not_natural_persons":
+      return "eligNaturalPersons";
+    case "no_private_offended_party":
+      return "eligPrivateParty";
     case "excluded_offense":
       return "eligOffense";
+    case "different_city":
+    case "different_city_unverified":
+    case "adjoining_barangays":
+      return "eligAdjoining";
     case "property_elsewhere":
+    case "property_elsewhere_unverified":
+    case "property_elsewhere_agreed":
       return "eligPropertyAgreement";
-    default:
+    case "uncertain_answers":
       return "eligResidency";
   }
 }

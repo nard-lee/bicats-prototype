@@ -90,3 +90,33 @@ describe("intake incident and contact guards", () => {
     expect(saved.contactNormalized).toBe("09171234567");
   });
 });
+
+// Two of the §408 exclusions are answered by the complainant, not decided by
+// staff, so a "no" has to stop the filing and point at the question asked.
+describe("intake party screens", () => {
+  it("turns away a complaint against a company or organization", async () => {
+    const { agent, token } = await intake();
+
+    const response = await submitComplaint(agent, token, {
+      eligNaturalPersons: "no",
+    }).expect(400);
+
+    expect(response.body.fields.eligNaturalPersons).toMatch(
+      /outside the barangay's authority/,
+    );
+    expect(await prisma.complaint.count()).toBe(0);
+  });
+
+  it("turns away an offense with no private offended party", async () => {
+    const { agent, token } = await intake();
+
+    const response = await submitComplaint(agent, token, {
+      eligPrivateParty: "no",
+    }).expect(400);
+
+    expect(response.body.fields.eligPrivateParty).toMatch(
+      /outside the barangay's authority/,
+    );
+    expect(await prisma.complaint.count()).toBe(0);
+  });
+});
