@@ -1,22 +1,5 @@
 import { z } from "zod";
 
-const phone = z
-  .string()
-  .trim()
-  .transform((v) => v.replace(/[\s\-().]/g, ""))
-  .transform((v) => {
-    if (/^09\d{9}$/.test(v)) {
-      return `+63${v.slice(1)}`;
-    }
-
-    return v;
-  })
-  .pipe(
-    z.e164(
-      "Invalid phone number. Use 09XXXXXXXXX or international format, e.g. +639171234567",
-    ),
-  );
-
 export const loginSchema = z.object({
   identifier: z
     .string()

@@ -44,14 +44,6 @@ export const ATTENDANCE_LABEL: Record<AttendanceStatus, string> = {
   excused: "Excused",
 };
 
-// Only a non-attendance is a problem; showing up and being excused are both
-// settled, so neither gets a color.
-export const ATTENDANCE_STYLE: Record<AttendanceStatus, string> = {
-  present: STATUS_NEUTRAL,
-  absent: STATUS_ACTION,
-  excused: STATUS_NEUTRAL,
-};
-
 export const ATTENDANCE_DOT: Record<AttendanceStatus, string> = {
   present: DOT_NEUTRAL,
   absent: DOT_ACTION,
