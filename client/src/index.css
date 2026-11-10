@@ -211,6 +211,9 @@ main:has([data-save-bar]) {
      the paper margins come from the sheet itself instead — and clone repeats
      them on every page a multi-page record spills onto. */
   @page {
+    /* No declared size means Chrome prints on the printer's default sheet,
+       Letter on a US-locale machine: 18mm shorter, so a page set for A4 spills. */
+    size: A4;
     margin: 0;
   }
   article {
